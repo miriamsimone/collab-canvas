@@ -3,9 +3,10 @@ import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
 import { useAuth } from '../hooks/useAuth';
 import { useCanvas, CANVAS_CONFIG } from '../hooks/useCanvas';
+import { useRectangles } from '../hooks/useRectangles';
 import { CanvasBackground } from './CanvasBackground';
 import { Toolbar } from './Toolbar';
-import { CanvasObject, type CanvasObjectData } from './CanvasObject';
+import { CanvasObject } from './CanvasObject';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -24,13 +25,23 @@ export const Canvas: React.FC = () => {
     centerView 
   } = useCanvas();
 
+  // Real-time rectangles management
+  const {
+    rectangles,
+    loading: rectanglesLoading,
+    error: rectanglesError,
+    isConnected,
+    createRectangle,
+    updateRectangle,
+    clearError: clearRectanglesError,
+  } = useRectangles();
+
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight - 60, // Account for header
   });
 
-  // Rectangle state  
-  const [rectangles, setRectangles] = useState<CanvasObjectData[]>([]);
+  // Local UI state  
   const [selectedRectangleId, setSelectedRectangleId] = useState<string | null>(null);
   const [isDraggingRectangle, setIsDraggingRectangle] = useState<boolean>(false);
 
@@ -47,33 +58,19 @@ export const Canvas: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Rectangle creation and interaction handlers
-  const createRectangle = (x: number, y: number): CanvasObjectData => {
-    const colors = ['#007ACC', '#28A745', '#DC3545', '#FFC107', '#6F42C1', '#FD7E14'];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    
-    return {
-      id: `rect-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      x,
-      y,
-      width: 120,
-      height: 80,
-      fill: randomColor + '20', // Add transparency
-      stroke: randomColor,
-      strokeWidth: 2,
-    };
-  };
-
-  // Handle rectangle drag start
+  // Rectangle interaction handlers
   const handleRectangleDragStart = () => {
     setIsDraggingRectangle(true);
   };
 
-  // Handle rectangle drag end (position updates)
-  const handleRectangleDragEnd = (id: string, x: number, y: number) => {
-    setRectangles(prev => prev.map(rect => 
-      rect.id === id ? { ...rect, x, y } : rect
-    ));
+  // Handle rectangle drag end (position updates with real-time sync)
+  const handleRectangleDragEnd = async (id: string, x: number, y: number) => {
+    try {
+      await updateRectangle(id, { x, y });
+    } catch (error) {
+      console.error('Failed to update rectangle position:', error);
+      // Error handling is managed by useRectangles hook
+    }
     setIsDraggingRectangle(false);
   };
 
@@ -82,7 +79,7 @@ export const Canvas: React.FC = () => {
     setSelectedRectangleId(id);
   };
 
-  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+  const handleStageClick = async (e: Konva.KonvaEventObject<MouseEvent>) => {
     // Don't create rectangles if dragging the canvas or rectangles
     if (isDragging || isDraggingRectangle) return;
     
@@ -93,10 +90,14 @@ export const Canvas: React.FC = () => {
     if (!pos) return;
 
     if (activeTool === 'rectangle') {
-      // Create a new rectangle at the click position
-      const newRectangle = createRectangle(pos.x, pos.y);
-      setRectangles(prev => [...prev, newRectangle]);
-      setSelectedRectangleId(newRectangle.id);
+      // Create a new rectangle at the click position with real-time sync
+      try {
+        const newRectangle = await createRectangle(pos.x, pos.y);
+        setSelectedRectangleId(newRectangle.id);
+      } catch (error) {
+        console.error('Failed to create rectangle:', error);
+        // Error handling is managed by useRectangles hook
+      }
     } else if (activeTool === 'select') {
       // Deselect if clicking on empty space (not on a rectangle)
       if (e.target === stage) {
@@ -111,6 +112,17 @@ export const Canvas: React.FC = () => {
       <header className="app-header">
         <div className="header-content">
           <h1>CollabCanvas</h1>
+          
+          {/* Real-time status indicator */}
+          <div className="realtime-status">
+            <div className={`connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
+              <div className="status-dot"></div>
+              <span className="status-text">
+                {rectanglesLoading ? 'Connecting...' : isConnected ? 'Live' : 'Offline'}
+              </span>
+            </div>
+          </div>
+          
           <div className="user-info">
             <span className="welcome-text">
               Welcome, {userProfile?.displayName}!
@@ -125,6 +137,22 @@ export const Canvas: React.FC = () => {
           </div>
         </div>
       </header>
+      
+      {/* Error Toast */}
+      {rectanglesError && (
+        <div className="error-toast">
+          <div className="error-content">
+            <span className="error-message">{rectanglesError}</span>
+            <button 
+              onClick={clearRectanglesError}
+              className="error-close"
+              type="button"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Toolbar */}
       <Toolbar 
