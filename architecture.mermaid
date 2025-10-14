@@ -1,0 +1,159 @@
+graph TB
+    subgraph "Client Browser"
+        subgraph "React Application"
+            APP[App.jsx<br/>Main App Component]
+            
+            subgraph "Components"
+                CANVAS[Canvas.jsx<br/>Main Canvas Container]
+                CANVASOBJ[CanvasObject.jsx<br/>Rectangle Rendering]
+                TOOLBAR[Toolbar.jsx<br/>Rectangle Creation Tool]
+                PRESENCE[PresenceList.jsx<br/>Online Users Display]
+                CURSOR[CursorOverlay.jsx<br/>Multiplayer Cursors]
+                LOGIN[Login.jsx<br/>Auth Form]
+                REGISTER[Register.jsx<br/>Registration Form]
+                AUTHPROV[AuthProvider.jsx<br/>Auth Context]
+            end
+            
+            subgraph "Hooks"
+                USECANVAS[useCanvas.js<br/>Canvas State & Logic]
+                USESHAPES[useShapes.js<br/>Rectangle CRUD & Sync]
+                USEPRESENCE[usePresence.js<br/>Cursor & Presence]
+                USEAUTH[useAuth.js<br/>Authentication State]
+            end
+            
+            subgraph "Services"
+                FIRESERVICE[firebase.js<br/>Firebase SDK Init]
+                CANVASSERV[canvasService.js<br/>Shared Canvas Init]
+                SHAPESERV[shapeService.js<br/>Rectangle CRUD]
+                PRESENCESERV[presenceService.js<br/>Presence & Heartbeat]
+            end
+            
+            subgraph "Utils"
+                COLORS[colors.js<br/>Cursor Colors]
+                HELPERS[canvasHelpers.js<br/>Coordinate Conversion & Calculations]
+            end
+        end
+        
+        subgraph "Rendering Layer"
+            KONVA[Konva.js<br/>Canvas Rendering Engine]
+        end
+    end
+    
+    subgraph "Firebase Cloud Services"
+        subgraph "Firebase Authentication"
+            FBAUTH[Firebase Auth<br/>Email/Password]
+        end
+        
+        subgraph "Cloud Firestore"
+            USERS[("users/<br/>User Profiles")]
+            CANVAS[("canvas/<br/>Shared Canvas Document")]
+            SHAPES[("canvas/shapes/<br/>Rectangle Documents")]
+            PRESENCECOL[("canvas/presence/<br/>Live Presence Data")]
+        end
+        
+        subgraph "Firebase Hosting"
+            HOSTING[Static File Hosting<br/>Production Deployment]
+        end
+    end
+    
+    subgraph "Development & Testing"
+        VITEST[Vitest<br/>Test Runner]
+        UNITTESTS[Unit Tests<br/>Services, Hooks, Utils]
+        INTTESTS[Integration Tests<br/>Sync, Auth, Persistence]
+    end
+    
+    subgraph "Build Tools"
+        VITE[Vite<br/>Build & Dev Server]
+        NPM[npm<br/>Package Manager]
+    end
+    
+    %% Component Relationships
+    APP --> CANVAS
+    APP --> AUTHPROV
+    APP --> TOOLBAR
+    APP --> PRESENCE
+    
+    CANVAS --> CANVASOBJ
+    CANVAS --> CURSOR
+    CANVAS --> USECANVAS
+    CANVAS --> USESHAPES
+    CANVAS --> KONVA
+    
+    CANVASOBJ --> KONVA
+    CURSOR --> USEPRESENCE
+    PRESENCE --> USEPRESENCE
+    
+    AUTHPROV --> LOGIN
+    AUTHPROV --> REGISTER
+    AUTHPROV --> USEAUTH
+    
+    %% Hook to Service Relationships
+    USECANVAS --> HELPERS
+    USECANVAS --> CANVASSERV
+    
+    USESHAPES --> SHAPESERV
+    USESHAPES -.Real-time Listener.-> SHAPES
+    
+    USEPRESENCE --> PRESENCESERV
+    USEPRESENCE --> COLORS
+    USEPRESENCE -.Real-time Listener.-> PRESENCECOL
+    
+    USEAUTH --> FIRESERVICE
+    
+    %% Service to Firebase Relationships
+    FIRESERVICE --> FBAUTH
+    FIRESERVICE --> USERS
+    
+    CANVASSERV --> FIRESERVICE
+    CANVASSERV --> CANVAS
+    
+    SHAPESERV --> FIRESERVICE
+    SHAPESERV --> SHAPES
+    
+    PRESENCESERV --> FIRESERVICE
+    PRESENCESERV --> PRESENCECOL
+    
+    %% Real-time Sync
+    SHAPES -.Broadcast Changes.-> USESHAPES
+    PRESENCECOL -.Broadcast Changes.-> USEPRESENCE
+    
+    %% Authentication Flow
+    USEAUTH --> FBAUTH
+    FBAUTH -.Auth State.-> USEAUTH
+    
+    %% Testing Relationships
+    VITEST --> UNITTESTS
+    VITEST --> INTTESTS
+    UNITTESTS -.Tests.-> FIRESERVICE
+    UNITTESTS -.Tests.-> CANVASSERV
+    UNITTESTS -.Tests.-> SHAPESERV
+    UNITTESTS -.Tests.-> PRESENCESERV
+    UNITTESTS -.Tests.-> USEAUTH
+    UNITTESTS -.Tests.-> USESHAPES
+    UNITTESTS -.Tests.-> USEPRESENCE
+    UNITTESTS -.Tests.-> COLORS
+    UNITTESTS -.Tests.-> HELPERS
+    
+    INTTESTS -.Tests.-> APP
+    
+    %% Build Pipeline
+    NPM --> VITE
+    VITE --> APP
+    VITE --> HOSTING
+    
+    %% Styling
+    classDef component fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef hook fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef service fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef firebase fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    classDef database fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+    classDef tool fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef test fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class CANVAS,CANVASOBJ,TOOLBAR,PRESENCE,CURSOR,LOGIN,REGISTER,AUTHPROV,APP component
+    class USECANVAS,USESHAPES,USEPRESENCE,USEAUTH hook
+    class FIRESERVICE,CANVASSERV,SHAPESERV,PRESENCESERV,COLORS,HELPERS service
+    class FBAUTH,HOSTING firebase
+    class USERS,CANVAS,SHAPES,PRESENCECOL database
+    class VITE,NPM,KONVA tool
+    class VITEST,UNITTESTS,INTTESTS test
