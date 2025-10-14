@@ -65,13 +65,16 @@ describe('CanvasObject', () => {
 
   it('should handle callbacks correctly', () => {
     const onSelect = vi.fn();
+    const onDragStart = vi.fn();
     const onDragEnd = vi.fn();
 
     // Test callback invocations
     onSelect();
+    onDragStart();
     onDragEnd('test-id', 50, 100);
 
     expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onDragStart).toHaveBeenCalledTimes(1);
     expect(onDragEnd).toHaveBeenCalledWith('test-id', 50, 100);
   });
 

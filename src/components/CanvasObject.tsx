@@ -17,6 +17,7 @@ interface CanvasObjectProps {
   object: CanvasObjectData;
   isSelected: boolean;
   onSelect: () => void;
+  onDragStart: () => void;
   onDragEnd: (id: string, x: number, y: number) => void;
 }
 
@@ -24,6 +25,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
   object,
   isSelected,
   onSelect,
+  onDragStart,
   onDragEnd,
 }) => {
   const shapeRef = React.useRef<Konva.Rect>(null);
@@ -36,6 +38,10 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
       transformerRef.current.getLayer()?.batchDraw();
     }
   }, [isSelected]);
+
+  const handleDragStart = () => {
+    onDragStart();
+  };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
@@ -79,6 +85,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         draggable
         onClick={onSelect}
         onTap={onSelect}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
         // Visual feedback on hover

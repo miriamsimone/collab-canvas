@@ -32,6 +32,7 @@ export const Canvas: React.FC = () => {
   // Rectangle state  
   const [rectangles, setRectangles] = useState<CanvasObjectData[]>([]);
   const [selectedRectangleId, setSelectedRectangleId] = useState<string | null>(null);
+  const [isDraggingRectangle, setIsDraggingRectangle] = useState<boolean>(false);
 
   // Handle window resize
   useEffect(() => {
@@ -63,11 +64,17 @@ export const Canvas: React.FC = () => {
     };
   };
 
+  // Handle rectangle drag start
+  const handleRectangleDragStart = () => {
+    setIsDraggingRectangle(true);
+  };
+
   // Handle rectangle drag end (position updates)
   const handleRectangleDragEnd = (id: string, x: number, y: number) => {
     setRectangles(prev => prev.map(rect => 
       rect.id === id ? { ...rect, x, y } : rect
     ));
+    setIsDraggingRectangle(false);
   };
 
   // Handle rectangle selection
@@ -135,7 +142,7 @@ export const Canvas: React.FC = () => {
           scaleY={scale}
           x={x}
           y={y}
-          draggable
+          draggable={activeTool === 'select' && !isDraggingRectangle}
           onDragStart={() => setIsDragging(true)}
           onDragEnd={(e) => {
             setIsDragging(false);
@@ -156,6 +163,7 @@ export const Canvas: React.FC = () => {
                 object={rectangle}
                 isSelected={selectedRectangleId === rectangle.id}
                 onSelect={() => handleRectangleSelect(rectangle.id)}
+                onDragStart={handleRectangleDragStart}
                 onDragEnd={handleRectangleDragEnd}
               />
             ))}
