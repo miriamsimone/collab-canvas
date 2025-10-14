@@ -143,17 +143,27 @@ export const Canvas: React.FC = () => {
           x={x}
           y={y}
           draggable={activeTool === 'select' && !isDraggingRectangle}
+          listening={!isDraggingRectangle}
           onDragStart={(e) => {
-            // Only allow canvas dragging if not dragging rectangles
-            if (isDraggingRectangle) {
-              e.evt.preventDefault();
+            // Completely prevent canvas dragging when dealing with rectangles
+            if (isDraggingRectangle || activeTool === 'rectangle') {
+              e.evt?.preventDefault();
+              e.evt?.stopPropagation();
+              return false;
+            }
+            // Only allow Stage dragging if clicking on Stage itself, not on rectangles
+            if (e.target !== stageRef.current) {
+              e.evt?.preventDefault();
+              e.evt?.stopPropagation();
               return false;
             }
             setIsDragging(true);
           }}
           onDragEnd={(e) => {
-            setIsDragging(false);
-            setPosition(e.target.x(), e.target.y());
+            if (isDragging) {
+              setIsDragging(false);
+              setPosition(e.target.x(), e.target.y());
+            }
           }}
           onWheel={handleZoom}
           onClick={handleStageClick}
