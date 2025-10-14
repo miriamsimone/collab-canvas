@@ -1,35 +1,56 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { AuthProvider } from './components/Auth/AuthProvider';
+import { useAuth } from './hooks/useAuth';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+// Main canvas component (placeholder for now)
+const CanvasApp: React.FC = () => {
+  const { userProfile, signOut } = useAuth();
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="canvas-app">
+      <header className="app-header">
+        <div className="header-content">
+          <h1>CollabCanvas</h1>
+          <div className="user-info">
+            <span className="welcome-text">
+              Welcome, {userProfile?.displayName}!
+            </span>
+            <button 
+              onClick={signOut} 
+              className="sign-out-button"
+              type="button"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </header>
+      
+      <main className="app-main">
+        <div className="canvas-placeholder">
+          <div className="placeholder-content">
+            <h2>🎨 Canvas Coming Soon</h2>
+            <p>Authentication is working! Canvas will be built in PR #3.</p>
+            <div className="user-details">
+              <p><strong>User ID:</strong> {userProfile?.uid}</p>
+              <p><strong>Email:</strong> {userProfile?.email}</p>
+              <p><strong>Display Name:</strong> {userProfile?.displayName}</p>
+              <p><strong>Account Created:</strong> {userProfile?.createdAt.toLocaleDateString()}</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <CanvasApp />
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;
