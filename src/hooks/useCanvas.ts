@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import Konva from 'konva';
+import { type ToolType } from '../components/Toolbar';
 
 // Canvas configuration constants
 export const CANVAS_CONFIG = {
@@ -15,12 +16,14 @@ export interface CanvasState {
   x: number;
   y: number;
   isDragging: boolean;
+  activeTool: ToolType;
 }
 
 export interface CanvasActions {
   setScale: (scale: number) => void;
   setPosition: (x: number, y: number) => void;
   setIsDragging: (isDragging: boolean) => void;
+  setActiveTool: (tool: ToolType) => void;
   handleZoom: (e: Konva.KonvaEventObject<WheelEvent>) => void;
   resetView: () => void;
   centerView: (containerWidth: number, containerHeight: number) => void;
@@ -31,6 +34,7 @@ export const useCanvas = (): CanvasState & CanvasActions => {
   const [x, setX] = useState(0);
   const [y, setY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [activeTool, setActiveTool] = useState<ToolType>('rectangle');
 
   // Set canvas position
   const setPosition = useCallback((newX: number, newY: number) => {
@@ -94,9 +98,11 @@ export const useCanvas = (): CanvasState & CanvasActions => {
     x,
     y,
     isDragging,
+    activeTool,
     setScale,
     setPosition,
     setIsDragging,
+    setActiveTool,
     handleZoom,
     resetView,
     centerView,

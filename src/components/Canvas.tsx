@@ -4,6 +4,9 @@ import Konva from 'konva';
 import { useAuth } from '../hooks/useAuth';
 import { useCanvas, CANVAS_CONFIG } from '../hooks/useCanvas';
 import { CanvasBackground } from './CanvasBackground';
+import { Toolbar } from './Toolbar';
+import { CanvasObject, type CanvasObjectData } from './CanvasObject';
+import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
   const { userProfile, signOut } = useAuth();
@@ -13,8 +16,10 @@ export const Canvas: React.FC = () => {
     x, 
     y, 
     isDragging,
+    activeTool,
     setPosition, 
     setIsDragging,
+    setActiveTool,
     handleZoom,
     centerView 
   } = useCanvas();
@@ -23,6 +28,10 @@ export const Canvas: React.FC = () => {
     width: window.innerWidth,
     height: window.innerHeight - 60, // Account for header
   });
+
+  // Rectangle state  
+  const [rectangles, setRectangles] = useState<CanvasObjectData[]>([]);
+  const [selectedRectangleId, setSelectedRectangleId] = useState<string | null>(null);
 
   // Handle window resize
   useEffect(() => {
@@ -36,6 +45,58 @@ export const Canvas: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Rectangle creation and interaction handlers
+  const createRectangle = (x: number, y: number): CanvasObjectData => {
+    const colors = ['#007ACC', '#28A745', '#DC3545', '#FFC107', '#6F42C1', '#FD7E14'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    return {
+      id: `rect-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      x,
+      y,
+      width: 120,
+      height: 80,
+      fill: randomColor + '20', // Add transparency
+      stroke: randomColor,
+      strokeWidth: 2,
+    };
+  };
+
+  // Handle rectangle drag end (position updates)
+  const handleRectangleDragEnd = (id: string, x: number, y: number) => {
+    setRectangles(prev => prev.map(rect => 
+      rect.id === id ? { ...rect, x, y } : rect
+    ));
+  };
+
+  // Handle rectangle selection
+  const handleRectangleSelect = (id: string) => {
+    setSelectedRectangleId(id);
+  };
+
+  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    // Don't create rectangles if dragging the canvas
+    if (isDragging) return;
+    
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const pos = getCanvasPointerPosition(stage);
+    if (!pos) return;
+
+    if (activeTool === 'rectangle') {
+      // Create a new rectangle at the click position
+      const newRectangle = createRectangle(pos.x, pos.y);
+      setRectangles(prev => [...prev, newRectangle]);
+      setSelectedRectangleId(newRectangle.id);
+    } else if (activeTool === 'select') {
+      // Deselect if clicking on empty space
+      if (e.target === stage) {
+        setSelectedRectangleId(null);
+      }
+    }
+  };
 
   return (
     <div className="canvas-app">
@@ -58,6 +119,12 @@ export const Canvas: React.FC = () => {
         </div>
       </header>
       
+      {/* Toolbar */}
+      <Toolbar 
+        activeTool={activeTool}
+        onToolChange={setActiveTool}
+      />
+      
       {/* Canvas Container */}
       <div className="canvas-container">
         <Stage
@@ -75,11 +142,23 @@ export const Canvas: React.FC = () => {
             setPosition(e.target.x(), e.target.y());
           }}
           onWheel={handleZoom}
+          onClick={handleStageClick}
+          onTap={handleStageClick}
         >
           <Layer>
             {/* Canvas Background with Grid */}
             <CanvasBackground scale={scale} />
-            {/* Shapes will be rendered here later */}
+            
+            {/* Render Rectangles */}
+            {rectangles.map((rectangle) => (
+              <CanvasObject
+                key={rectangle.id}
+                object={rectangle}
+                isSelected={selectedRectangleId === rectangle.id}
+                onSelect={() => handleRectangleSelect(rectangle.id)}
+                onDragEnd={handleRectangleDragEnd}
+              />
+            ))}
           </Layer>
         </Stage>
       </div>
