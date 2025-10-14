@@ -83,8 +83,8 @@ export const Canvas: React.FC = () => {
   };
 
   const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    // Don't create rectangles if dragging the canvas
-    if (isDragging) return;
+    // Don't create rectangles if dragging the canvas or rectangles
+    if (isDragging || isDraggingRectangle) return;
     
     const stage = stageRef.current;
     if (!stage) return;
@@ -98,7 +98,7 @@ export const Canvas: React.FC = () => {
       setRectangles(prev => [...prev, newRectangle]);
       setSelectedRectangleId(newRectangle.id);
     } else if (activeTool === 'select') {
-      // Deselect if clicking on empty space
+      // Deselect if clicking on empty space (not on a rectangle)
       if (e.target === stage) {
         setSelectedRectangleId(null);
       }
@@ -143,7 +143,14 @@ export const Canvas: React.FC = () => {
           x={x}
           y={y}
           draggable={activeTool === 'select' && !isDraggingRectangle}
-          onDragStart={() => setIsDragging(true)}
+          onDragStart={(e) => {
+            // Only allow canvas dragging if not dragging rectangles
+            if (isDraggingRectangle) {
+              e.evt.preventDefault();
+              return false;
+            }
+            setIsDragging(true);
+          }}
           onDragEnd={(e) => {
             setIsDragging(false);
             setPosition(e.target.x(), e.target.y());

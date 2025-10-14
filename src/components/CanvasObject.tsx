@@ -1,6 +1,7 @@
 import React from 'react';
 import { Rect, Transformer } from 'react-konva';
 import Konva from 'konva';
+import { CANVAS_CONFIG } from '../hooks/useCanvas';
 
 export interface CanvasObjectData {
   id: string;
@@ -70,6 +71,16 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
     onDragEnd(object.id, node.x(), node.y());
   };
 
+  // Constrain rectangle movement to canvas bounds
+  const dragBoundFunc = (pos: { x: number; y: number }) => {
+    const newX = Math.max(0, Math.min(pos.x, CANVAS_CONFIG.WIDTH - object.width));
+    const newY = Math.max(0, Math.min(pos.y, CANVAS_CONFIG.HEIGHT - object.height));
+    return {
+      x: newX,
+      y: newY,
+    };
+  };
+
   return (
     <>
       <Rect
@@ -83,6 +94,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         stroke={object.stroke}
         strokeWidth={object.strokeWidth}
         draggable
+        dragBoundFunc={dragBoundFunc}
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={handleDragStart}
