@@ -4,9 +4,11 @@ import Konva from 'konva';
 import { useAuth } from '../hooks/useAuth';
 import { useCanvas, CANVAS_CONFIG } from '../hooks/useCanvas';
 import { useRectangles } from '../hooks/useRectangles';
+import { usePresence } from '../hooks/usePresence';
 import { CanvasBackground } from './CanvasBackground';
 import { Toolbar } from './Toolbar';
 import { CanvasObject } from './CanvasObject';
+import { MultiplayerCursors } from './MultiplayerCursor';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -35,6 +37,14 @@ export const Canvas: React.FC = () => {
     updateRectangle,
     clearError: clearRectanglesError,
   } = useRectangles();
+
+  // Real-time presence/cursor management
+  const {
+    cursors,
+    error: presenceError,
+    updateCursorPosition,
+    clearError: clearPresenceError,
+  } = usePresence();
 
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
@@ -77,6 +87,18 @@ export const Canvas: React.FC = () => {
   // Handle rectangle selection
   const handleRectangleSelect = (id: string) => {
     setSelectedRectangleId(id);
+  };
+
+  // Handle mouse move for cursor tracking
+  const handleStageMouseMove = () => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const pos = getCanvasPointerPosition(stage);
+    if (!pos) return;
+
+    // Update cursor position for multiplayer cursors
+    updateCursorPosition(pos.x, pos.y);
   };
 
   const handleStageClick = async (e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -138,13 +160,28 @@ export const Canvas: React.FC = () => {
         </div>
       </header>
       
-      {/* Error Toast */}
+      {/* Error Toasts */}
       {rectanglesError && (
         <div className="error-toast">
           <div className="error-content">
             <span className="error-message">{rectanglesError}</span>
             <button 
               onClick={clearRectanglesError}
+              className="error-close"
+              type="button"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {presenceError && (
+        <div className="error-toast" style={{ top: '120px' }}>
+          <div className="error-content">
+            <span className="error-message">Cursor sync: {presenceError}</span>
+            <button 
+              onClick={clearPresenceError}
               className="error-close"
               type="button"
             >
@@ -194,6 +231,7 @@ export const Canvas: React.FC = () => {
             }
           }}
           onWheel={handleZoom}
+          onMouseMove={handleStageMouseMove}
           onClick={handleStageClick}
           onTap={handleStageClick}
         >
@@ -214,6 +252,13 @@ export const Canvas: React.FC = () => {
             ))}
           </Layer>
         </Stage>
+        
+        {/* Multiplayer Cursors Overlay */}
+        <MultiplayerCursors 
+          cursors={cursors}
+          canvasScale={scale}
+          canvasOffset={{ x, y }}
+        />
       </div>
       
       {/* Canvas Info Overlay */}

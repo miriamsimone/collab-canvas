@@ -667,3 +667,54 @@ body {
     opacity: 1;
   }
 }
+
+/* Multiplayer Cursor Styles */
+.multiplayer-cursor {
+  will-change: transform;
+}
+
+.cursor-label {
+  position: absolute;
+  left: 18px;
+  top: 2px;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: fadeInLabel 0.2s ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+@keyframes fadeInLabel {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.multiplayer-cursors-container {
+  pointer-events: none;
+}
+
+/* Responsive cursor labels */
+@media (max-width: 768px) {
+  .cursor-label {
+    font-size: 10px;
+    padding: 1px 6px;
+    max-width: 80px;
+  }
+}

@@ -370,70 +370,79 @@ collabcanvas/
 
 ---
 
-### PR #6: Multiplayer Cursors
-**Goal:** Show real-time cursor positions for all users
+## PR #6: Multiplayer Cursors
+**Goal:** Real-time cursor tracking for all connected users
+### Tasks:
 
-- [ ] **Subtask 6.1:** Create presence service
-  - **Files:** `src/services/presenceService.js`
-  - Implement `updateCursorPosition(userId, x, y)` for shared canvas
-  - Implement `initializePresence(userId, displayName)`
-  - Implement `removePresence(userId)`
-  - Implement `getPresence()` listener for shared canvas
+- [ ] **6.1: Design Realtime Database Schema**
 
-- [ ] **Subtask 6.2:** Create usePresence hook
-  - **Files:** `src/hooks/usePresence.js`
-  - Subscribe to `canvas/presence` collection (shared canvas)
-  - Initialize presence on mount
-  - Clean up presence on unmount
-  - Return presence array and update function
+  - Path: `/sessions/global-canvas-v1/{userId}`
+  - Data structure:
+    ```
+    {
+      displayName: string,
+      cursorColor: string,
+      cursorX: number,
+      cursorY: number,
+      lastSeen: timestamp
+    }
+    ```
 
-- [ ] **Subtask 6.3:** Track cursor movement
-  - **Files:** `src/components/Canvas.jsx`
-  - Add mousemove listener to Stage
-  - Convert screen coordinates to canvas coordinates using helpers
-  - Throttle cursor updates for smooth performance
-  - Call `updateCursorPosition()` with coordinates
+- [ ] **6.2: Create Cursor Service**
 
-- [ ] **Subtask 6.4:** Create CursorOverlay component
-  - **Files:** `src/components/CursorOverlay.jsx`
-  - Render cursor for each user in presence
-  - Display user name label near cursor
-  - Apply unique color per user
-  - Position cursors correctly based on zoom/pan
+  - Files to create: `src/services/cursors.js`
+  - Function: `updateCursorPosition(canvasId, userId, x, y, name, color)`
+  - Function: `subscribeToCursors(canvasId, callback)`
+  - Function: `removeCursor(canvasId, userId)` (on disconnect)
 
-- [ ] **Subtask 6.5:** Generate unique cursor colors
-  - **Files:** `src/utils/colors.js`
-  - Create color assignment function
-  - Ensure good contrast and visibility
-  - Assign color on presence initialization
+- [ ] **6.3: Create Cursors Hook**
 
-- [ ] **Subtask 6.6:** Write unit tests for presence service
-  - **Files:** `tests/unit/services/presenceService.test.js`
-  - Test `updateCursorPosition()` function
-  - Test `initializePresence()` function
-  - Test `removePresence()` function
-  - Mock Firestore calls
+  - Files to create: `src/hooks/useCursors.js`
+  - Track mouse position on canvas
+  - Convert screen coords to canvas coords
+  - Throttle updates to ~60Hz (16ms)
+  - Return: `cursors` object (keyed by userId)
 
-- [ ] **Subtask 6.7:** Write unit tests for color utility
-  - **Files:** `tests/unit/utils/colors.test.js`
-  - Test color generation
-  - Test color uniqueness
-  - Test color contrast
+- [ ] **6.4: Build Cursor Component**
 
-- [ ] **Subtask 6.8:** Write integration test for cursor sync
-  - **Files:** `tests/integration/cursorSync.test.js`
-  - Test cursor positions sync across users
-  - Test cursor appears when user joins
-  - Test cursor disappears when user leaves
+  - Files to create: `src/components/Collaboration/Cursor.jsx`
+  - SVG cursor icon with user color
+  - Name label next to cursor
+  - Smooth CSS transitions for movement
+
+- [ ] **6.5: Integrate Cursors into Canvas**
+
+  - Files to update: `src/components/Canvas/Canvas.jsx`
+  - Add `onMouseMove` handler to Stage
+  - Update cursor position in RTDB
+  - Render Cursor components for all other users
+
+- [ ] **6.6: Assign User Colors**
+
+  - Files to create: `src/utils/helpers.js`
+  - Function: `generateUserColor(userId)` - randomly assigned on join
+  - Color palette: 8-10 distinct colors with sufficient contrast
+  - Maintain color consistency per user throughout session
+
+- [ ] **6.7: Handle Cursor Cleanup**
+
+  - Files to update: `src/hooks/useCursors.js`
+  - Remove cursor on component unmount
+  - Use `onDisconnect()` in RTDB to auto-cleanup
+
+- [ ] **6.8: Optimize Cursor Updates**
+  - Files to update: `src/hooks/useCursors.js`
+  - Throttle mouse events to 20-30 FPS (not full 60Hz)
+  - Only send if position changed significantly (>2px)
 
 **Acceptance Criteria:**
-- Each user sees other users' cursors
-- Cursors move smoothly in real-time
-- User names display near cursors
-- Cursors have unique, visible colors
-- Presence service unit tests pass
-- Color utility tests pass
-- Cursor sync integration test passes
+
+- [ ] Moving mouse shows cursor to other users
+- [ ] Cursor has correct user name and color
+- [ ] Cursors move smoothly without jitter
+- [ ] Cursor disappears when user leaves
+- [ ] Updates happen within 50ms
+- [ ] No performance impact with 5 concurrent cursors
 
 ---
 
