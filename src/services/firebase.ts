@@ -2,14 +2,14 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Firebase configuration from environment variables
+// Firebase configuration with hardcoded values
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyBrSXvvYHwsoWeYZkVbpDF8FXpr2wZnq-Y",
+  authDomain: "collab-canvas-2e4c5.firebaseapp.com",
+  projectId: "collab-canvas-2e4c5",
+  storageBucket: "collab-canvas-2e4c5.firebasestorage.app",
+  messagingSenderId: "648585977625",
+  appId: "1:648585977625:web:941c261c3e83dbe3cd6f88",
 };
 
 // Initialize Firebase app
