@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCanvas, CANVAS_CONFIG } from '../hooks/useCanvas';
 import { useRectangles } from '../hooks/useRectangles';
 import { usePresence } from '../hooks/usePresence';
+import { canvasService } from '../services/canvasService';
 import { CanvasBackground } from './CanvasBackground';
 import { Toolbar } from './Toolbar';
 import { CanvasObject } from './CanvasObject';
@@ -13,7 +14,7 @@ import { PresenceList } from './PresenceList';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
-  const { userProfile, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
   const stageRef = useRef<Konva.Stage>(null);
   const { 
     scale, 
@@ -57,6 +58,26 @@ export const Canvas: React.FC = () => {
   // Local UI state  
   const [selectedRectangleId, setSelectedRectangleId] = useState<string | null>(null);
   const [isDraggingRectangle, setIsDraggingRectangle] = useState<boolean>(false);
+  const [canvasError, setCanvasError] = useState<string | null>(null);
+
+  // Initialize shared canvas on mount
+  useEffect(() => {
+    const initializeCanvas = async () => {
+      if (!user || !userProfile) {
+        return;
+      }
+
+      try {
+        setCanvasError(null);
+        await canvasService.initializeSharedCanvas(user.uid);
+      } catch (error: any) {
+        console.error('Failed to initialize canvas:', error);
+        setCanvasError(`Failed to initialize canvas: ${error.message}`);
+      }
+    };
+
+    initializeCanvas();
+  }, [user, userProfile]);
 
   // Handle window resize
   useEffect(() => {
@@ -185,6 +206,21 @@ export const Canvas: React.FC = () => {
             <span className="error-message">Cursor sync: {presenceError}</span>
             <button 
               onClick={clearPresenceError}
+              className="error-close"
+              type="button"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {canvasError && (
+        <div className="error-toast" style={{ top: '160px' }}>
+          <div className="error-content">
+            <span className="error-message">{canvasError}</span>
+            <button 
+              onClick={() => setCanvasError(null)}
               className="error-close"
               type="button"
             >
