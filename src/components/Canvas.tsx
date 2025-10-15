@@ -9,6 +9,7 @@ import { CanvasBackground } from './CanvasBackground';
 import { Toolbar } from './Toolbar';
 import { CanvasObject } from './CanvasObject';
 import { MultiplayerCursors } from './MultiplayerCursor';
+import { PresenceList } from './PresenceList';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -41,6 +42,8 @@ export const Canvas: React.FC = () => {
   // Real-time presence/cursor management
   const {
     cursors,
+    isConnected: presenceConnected,
+    loading: presenceLoading,
     error: presenceError,
     updateCursorPosition,
     clearError: clearPresenceError,
@@ -295,6 +298,14 @@ export const Canvas: React.FC = () => {
           Reset Zoom
         </button>
       </div>
+      
+      {/* Presence List */}
+      <PresenceList
+        presenceData={cursors}
+        currentUserId={userProfile?.uid}
+        isConnected={presenceConnected}
+        loading={presenceLoading}
+      />
     </div>
   );
 };
