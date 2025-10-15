@@ -27,7 +27,7 @@ export interface CreateRectangleData extends CanvasObjectData {
 
 // Rectangle service class for managing Firestore operations
 export class RectanglesService {
-  private readonly collectionPath = `canvas/shapes`;
+  private readonly collectionPath = `canvas/shared/shapes`;
 
   /**
    * Create a new rectangle in Firestore
