@@ -67,6 +67,13 @@ export const useAuth = (): AuthState & AuthActions => {
           createdAt: data.createdAt.toDate(),
           lastActive: data.lastActive.toDate(),
         });
+      } else {
+        // Profile doesn't exist, create one with basic info from Firebase Auth
+        const firebaseUser = auth.currentUser;
+        if (firebaseUser) {
+          const displayName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User';
+          await createUserProfile(firebaseUser, displayName);
+        }
       }
     } catch (err) {
       console.error('Error loading user profile:', err);
