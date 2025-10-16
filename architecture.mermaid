@@ -1,41 +1,57 @@
 graph TB
     subgraph "Client Browser"
         subgraph "React Application"
-            APP[App.jsx<br/>Main App Component]
+            APP[App.tsx<br/>Main App Component]
             
             subgraph "Components"
-                CANVAS[Canvas.jsx<br/>Main Canvas Container]
-                CANVASOBJ[CanvasObject.jsx<br/>Rectangle Rendering]
-                TOOLBAR[Toolbar.jsx<br/>Rectangle Creation Tool]
-                PRESENCE[PresenceList.jsx<br/>Online Users Display]
-                CURSOR[CursorOverlay.jsx<br/>Multiplayer Cursors]
-                LOGIN[Login.jsx<br/>Auth Form]
-                REGISTER[Register.jsx<br/>Registration Form]
-                AUTHPROV[AuthProvider.jsx<br/>Auth Context]
+                CANVAS[Canvas.tsx<br/>Main Canvas Container]
+                CANVASOBJ[CanvasObject.tsx<br/>Multi-Shape Rendering]
+                TOOLBAR[Toolbar.tsx<br/>Shape Creation Tools]
+                PRESENCE[PresenceList.tsx<br/>Online Users Display]
+                CURSOR[MultiplayerCursor.tsx<br/>Multiplayer Cursors]
+                LOGIN[Login.tsx<br/>Auth Form]
+                REGISTER[Register.tsx<br/>Registration Form]
+                AUTHPROV[AuthProvider.tsx<br/>Auth Context]
+                AIUI[AICommandInput.tsx<br/>AI Interface]
+            end
+            
+            subgraph "Performance Layer 🚀"
+                VIEWPORT[ViewportCulling<br/>Only Render Visible Objects]
+                OBJPOOL[ObjectPool<br/>Reuse Konva Objects]
+                SPATIAL[SpatialIndex<br/>QuadTree for Fast Queries]
+                BATCHER[UpdateBatcher<br/>Batch Firestore Writes]
+                THROTTLER[EventThrottler<br/>Reduce Update Frequency]
             end
             
             subgraph "Hooks"
-                USECANVAS[useCanvas.js<br/>Canvas State & Logic]
-                USESHAPES[useShapes.js<br/>Rectangle CRUD & Sync]
-                USEPRESENCE[usePresence.js<br/>Cursor & Presence]
-                USEAUTH[useAuth.js<br/>Authentication State]
+                USECANVAS[useCanvas.ts<br/>Canvas State & Logic]
+                USESHAPES[useShapes.ts<br/>Multi-Shape CRUD & Sync]
+                USEPRESENCE[usePresence.ts<br/>Cursor & Presence]
+                USEAUTH[useAuth.ts<br/>Authentication State]
+                USEAI[useAI.ts<br/>AI Command Processing]
+                USEPERF[usePerformance.ts<br/>Performance Monitoring]
             end
             
             subgraph "Services"
-                FIRESERVICE[firebase.js<br/>Firebase SDK Init]
-                CANVASSERV[canvasService.js<br/>Shared Canvas Init]
-                SHAPESERV[shapeService.js<br/>Rectangle CRUD]
-                PRESENCESERV[presenceService.js<br/>Presence & Heartbeat]
+                FIRESERVICE[firebase.ts<br/>Firebase SDK Init]
+                CANVASSERV[canvasService.ts<br/>Shared Canvas Init]
+                SHAPESERV[shapesService.ts<br/>Multi-Shape CRUD]
+                PRESENCESERV[presenceService.ts<br/>Presence & Heartbeat]
+                AISERVICE[aiService.ts<br/>AI Command Processing]
+                PERFSERVICE[performanceService.ts<br/>Metrics & Optimization]
             end
             
             subgraph "Utils"
-                COLORS[colors.js<br/>Cursor Colors]
-                HELPERS[canvasHelpers.js<br/>Coordinate Conversion & Calculations]
+                HELPERS[canvasHelpers.ts<br/>Coordinate Conversion]
+                PERFHELPERS[performanceHelpers.ts<br/>Optimization Utils]
+                AIHELPERS[aiHelpers.ts<br/>AI Command Parsing]
             end
         end
         
-        subgraph "Rendering Layer"
+        subgraph "Optimized Rendering Layer 🎨"
             KONVA[Konva.js<br/>Canvas Rendering Engine]
+            WEBGL[WebGL Layer<br/>Hardware Acceleration]
+            OFFSCREEN[OffscreenCanvas<br/>Background Rendering]
         end
     end
     
@@ -44,11 +60,18 @@ graph TB
             FBAUTH[Firebase Auth<br/>Email/Password]
         end
         
-        subgraph "Cloud Firestore"
+        subgraph "Cloud Firestore - Optimized Structure 📊"
             USERS[("users/<br/>User Profiles")]
             CANVAS[("canvas/<br/>Shared Canvas Document")]
-            SHAPES[("canvas/shapes/<br/>Rectangle Documents")]
-            PRESENCECOL[("canvas/presence/<br/>Live Presence Data")]
+            SHAPES[("canvas/shared/shapes/<br/>Batched Shape Documents")]
+            PRESENCECOL[("presence/<br/>Live Presence Data")]
+            AICOMMANDS[("aiCommands/<br/>AI Command Queue")]
+            PERFORMANCE[("performance/<br/>Metrics & Analytics")]
+        end
+        
+        subgraph "External AI Services 🤖"
+            OPENAI[OpenAI GPT-4<br/>Function Calling API]
+            CLAUDE[Claude Anthropic<br/>Alternative AI API]
         end
         
         subgraph "Firebase Hosting"
@@ -72,14 +95,28 @@ graph TB
     APP --> AUTHPROV
     APP --> TOOLBAR
     APP --> PRESENCE
+    APP --> AIUI
     
     CANVAS --> CANVASOBJ
     CANVAS --> CURSOR
     CANVAS --> USECANVAS
     CANVAS --> USESHAPES
+    CANVAS --> VIEWPORT
     CANVAS --> KONVA
     
+    %% Performance Layer Integration
+    CANVAS --> VIEWPORT
+    CANVAS --> OBJPOOL
+    CANVAS --> SPATIAL
+    CANVASOBJ --> OBJPOOL
+    USESHAPES --> BATCHER
+    USEPRESENCE --> THROTTLER
+    
+    %% Optimized Rendering
     CANVASOBJ --> KONVA
+    KONVA --> WEBGL
+    VIEWPORT --> OFFSCREEN
+    
     CURSOR --> USEPRESENCE
     PRESENCE --> USEPRESENCE
     
@@ -87,18 +124,33 @@ graph TB
     AUTHPROV --> REGISTER
     AUTHPROV --> USEAUTH
     
+    %% AI Integration
+    AIUI --> USEAI
+    USEAI --> AISERVICE
+    
     %% Hook to Service Relationships
     USECANVAS --> HELPERS
     USECANVAS --> CANVASSERV
+    USECANVAS --> PERFHELPERS
     
     USESHAPES --> SHAPESERV
     USESHAPES -.Real-time Listener.-> SHAPES
+    USESHAPES --> SPATIAL
     
     USEPRESENCE --> PRESENCESERV
-    USEPRESENCE --> COLORS
+    USEPRESENCE --> THROTTLER
     USEPRESENCE -.Real-time Listener.-> PRESENCECOL
     
     USEAUTH --> FIRESERVICE
+    
+    %% AI Hook Relationships
+    USEAI --> AISERVICE
+    USEAI --> AIHELPERS
+    USEAI -.Command Queue.-> AICOMMANDS
+    
+    %% Performance Monitoring
+    USEPERF --> PERFSERVICE
+    USEPERF -.Metrics.-> PERFORMANCE
     
     %% Service to Firebase Relationships
     FIRESERVICE --> FBAUTH
@@ -109,9 +161,21 @@ graph TB
     
     SHAPESERV --> FIRESERVICE
     SHAPESERV --> SHAPES
+    SHAPESERV --> BATCHER
     
     PRESENCESERV --> FIRESERVICE
     PRESENCESERV --> PRESENCECOL
+    
+    %% AI Service Relationships
+    AISERVICE --> FIRESERVICE
+    AISERVICE --> AICOMMANDS
+    AISERVICE --> OPENAI
+    AISERVICE --> CLAUDE
+    AISERVICE --> SHAPESERV
+    
+    %% Performance Service Relationships
+    PERFSERVICE --> FIRESERVICE
+    PERFSERVICE --> PERFORMANCE
     
     %% Real-time Sync
     SHAPES -.Broadcast Changes.-> USESHAPES
@@ -149,11 +213,17 @@ graph TB
     classDef database fill:#ffebee,stroke:#b71c1c,stroke-width:2px
     classDef tool fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
     classDef test fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef performance fill:#e8f5e8,stroke:#2e7d2e,stroke-width:3px
+    classDef ai fill:#fff4e6,stroke:#ff8f00,stroke-width:3px
+    classDef external fill:#f1f8e9,stroke:#33691e,stroke-width:2px
     
-    class CANVAS,CANVASOBJ,TOOLBAR,PRESENCE,CURSOR,LOGIN,REGISTER,AUTHPROV,APP component
-    class USECANVAS,USESHAPES,USEPRESENCE,USEAUTH hook
-    class FIRESERVICE,CANVASSERV,SHAPESERV,PRESENCESERV,COLORS,HELPERS service
+    class CANVAS,CANVASOBJ,TOOLBAR,PRESENCE,CURSOR,LOGIN,REGISTER,AUTHPROV,APP,AIUI component
+    class USECANVAS,USESHAPES,USEPRESENCE,USEAUTH,USEAI,USEPERF hook
+    class FIRESERVICE,CANVASSERV,SHAPESERV,PRESENCESERV,HELPERS,AISERVICE,PERFSERVICE service
     class FBAUTH,HOSTING firebase
-    class USERS,CANVAS,SHAPES,PRESENCECOL database
-    class VITE,NPM,KONVA tool
+    class USERS,CANVAS,SHAPES,PRESENCECOL,AICOMMANDS,PERFORMANCE database
+    class VITE,NPM,KONVA,WEBGL,OFFSCREEN tool
     class VITEST,UNITTESTS,INTTESTS test
+    class VIEWPORT,OBJPOOL,SPATIAL,BATCHER,THROTTLER performance
+    class PERFHELPERS,AIHELPERS service
+    class OPENAI,CLAUDE external
