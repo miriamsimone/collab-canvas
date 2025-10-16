@@ -10,12 +10,12 @@ const mockUseAuth = vi.mocked(useAuth);
 // Mock the presence service
 vi.mock('../../../src/services/presenceService', () => ({
   presenceService: {
-    updateCursorPosition: vi.fn(),
+    updateCursorPosition: vi.fn().mockResolvedValue(undefined),
     subscribeToPresence: vi.fn(() => vi.fn()), // Returns unsubscribe function
     startHeartbeat: vi.fn(),
     stopHeartbeat: vi.fn(),
-    markInactive: vi.fn(),
-    removePresence: vi.fn(),
+    markInactive: vi.fn().mockResolvedValue(undefined),
+    removePresence: vi.fn().mockResolvedValue(undefined),
   },
   generateUserColor: vi.fn(() => '#FF6B6B'),
 }));

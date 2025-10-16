@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "collab-canvas-2e4c5",
     "public": "dist",
     "ignore": [
       "firebase.json",

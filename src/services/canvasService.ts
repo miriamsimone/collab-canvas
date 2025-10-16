@@ -35,13 +35,33 @@ export class CanvasService {
     if (canvasDoc.exists()) {
       // Canvas already exists, return it
       const data = canvasDoc.data() as FirestoreCanvasDocument;
+      
+      // Handle potential missing timestamp fields with fallbacks
+      const now = new Date();
+      let createdAt: Date;
+      let updatedAt: Date;
+      
+      try {
+        createdAt = data.createdAt?.toDate() || now;
+      } catch (error) {
+        console.error('createdAt conversion failed:', error);
+        createdAt = now;
+      }
+      
+      try {
+        updatedAt = data.updatedAt?.toDate() || now;
+      } catch (error) {
+        console.error('updatedAt conversion failed:', error);
+        updatedAt = now;
+      }
+      
       return {
-        id: data.id,
-        name: data.name,
-        createdAt: data.createdAt.toDate(),
-        updatedAt: data.updatedAt.toDate(),
+        id: data.id || this.sharedCanvasId,
+        name: data.name || 'Shared Canvas',
+        createdAt,
+        updatedAt,
         createdBy: data.createdBy,
-        isActive: data.isActive,
+        isActive: data.isActive !== undefined ? data.isActive : true,
       };
     } else {
       // Create new shared canvas
@@ -76,13 +96,19 @@ export class CanvasService {
 
       if (canvasDoc.exists()) {
         const data = canvasDoc.data() as FirestoreCanvasDocument;
+        
+        // Handle potential missing timestamp fields with fallbacks
+        const now = new Date();
+        const createdAt = data.createdAt?.toDate() || now;
+        const updatedAt = data.updatedAt?.toDate() || now;
+        
         return {
-          id: data.id,
-          name: data.name,
-          createdAt: data.createdAt.toDate(),
-          updatedAt: data.updatedAt.toDate(),
+          id: data.id || this.sharedCanvasId,
+          name: data.name || 'Shared Canvas',
+          createdAt,
+          updatedAt,
           createdBy: data.createdBy,
-          isActive: data.isActive,
+          isActive: data.isActive !== undefined ? data.isActive : true,
         };
       }
       return null;

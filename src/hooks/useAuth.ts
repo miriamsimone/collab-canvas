@@ -60,12 +60,17 @@ export const useAuth = (): AuthState & AuthActions => {
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
         const data = userDoc.data();
+        // Handle potential missing timestamp fields with fallbacks
+        const now = new Date();
+        const createdAt = data.createdAt?.toDate() || now;
+        const lastActive = data.lastActive?.toDate() || now;
+        
         setUserProfile({
           uid,
           email: data.email,
           displayName: data.displayName,
-          createdAt: data.createdAt.toDate(),
-          lastActive: data.lastActive.toDate(),
+          createdAt,
+          lastActive,
         });
       } else {
         // Profile doesn't exist, create one with basic info from Firebase Auth

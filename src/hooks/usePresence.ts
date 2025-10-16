@@ -145,7 +145,9 @@ export const usePresence = (): UsePresenceState & UsePresenceActions => {
       
       // Mark user as inactive and clean up
       if (user) {
-        presenceService.markInactive(user.uid).catch(console.error);
+        presenceService.markInactive(user.uid).catch((error) => {
+          console.error('Failed to mark user inactive:', error);
+        });
       }
       
       setIsConnected(false);
@@ -162,7 +164,9 @@ export const usePresence = (): UsePresenceState & UsePresenceActions => {
       presenceService.stopHeartbeat();
       
       if (user) {
-        presenceService.removePresence(user.uid).catch(console.error);
+        presenceService.removePresence(user.uid).catch((error) => {
+          console.error('Failed to remove presence:', error);
+        });
       }
     };
   }, [user]);

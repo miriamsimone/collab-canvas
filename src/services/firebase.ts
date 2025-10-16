@@ -19,6 +19,17 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Configure for development environment
+if (import.meta.env.DEV) {
+  console.log('Running in development mode');
+  console.log('Firebase project:', firebaseConfig.projectId);
+  console.log('Auth domain:', firebaseConfig.authDomain);
+  
+  // Add localhost to auth domain for development
+  console.log('Note: If you see CORS errors, add localhost to Firebase authorized domains');
+  console.log('Instructions: Firebase Console → Authentication → Settings → Authorized domains');
+}
+
 // Export the app instance for potential future use
 export { app };
 

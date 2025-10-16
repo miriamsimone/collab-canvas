@@ -82,7 +82,8 @@ export class PresenceService {
             const data = doc.data() as PresenceData;
             
             // Filter out inactive users based on lastSeen timestamp
-            const lastSeenTime = data.lastSeen.toMillis();
+            // Handle potential missing lastSeen field
+            const lastSeenTime = data.lastSeen?.toMillis() || 0;
             if (now - lastSeenTime < this.INACTIVE_THRESHOLD) {
               presenceList.push(data);
             } else {
