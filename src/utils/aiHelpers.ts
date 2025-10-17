@@ -1,5 +1,6 @@
 import { type CanvasObjectData } from '../components/CanvasObject';
 import { type CanvasState } from '../types/ai';
+import { CANVAS_CONFIG } from '../hooks/useCanvas';
 
 /**
  * Get current canvas state for AI context
@@ -16,8 +17,8 @@ export function getCanvasState(rectangles: CanvasObjectData[]): CanvasState {
       fill: rectangle.fill,
     })),
     canvasSize: {
-      width: 1200, // Default canvas size - could be made dynamic
-      height: 800,
+      width: CANVAS_CONFIG.WIDTH,
+      height: CANVAS_CONFIG.HEIGHT,
     },
   };
 }
@@ -56,6 +57,14 @@ export function validateCreateRectangleParams(params: any): {
 
   if (params.x < 0 || params.y < 0) {
     return { isValid: false, error: 'coordinates must be non-negative' };
+  }
+
+  // Validate coordinates are within canvas bounds
+  if (params.x > CANVAS_CONFIG.WIDTH || params.y > CANVAS_CONFIG.HEIGHT) {
+    return { 
+      isValid: false, 
+      error: `coordinates must be within canvas bounds (0-${CANVAS_CONFIG.WIDTH}, 0-${CANVAS_CONFIG.HEIGHT})` 
+    };
   }
 
   // Validate color format (basic hex check)

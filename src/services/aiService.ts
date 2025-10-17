@@ -1,4 +1,4 @@
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { 
@@ -10,10 +10,10 @@ import { validateCreateRectangleParams, parseColorName } from '../utils/aiHelper
 
 // Zod schema for AI tool parameters
 const createRectangleSchema = z.object({
-  x: z.number().describe('X position on the canvas (pixels from left)'),
-  y: z.number().describe('Y position on the canvas (pixels from top)'),
-  width: z.number().min(10).max(500).describe('Width of the rectangle in pixels (10-500)'),
-  height: z.number().min(10).max(500).describe('Height of the rectangle in pixels (10-500)'),
+  x: z.number().min(0).max(5000).describe('X position on the canvas (0-5000 pixels from left)'),
+  y: z.number().min(0).max(5000).describe('Y position on the canvas (0-5000 pixels from top)'),
+  width: z.number().min(10).max(1000).describe('Width of the rectangle in pixels (10-1000)'),
+  height: z.number().min(10).max(1000).describe('Height of the rectangle in pixels (10-1000)'),
   color: z.string().describe('Color of the rectangle (hex format like #ff0000 or color name like "red")'),
 });
 
@@ -25,8 +25,16 @@ const defaultConfig: AIServiceConfig = {
   timeout: 10000, // 10 second timeout
 };
 
+// Verify API key is loaded
+if (defaultConfig.apiKey) {
+  console.log('✅ OpenAI API key loaded successfully');
+} else {
+  console.warn('⚠️ OpenAI API key not found in environment variables');
+}
+
 class AIService {
   private config: AIServiceConfig;
+  private openai: any;
 
   constructor(config: Partial<AIServiceConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
@@ -34,6 +42,13 @@ class AIService {
     if (!this.config.apiKey) {
       throw new Error('OpenAI API key is required. Please set VITE_OPENAI_API_KEY in your .env.local file.');
     }
+
+    // Create OpenAI provider with explicit API key
+    this.openai = createOpenAI({
+      apiKey: this.config.apiKey,
+    });
+
+    console.log('✅ AI Service initialized with OpenAI provider');
   }
 
   /**
@@ -48,7 +63,7 @@ class AIService {
       const systemPrompt = `You are an AI assistant that helps users create rectangles on a canvas.
 
 Current canvas state:
-- Canvas size: ${canvasState.canvasSize.width}x${canvasState.canvasSize.height} pixels
+- Canvas size: ${canvasState.canvasSize.width}x${canvasState.canvasSize.height} pixels (large canvas, coordinates up to ${canvasState.canvasSize.width} are valid)
 - Existing rectangles: ${canvasState.rectangles.length}
 ${canvasState.rectangles.length > 0 ? 
   canvasState.rectangles.map(r => 
@@ -56,6 +71,7 @@ ${canvasState.rectangles.length > 0 ?
   ).join('\n') : '  - No existing rectangles'}
 
 Parse the user's command and extract rectangle creation parameters. 
+The canvas is large (${canvasState.canvasSize.width}x${canvasState.canvasSize.height}), so coordinates up to ${canvasState.canvasSize.width} are perfectly valid.
 If the user doesn't specify exact coordinates, choose reasonable positions that don't overlap with existing rectangles.
 Convert color names to hex format (e.g., "red" becomes "#ff0000").
 Default to reasonable sizes if not specified (e.g., 100x80 pixels).
@@ -63,10 +79,11 @@ Default to reasonable sizes if not specified (e.g., 100x80 pixels).
 Examples:
 - "create a red rectangle" -> place at available space, 100x80 size, #ff0000 color
 - "add a blue square at 200, 150" -> place at (200,150), square size like 100x100, #0000ff color
-- "make a green rectangle 150 wide and 100 tall" -> available position, 150x100 size, #00ff00 color`;
+- "make a green rectangle 150 wide and 100 tall" -> available position, 150x100 size, #00ff00 color
+- "create a rectangle at 2000, 3000" -> place at (2000,3000), valid coordinates on this large canvas`;
 
       const result = await generateObject({
-        model: openai(this.config.model),
+        model: this.openai(this.config.model),
         system: systemPrompt,
         prompt: `User command: "${prompt}"`,
         schema: z.object({
@@ -146,7 +163,7 @@ Examples:
   async testConnection(): Promise<boolean> {
     try {
       const testResponse = await generateObject({
-        model: openai(this.config.model),
+        model: this.openai(this.config.model),
         prompt: 'Just respond with success: true',
         schema: z.object({
           success: z.boolean(),
