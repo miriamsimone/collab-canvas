@@ -112,12 +112,13 @@ The application follows a clean architecture pattern:
 
 ## 🚀 Deployment
 
-### Automated Deployment
-- **CI/CD**: GitHub Actions automatically tests and deploys on push to `main`
-- **Preview**: PR deployments create preview URLs for testing
-- **Production**: Live at https://collab-canvas-2e4c5.web.app
+### Vercel Deployment (Primary)
+- **🌐 Live App**: https://collab-canvas-miriam.vercel.app
+- **📖 Full Deployment Guide**: See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
 
-### Manual Deployment
+**⚠️ Important**: Always update the Vercel alias after deployment! See the deployment guide for details.
+
+### Firebase Deployment (Alternative)
 ```bash
 # Build and deploy to Firebase
 npm run deploy
