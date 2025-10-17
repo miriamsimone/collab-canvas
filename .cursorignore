@@ -1,0 +1,50 @@
+# Outdated documentation (no longer relevant to current development)
+prd.md
+tasklist.md
+
+# Keep current PRD for final sprint:
+# collabcanvas-final-prd.md - Current PRD for final implementation
+
+# Build artifacts and dependencies
+dist/
+node_modules/
+.vercel/
+.firebase/
+
+# Temporary/debug documentation from MVP development
+CLEAN_DOMAIN_SUCCESS.md
+FINAL_FIX_STEPS.md
+FINAL_SUCCESS_SUMMARY.md
+FIREBASE_SETUP.md
+FIRESTORE_CORS_DEBUG.md
+NEW_DEPLOYMENT_INFO.md
+QUOTA_FIX_STEPS.md
+VERCEL_FIX_GUIDE.md
+WORKING_APP_GUIDE.md
+
+# Test artifacts
+coverage/
+.nyc_output/
+
+# OS and IDE files
+.DS_Store
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Plan files (temporary development docs)
+*.plan.md
+
+# Keep these important files:
+# README.md - Current project documentation
+# DEPLOYMENT_GUIDE.md - Current deployment process
+# collabcanvas-final-tasklist.md - Current task list
+# architecture.mermaid - System architecture
+# package.json, tsconfig.json, etc. - Project configuration
