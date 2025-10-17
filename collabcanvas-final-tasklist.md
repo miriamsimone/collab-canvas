@@ -151,50 +151,75 @@ collab-canvas/
 
 ### 🚀 PHASE 1: CRITICAL PERFORMANCE & ARCHITECTURE (Days 1-2)
 
-### PR #11: Performance Architecture Foundation ⚡ CRITICAL
-**Goal:** Fix fundamental performance bottlenecks and establish scalable architecture
+### PR #11: Firebase Realtime Database Smooth Cursors ⚡ CRITICAL
+**Goal:** Switch cursor movement and object dragging from throttled Firestore to Firebase Realtime Database for smooth, real-time animations
 
 **Files to Create:**
-- `src/utils/performanceHelpers.ts` - Performance optimization utilities
-- `src/hooks/usePerformance.ts` - Performance monitoring and metrics
-- `src/services/performanceService.ts` - Performance tracking service
-- `src/components/performance/ViewportCulling.tsx` - Only render visible objects
-- `src/components/performance/ObjectPool.tsx` - Reuse Konva objects efficiently
-- `src/utils/spatialIndex.ts` - QuadTree for fast spatial queries
-- `src/utils/updateBatcher.ts` - Batch Firestore writes
-- `src/utils/eventThrottler.ts` - Throttle high-frequency events
-- `tests/unit/utils/performanceHelpers.test.ts` - Performance tests
+- `src/services/realtimeCursorService.ts` - RTDB cursor service replacing Firestore operations
+- `src/services/realtimeObjectService.ts` - Real-time object dragging updates (future)
+- `tests/unit/services/realtimeCursorService.test.ts` - RTDB cursor service tests
 
 **Files to Modify:**
-- `src/components/Canvas.tsx` - Integrate viewport culling and object pooling
-- `src/components/CanvasObject.tsx` - Use object pool, optimize renders
-- `src/hooks/useRectangles.ts` - Add batching and throttling
-- `src/hooks/usePresence.ts` - Throttle cursor updates more aggressively
-- `src/services/rectanglesService.ts` - Implement batched writes
-- `firestore.rules` - Optimize for batched operations
+- `src/services/firebase.ts` - Add RTDB initialization with URL: `https://collab-canvas-2e4c5-default-rtdb.firebaseio.com/`
+- `src/hooks/usePresence.ts` - Remove 50ms throttling, use RTDB service for real-time updates
+- `src/components/CanvasObject.tsx` - Add RTDB updates during dragging (future enhancement)
+- `src/hooks/useRectangles.ts` - Listen to RTDB during drag, persist to Firestore on dragEnd (future)
+- Database security rules - Configure RTDB rules for presence and object movement data
+
+**Database Schema Design:**
+```json
+{
+  "presence": {
+    "userId1": {
+      "displayName": "User Name",
+      "cursorX": 150,
+      "cursorY": 200,
+      "color": "#ff0000", 
+      "lastSeen": timestamp,
+      "isActive": true
+    }
+  },
+  "objectMovements": {
+    "rectangleId1": {
+      "x": 100,
+      "y": 150,
+      "width": 200,
+      "height": 100,
+      "isDragging": true,
+      "draggedBy": "userId1"
+    }
+  }
+}
+```
+
+**Implementation Phases:**
+- **Phase 1**: RTDB setup and cursor movement (immediate smooth cursor fix)
+- **Phase 2**: Real-time object dragging with dual RTDB/Firestore storage
+- **Phase 3**: Real-time resizing and transform operations
 
 **Tasks:**
-- [ ] 11.1: Profile current performance issues (FPS, memory, network)
-- [ ] 11.2: Implement ViewportCulling (only render objects in view)
-- [ ] 11.3: Create ObjectPool for Konva shape reuse
-- [ ] 11.4: Build QuadTree spatial index for collision detection
-- [ ] 11.5: Implement UpdateBatcher for Firestore operations
-- [ ] 11.6: Add EventThrottler for cursor/presence updates
-- [ ] 11.7: Optimize React renders with React.memo and useMemo
-- [ ] 11.8: Add performance monitoring hooks and metrics
-- [ ] 11.9: Test with 100+ rectangles (current stress test)
-- [ ] 11.10: Measure improvements: FPS, render time, memory usage
-- [ ] 11.11: Establish performance benchmarks for future features
-- [ ] 11.12: Write performance regression tests
+- [ ] 11.1: Configure Firebase Realtime Database in firebase.ts with provided URL
+- [ ] 11.2: Create RTDB security rules for presence and object movement data  
+- [ ] 11.3: Create realtimeCursorService.ts to replace Firestore cursor operations
+- [ ] 11.4: Remove throttling from usePresence.ts and integrate RTDB service
+- [ ] 11.5: Test smooth cursor movement with multiple users
+- [ ] 11.6: Create realtimeObjectService.ts for real-time object dragging
+- [ ] 11.7: Update CanvasObject.tsx for real-time position updates during drag
+- [ ] 11.8: Implement dual storage: RTDB for live updates, Firestore for persistence
+- [ ] 11.9: Update useRectangles.ts to listen to RTDB during dragging
+- [ ] 11.10: Test smooth object dragging with persistence to Firestore
+- [ ] 11.11: Optimize RTDB connection management and cleanup
+- [ ] 11.12: Write comprehensive tests for RTDB services
 
 **Acceptance Criteria:**
-- [ ] Canvas maintains 60 FPS with 100+ objects
-- [ ] Memory usage is stable (no memory leaks)
-- [ ] Firestore operations are batched efficiently
-- [ ] Cursor updates are throttled to 20-30 FPS
-- [ ] Viewport culling works correctly with pan/zoom
-- [ ] Performance monitoring provides actionable metrics
-- [ ] All performance tests pass
+- [ ] Cursor movement is smooth and real-time (no more 50ms throttling)
+- [ ] Cursor latency improved from 50ms to ~10-20ms
+- [ ] Object dragging provides smooth visual feedback in real-time
+- [ ] Final object positions persist to Firestore after drag ends
+- [ ] Multiple users see smooth animations simultaneously
+- [ ] RTDB connection management is robust (connect/disconnect/reconnect)
+- [ ] No data loss during network interruptions
+- [ ] All RTDB operations are properly secured
 
 ---
 

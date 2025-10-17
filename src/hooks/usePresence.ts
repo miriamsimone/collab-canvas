@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { presenceService, generateUserColor, type PresenceData, type CursorUpdate } from '../services/presenceService';
+import { realtimeCursorService, type RealtimePresenceData, type RealtimeCursorUpdate } from '../services/realtimeCursorService';
+import { generateUserColor } from '../services/presenceService'; // Keep the color generation utility
 import { useAuth } from './useAuth';
 
 interface UsePresenceState {
-  cursors: Record<string, PresenceData>;
+  cursors: Record<string, RealtimePresenceData>;
   isConnected: boolean;
   loading: boolean;
   error: string | null;
@@ -16,20 +17,13 @@ interface UsePresenceActions {
 
 export const usePresence = (): UsePresenceState & UsePresenceActions => {
   const { user, userProfile } = useAuth();
-  const [cursors, setCursors] = useState<Record<string, PresenceData>>({});
+  const [cursors, setCursors] = useState<Record<string, RealtimePresenceData>>({});
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Refs for throttling and optimization
-  const lastUpdateTime = useRef<number>(0);
-  const lastPosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Refs for optimization (no more throttling!)
   const userColorRef = useRef<string | null>(null);
-  
-  // Throttling configuration
-  const THROTTLE_INTERVAL = 50; // 20 FPS (50ms between updates)
-  const MIN_POSITION_CHANGE = 2; // Minimum pixel change to trigger update
 
   // Get or generate user color
   const getUserColor = useCallback(() => {
@@ -41,54 +35,23 @@ export const usePresence = (): UsePresenceState & UsePresenceActions => {
   }, [user]);
 
   /**
-   * Throttled cursor position update
+   * Real-time cursor position update (no throttling!)
    */
-  const updateCursorPosition = useCallback((x: number, y: number) => {
+  const updateCursorPosition = useCallback(async (x: number, y: number) => {
     if (!user || !userProfile) return;
 
-    const now = Date.now();
-    const timeSinceLastUpdate = now - lastUpdateTime.current;
-    const distanceFromLastPosition = Math.sqrt(
-      Math.pow(x - lastPosition.current.x, 2) + 
-      Math.pow(y - lastPosition.current.y, 2)
-    );
+    try {
+      const cursorUpdate: RealtimeCursorUpdate = {
+        x,
+        y,
+        displayName: userProfile.displayName,
+        color: getUserColor(),
+      };
 
-    // Skip update if too soon or position hasn't changed significantly
-    if (timeSinceLastUpdate < THROTTLE_INTERVAL && 
-        distanceFromLastPosition < MIN_POSITION_CHANGE) {
-      return;
-    }
-
-    // Clear any pending update
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current);
-    }
-
-    // Schedule the update
-    const updateFn = async () => {
-      try {
-        const cursorUpdate: CursorUpdate = {
-          x,
-          y,
-          displayName: userProfile.displayName,
-          color: getUserColor(),
-        };
-
-        await presenceService.updateCursorPosition(user.uid, cursorUpdate);
-        
-        lastUpdateTime.current = now;
-        lastPosition.current = { x, y };
-      } catch (err: any) {
-        console.error('Failed to update cursor position:', err);
-        setError(`Failed to update cursor: ${err.message}`);
-      }
-    };
-
-    // Execute immediately if enough time has passed, otherwise throttle
-    if (timeSinceLastUpdate >= THROTTLE_INTERVAL) {
-      updateFn();
-    } else {
-      updateTimeoutRef.current = setTimeout(updateFn, THROTTLE_INTERVAL - timeSinceLastUpdate);
+      await realtimeCursorService.updateCursorPosition(user.uid, cursorUpdate);
+    } catch (err: any) {
+      console.error('Failed to update cursor position:', err);
+      setError(`Failed to update cursor: ${err.message}`);
     }
   }, [user, userProfile, getUserColor]);
 
@@ -113,39 +76,33 @@ export const usePresence = (): UsePresenceState & UsePresenceActions => {
 
     // Start heartbeat to maintain presence
     const userColor = getUserColor();
-    presenceService.startHeartbeat(user.uid, userProfile.displayName, userColor);
+    realtimeCursorService.startHeartbeat(user.uid, userProfile.displayName, userColor);
 
     // Subscribe to presence updates
-    const unsubscribe = presenceService.subscribeToPresence(
-      (presenceList) => {
-        // Convert array to object keyed by userId, excluding current user
-        const cursorsObject: Record<string, PresenceData> = {};
-        presenceList.forEach((presence) => {
-          if (presence.userId !== user.uid) { // Exclude current user's cursor
-            cursorsObject[presence.userId] = presence;
+    const unsubscribe = realtimeCursorService.subscribeToPresence(
+      (allCursors) => {
+        // Exclude current user's cursor from display
+        const otherUsersCursors: Record<string, RealtimePresenceData> = {};
+        Object.entries(allCursors).forEach(([userId, presenceData]) => {
+          if (userId !== user.uid) {
+            otherUsersCursors[userId] = presenceData;
           }
         });
 
-        setCursors(cursorsObject);
+        setCursors(otherUsersCursors);
         setLoading(false);
         setIsConnected(true);
-      },
-      (error) => {
-        console.error('Presence subscription error:', error);
-        setError(`Connection error: ${error.message}`);
-        setLoading(false);
-        setIsConnected(false);
       }
     );
 
     // Cleanup function
     return () => {
       unsubscribe();
-      presenceService.stopHeartbeat();
+      realtimeCursorService.stopHeartbeat();
       
       // Mark user as inactive and clean up
       if (user) {
-        presenceService.markInactive(user.uid).catch((error) => {
+        realtimeCursorService.markInactive(user.uid).catch((error) => {
           console.error('Failed to mark user inactive:', error);
         });
       }
@@ -157,14 +114,10 @@ export const usePresence = (): UsePresenceState & UsePresenceActions => {
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
-      
-      presenceService.stopHeartbeat();
+      realtimeCursorService.cleanup();
       
       if (user) {
-        presenceService.removePresence(user.uid).catch((error) => {
+        realtimeCursorService.removePresence(user.uid).catch((error) => {
           console.error('Failed to remove presence:', error);
         });
       }
@@ -177,11 +130,11 @@ export const usePresence = (): UsePresenceState & UsePresenceActions => {
       if (!user || !userProfile) return;
 
       if (document.hidden) {
-        presenceService.stopHeartbeat();
-        presenceService.markInactive(user.uid).catch(console.error);
+        realtimeCursorService.stopHeartbeat();
+        realtimeCursorService.markInactive(user.uid).catch(console.error);
       } else {
         const userColor = getUserColor();
-        presenceService.startHeartbeat(user.uid, userProfile.displayName, userColor);
+        realtimeCursorService.startHeartbeat(user.uid, userProfile.displayName, userColor);
       }
     };
 

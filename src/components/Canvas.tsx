@@ -294,7 +294,7 @@ export const Canvas: React.FC = () => {
         
         {/* Multiplayer Cursors Overlay */}
         <MultiplayerCursors 
-          cursors={cursors}
+          cursors={cursors as any}
           canvasScale={scale}
           canvasOffset={{ x, y }}
         />
@@ -337,7 +337,7 @@ export const Canvas: React.FC = () => {
       
       {/* Presence List */}
       <PresenceList
-        presenceData={cursors}
+        presenceData={cursors as any}
         currentUserId={userProfile?.uid}
         isConnected={presenceConnected}
         loading={presenceLoading}
