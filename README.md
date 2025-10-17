@@ -22,14 +22,14 @@ A real-time collaborative design canvas that enables multiple users to create, m
 - **Secure Authentication**: Firebase Auth with email/password
 - **State Persistence**: Canvas survives page refreshes and disconnects
 - **Error Handling**: Graceful error recovery with user notifications
-- **Performance**: Optimized for 5+ concurrent users
+- **Performance**: Optimized for 5+ concurrent users with real-time RTDB sync
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 19 + TypeScript + Vite
 - **Canvas**: Konva.js + React-Konva for 2D graphics rendering
-- **Backend**: Firebase (Firestore + Authentication + Hosting)
-- **Real-time**: Firestore real-time listeners for live collaboration
+- **Backend**: Firebase (Firestore + Realtime Database + Authentication)
+- **Real-time**: Firebase RTDB for smooth cursors/dragging (10-20ms latency) + Firestore for persistence
 - **Testing**: Vitest + React Testing Library + Unit/Integration tests
 - **CI/CD**: GitHub Actions with automated testing and deployment
 

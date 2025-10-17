@@ -5,12 +5,17 @@ import { useAuth } from '../hooks/useAuth';
 import { useCanvas, CANVAS_CONFIG } from '../hooks/useCanvas';
 import { useRectangles } from '../hooks/useRectangles';
 import { usePresence } from '../hooks/usePresence';
+import { useAI } from '../hooks/useAI';
 import { canvasService } from '../services/canvasService';
 import { CanvasBackground } from './CanvasBackground';
 import { Toolbar } from './Toolbar';
 import { CanvasObject } from './CanvasObject';
 import { MultiplayerCursors } from './MultiplayerCursor';
 import { PresenceList } from './PresenceList';
+import { AICommandInput } from './features/AI/AICommandInput';
+import { AILoadingIndicator } from './features/AI/AILoadingIndicator';
+import { AIErrorDisplay } from './features/AI/AIErrorDisplay';
+import { AICommandHistory } from './features/AI/AICommandHistory';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -50,6 +55,29 @@ export const Canvas: React.FC = () => {
     updateCursorPosition,
     clearError: clearPresenceError,
   } = usePresence();
+
+  // AI rectangle creation handler
+  const handleAICreateRectangle = async (x: number, y: number, width: number, height: number, color: string): Promise<void> => {
+    try {
+      await createRectangle(x, y, width, height, color);
+    } catch (error) {
+      console.error('Failed to create AI rectangle:', error);
+      throw error; // Re-throw to let AI hook handle the error
+    }
+  };
+
+  // AI command processing
+  const {
+    isLoading: aiLoading,
+    error: aiError,
+    commandHistory,
+    executeCommand: executeAICommand,
+    clearError: clearAIError,
+    clearHistory: clearAIHistory,
+  } = useAI({
+    rectangles,
+    onCreateRectangle: handleAICreateRectangle,
+  });
 
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
@@ -357,6 +385,38 @@ export const Canvas: React.FC = () => {
         isConnected={presenceConnected}
         loading={presenceLoading}
       />
+
+      {/* AI Command Panel */}
+      <div className="ai-panel">
+        <div className="ai-panel-header">
+          <h3>AI Assistant</h3>
+          <div className="ai-status">
+            {aiLoading && <AILoadingIndicator size="small" />}
+          </div>
+        </div>
+        
+        <div className="ai-panel-content">
+          {aiError && (
+            <AIErrorDisplay 
+              error={aiError} 
+              onDismiss={clearAIError}
+            />
+          )}
+          
+          <AICommandInput
+            onExecuteCommand={executeAICommand}
+            isLoading={aiLoading}
+            disabled={!user}
+            placeholder="Try: 'create a red rectangle at 200, 150'"
+          />
+          
+          <AICommandHistory
+            commands={commandHistory}
+            maxVisible={3}
+            onClearHistory={clearAIHistory}
+          />
+        </div>
+      </div>
     </div>
   );
 };

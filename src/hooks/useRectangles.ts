@@ -16,7 +16,7 @@ interface UseRectanglesState {
 }
 
 interface UseRectanglesActions {
-  createRectangle: (x: number, y: number) => Promise<CanvasObjectData>;
+  createRectangle: (x: number, y: number, width?: number, height?: number, fillColor?: string) => Promise<CanvasObjectData>;
   updateRectangle: (id: string, updates: Partial<CanvasObjectData>) => Promise<void>;
   updateRectangleTransform: (id: string, x: number, y: number, width: number, height: number) => Promise<void>;
   deleteRectangle: (id: string) => Promise<void>;
@@ -37,21 +37,28 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
   /**
    * Create a new rectangle locally and sync to Firestore
    */
-  const createRectangle = useCallback(async (x: number, y: number): Promise<CanvasObjectData> => {
+  const createRectangle = useCallback(async (
+    x: number, 
+    y: number, 
+    width: number = 120, 
+    height: number = 80, 
+    fillColor?: string
+  ): Promise<CanvasObjectData> => {
     if (!user || !userProfile) {
       throw new Error('User must be authenticated to create rectangles');
     }
 
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const baseColor = fillColor ? fillColor.replace('#', '') : randomColor.replace('#', '');
     
     const newRectangle: CanvasObjectData = {
       id: generateRectangleId(),
       x,
       y,
-      width: 120,
-      height: 80,
-      fill: randomColor + '20', // Add transparency
-      stroke: randomColor,
+      width,
+      height,
+      fill: fillColor || (randomColor + '20'), // Use provided color or add transparency to random
+      stroke: `#${baseColor}`,
       strokeWidth: 2,
     };
 
