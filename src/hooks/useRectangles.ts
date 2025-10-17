@@ -5,6 +5,7 @@ import {
   prepareRectangleForFirestore,
   generateRectangleId,
 } from '../services/rectanglesService';
+import { realtimeObjectService, type RealtimeObjectData } from '../services/realtimeObjectService';
 import { useAuth } from './useAuth';
 
 interface UseRectanglesState {
@@ -17,6 +18,7 @@ interface UseRectanglesState {
 interface UseRectanglesActions {
   createRectangle: (x: number, y: number) => Promise<CanvasObjectData>;
   updateRectangle: (id: string, updates: Partial<CanvasObjectData>) => Promise<void>;
+  updateRectangleTransform: (id: string, x: number, y: number, width: number, height: number) => Promise<void>;
   deleteRectangle: (id: string) => Promise<void>;
   clearError: () => void;
 }
@@ -27,6 +29,7 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [realtimeMovements, setRealtimeMovements] = useState<Record<string, RealtimeObjectData>>({});
 
   // Colors for random rectangle creation
   const colors = ['#007ACC', '#28A745', '#DC3545', '#FFC107', '#6F42C1', '#FD7E14'];
@@ -96,6 +99,37 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
   }, [user]);
 
   /**
+   * Update rectangle transform (position and size) - specifically for resize operations
+   */
+  const updateRectangleTransform = useCallback(async (
+    id: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ): Promise<void> => {
+    if (!user) {
+      throw new Error('User must be authenticated to update rectangles');
+    }
+
+    const updates: Partial<CanvasObjectData> = { x, y, width, height };
+
+    try {
+      // Optimistic update - update rectangle locally first
+      setRectangles(prev => prev.map(rect => 
+        rect.id === id ? { ...rect, ...updates } : rect
+      ));
+      
+      // Sync to Firestore
+      await rectanglesService.updateRectangle(id, updates, user.uid);
+    } catch (err: any) {
+      setError(`Failed to update rectangle transform: ${err.message}`);
+      // Note: In a production app, you might want to revert the optimistic update
+      throw err;
+    }
+  }, [user]);
+
+  /**
    * Delete a rectangle locally and sync to Firestore
    */
   const deleteRectangle = useCallback(async (id: string): Promise<void> => {
@@ -137,7 +171,8 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
     setLoading(true);
     setError(null);
 
-    const unsubscribe = rectanglesService.subscribeToRectangles(
+    // Subscribe to Firestore for persistent rectangle data
+    const unsubscribeRectangles = rectanglesService.subscribeToRectangles(
       (updatedRectangles) => {
         setRectangles(updatedRectangles);
         setLoading(false);
@@ -151,16 +186,58 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
       }
     );
 
-    // Cleanup subscription on component unmount or user change
+    // Subscribe to RTDB for real-time object movements during dragging
+    const unsubscribeMovements = realtimeObjectService.subscribeToObjectMovements(
+      (movements) => {
+        setRealtimeMovements(movements);
+      }
+    );
+
+    // Cleanup subscriptions on component unmount or user change
     return () => {
-      unsubscribe();
+      unsubscribeRectangles();
+      unsubscribeMovements();
       setIsConnected(false);
     };
   }, [user]);
 
+  // Merge Firestore rectangles with RTDB real-time movements
+  const mergedRectangles = rectangles.map(rectangle => {
+    const realtimeMovement = realtimeMovements[rectangle.id];
+    
+    // If this rectangle is being dragged in real-time by someone else, use RTDB position
+    if (realtimeMovement && realtimeMovement.isDragging && realtimeMovement.draggedBy !== user?.uid) {
+      return {
+        ...rectangle,
+        x: realtimeMovement.x,
+        y: realtimeMovement.y,
+        width: realtimeMovement.width,
+        height: realtimeMovement.height,
+      };
+    }
+    
+    // If this rectangle WAS being dragged recently (grace period), prefer RTDB position
+    // This prevents snap-back during the Firestore update delay
+    if (realtimeMovement && !realtimeMovement.isDragging) {
+      const timeSinceUpdate = Date.now() - realtimeMovement.timestamp;
+      if (timeSinceUpdate < 2000) { // 2 second grace period for recently finished drags
+        return {
+          ...rectangle,
+          x: realtimeMovement.x,
+          y: realtimeMovement.y,
+          width: realtimeMovement.width,
+          height: realtimeMovement.height,
+        };
+      }
+    }
+    
+    // Otherwise, use the Firestore position
+    return rectangle;
+  });
+
   return {
-    // State
-    rectangles,
+    // State - return merged rectangles that combine Firestore + RTDB data
+    rectangles: mergedRectangles,
     loading,
     error,
     isConnected,
@@ -168,6 +245,7 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
     // Actions
     createRectangle,
     updateRectangle,
+    updateRectangleTransform,
     deleteRectangle,
     clearError,
   };

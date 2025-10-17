@@ -37,6 +37,7 @@ export const Canvas: React.FC = () => {
     isConnected,
     createRectangle,
     updateRectangle,
+    updateRectangleTransform,
     clearError: clearRectanglesError,
   } = useRectangles();
 
@@ -104,6 +105,17 @@ export const Canvas: React.FC = () => {
     } catch (error) {
       console.error('Failed to update rectangle position:', error);
       // Error handling is managed by useRectangles hook
+    }
+    setIsDraggingRectangle(false);
+  };
+
+  // Handle rectangle transform end (resize/rotate operations with real-time sync)
+  const handleRectangleTransformEnd = async (id: string, x: number, y: number, width: number, height: number) => {
+    try {
+      await updateRectangleTransform(id, x, y, width, height);
+    } catch (error) {
+      console.error('Failed to update rectangle transform:', error);
+      setCanvasError('Failed to update rectangle size. Please try again.');
     }
     setIsDraggingRectangle(false);
   };
@@ -287,6 +299,9 @@ export const Canvas: React.FC = () => {
                 onSelect={() => handleRectangleSelect(rectangle.id)}
                 onDragStart={handleRectangleDragStart}
                 onDragEnd={handleRectangleDragEnd}
+                onTransformEnd={handleRectangleTransformEnd}
+                currentUserId={user?.uid}
+                onCursorUpdate={updateCursorPosition}
               />
             ))}
           </Layer>
