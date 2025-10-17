@@ -238,7 +238,7 @@ collab-canvas/
 - `src/components/features/AI/AILoadingIndicator.tsx` - Loading state component
 - `src/components/features/AI/AIErrorDisplay.tsx` - Error message component
 - `src/hooks/useAI.ts` - AI command processing and state management
-- `src/services/aiService.ts` - AI API integration and function calling
+- `src/services/aiService.ts` - Vercel AI SDK integration and tool definitions
 - `src/types/ai.ts` - AI command types and interfaces
 - `src/utils/aiHelpers.ts` - AI command parsing and validation
 - `functions/src/ai.ts` - Firebase Function for AI endpoint (optional)
@@ -248,10 +248,10 @@ collab-canvas/
 - `src/components/Canvas.tsx` - Integrate AI command panel
 - `src/services/rectanglesService.ts` - Make methods AI-callable
 - `firestore.rules` - Add rules for AI command queue (if storing)
-- `package.json` - Add OpenAI or Anthropic dependencies
+- `package.json` - Add Vercel AI SDK dependencies (ai, @ai-sdk/openai)
 
 **Tasks:**
-- [ ] 12.1: Set up OpenAI or Anthropic Claude API integration
+- [ ] 12.1: Set up Vercel AI SDK with OpenAI/Anthropic provider integration
 - [ ] 12.2: Design function calling schema for canvas operations
 - [ ] 12.3: Create aiService with command parsing and execution
 - [ ] 12.4: Implement createRectangle() AI function
@@ -280,9 +280,69 @@ collab-canvas/
 
 ---
 
+### PR #13: AI Canvas Agent ⚡ CRITICAL - EARLY TESTING
+**Goal:** Build natural language interface for canvas manipulation using Vercel AI SDK
+
+**Files to Create:**
+- `src/components/features/AI/AICommandInput.tsx` - Chat-style input
+- `src/components/features/AI/AICommandHistory.tsx` - Command history
+- `src/components/features/AI/AILoadingIndicator.tsx` - Loading state
+- `src/components/features/AI/AIErrorDisplay.tsx` - Error messages
+- `src/hooks/useAI.ts` - AI state management
+- `src/services/aiService.ts` - Vercel AI SDK integration
+- `src/types/ai.ts` - AI command types
+- `src/utils/aiHelpers.ts` - AI helper functions
+- `tests/unit/services/aiService.test.ts` - Tests
+- `tests/unit/hooks/useAI.test.ts` - Hook tests
+
+**Files to Modify:**
+- `src/components/Canvas.tsx` - Integrate AI panel
+- `src/services/rectanglesService.ts` - Add AI-callable methods
+- `package.json` - Add Vercel AI SDK (`ai` package)
+
+**Tasks:**
+- [ ] 13.1: Install Vercel AI SDK (`npm install ai @ai-sdk/openai`)
+- [ ] 13.2: Set up Vercel AI SDK with function calling schema
+- [ ] 13.3: Create aiService with Vercel AI integration
+- [ ] 13.4: Implement createRectangle() AI tool
+- [ ] 13.5: Implement moveShape() AI tool
+- [ ] 13.6: Implement resizeShape() AI tool
+- [ ] 13.7: Implement arrangeInRow() AI tool
+- [ ] 13.8: Implement createGrid() AI tool
+- [ ] 13.9: Implement getCanvasState() for context
+- [ ] 13.10: Implement complex command: "create login form"
+- [ ] 13.11: Implement complex command: "create navigation bar"
+- [ ] 13.12: Create AICommandInput UI component
+- [ ] 13.13: Create useAI hook for command execution
+- [ ] 13.14: Add loading states and error handling
+- [ ] 13.15: Create AICommandHistory component
+- [ ] 13.16: Implement AI command queue for multi-user
+- [ ] 13.17: Ensure AI-generated objects sync to all users
+- [ ] 13.18: Add success/error feedback messages
+- [ ] 13.19: Write unit tests for AI service
+- [ ] 13.20: Test 6-8 distinct commands
+- [ ] 13.21: Test complex multi-step commands
+- [ ] 13.22: Test concurrent AI usage
+- [ ] 13.23: Optimize for sub-2s response times
+
+**Acceptance Criteria:**
+- [ ] 6-8 distinct command types work
+- [ ] Creation commands execute correctly
+- [ ] Manipulation commands work reliably
+- [ ] Layout commands arrange objects properly
+- [ ] Complex commands generate 3+ elements
+- [ ] AI responses are <2s for simple commands
+- [ ] Multiple users can use AI simultaneously
+- [ ] AI-generated objects sync to all users
+- [ ] Error handling is robust
+- [ ] 85%+ accuracy on valid commands
+- [ ] All tests pass
+
+---
+
 ### 🎨 PHASE 2: EXPANDED CANVAS FEATURES (Days 3-4)
 
-### PR #13: Additional Shape Types (Circles, Lines, Text)
+### PR #14: Additional Shape Types (Circles, Lines, Text)  
 **Goal:** Expand from rectangles-only to multiple shape types (built on optimized foundation)
 
 **Files to Create:**
@@ -303,17 +363,17 @@ collab-canvas/
 - `firestore.rules` - Update rules if needed for new shape types
 
 **Tasks:**
-- [ ] 13.1: Define TypeScript interfaces for Circle, Line, Text shapes
-- [ ] 13.2: Create Circle component with proper rendering (optimized)
-- [ ] 13.3: Create Line component with endpoints
-- [ ] 13.4: Create Text component with inline editing
-- [ ] 13.5: Update Toolbar with shape selection buttons
-- [ ] 13.6: Refactor shapesService to handle all shape types (use performance utilities)
-- [ ] 13.7: Update useShapes hook for multi-shape CRUD (with batching)
-- [ ] 13.8: Update Canvas to render different shape types (with viewport culling)
-- [ ] 13.9: Ensure all shapes work with existing performance optimizations
-- [ ] 13.10: Write unit tests for shape operations
-- [ ] 13.11: Test shape creation and syncing in production
+- [ ] 14.1: Define TypeScript interfaces for Circle, Line, Text shapes
+- [ ] 14.2: Create Circle component with proper rendering (optimized)
+- [ ] 14.3: Create Line component with endpoints
+- [ ] 14.4: Create Text component with inline editing
+- [ ] 14.5: Update Toolbar with shape selection buttons
+- [ ] 14.6: Refactor shapesService to handle all shape types (use performance utilities)
+- [ ] 14.7: Update useShapes hook for multi-shape CRUD (with batching)
+- [ ] 14.8: Update Canvas to render different shape types (with viewport culling)
+- [ ] 14.9: Ensure all shapes work with existing performance optimizations
+- [ ] 14.10: Write unit tests for shape operations
+- [ ] 14.11: Test shape creation and syncing in production
 
 **Acceptance Criteria:**
 - [ ] Users can create circles, lines, and text layers
@@ -326,7 +386,7 @@ collab-canvas/
 
 ---
 
-### PR #14: Undo/Redo System (Tier 1 Feature)
+### PR #15: Undo/Redo System (Tier 1 Feature)
 **Goal:** Implement command pattern for undo/redo functionality
 
 **Files to Create:**
@@ -345,19 +405,19 @@ collab-canvas/
 - `src/hooks/useKeyboardShortcuts.ts` - Add Cmd+Z, Cmd+Shift+Z
 
 **Tasks:**
-- [ ] 14.1: Define Command interface (execute, undo)
-- [ ] 14.2: Create commandService with undo/redo stacks
-- [ ] 14.3: Implement CreateShapeCommand
-- [ ] 14.4: Implement MoveShapeCommand
-- [ ] 14.5: Implement ResizeShapeCommand
-- [ ] 14.6: Implement RotateShapeCommand
-- [ ] 14.7: Implement DeleteShapeCommand
-- [ ] 14.8: Implement UpdateStyleCommand
-- [ ] 14.9: Create useUndoRedo hook
-- [ ] 14.10: Add keyboard shortcuts (Cmd+Z, Cmd+Shift+Z)
-- [ ] 14.11: Create undo/redo UI buttons
-- [ ] 14.12: Test undo/redo with various operations
-- [ ] 14.13: Write comprehensive unit tests
+- [ ] 15.1: Define Command interface (execute, undo)
+- [ ] 15.2: Create commandService with undo/redo stacks
+- [ ] 15.3: Implement CreateShapeCommand
+- [ ] 15.4: Implement MoveShapeCommand
+- [ ] 15.5: Implement ResizeShapeCommand
+- [ ] 15.6: Implement RotateShapeCommand
+- [ ] 15.7: Implement DeleteShapeCommand
+- [ ] 15.8: Implement UpdateStyleCommand
+- [ ] 15.9: Create useUndoRedo hook
+- [ ] 15.10: Add keyboard shortcuts (Cmd+Z, Cmd+Shift+Z)
+- [ ] 15.11: Create undo/redo UI buttons
+- [ ] 15.12: Test undo/redo with various operations
+- [ ] 15.13: Write comprehensive unit tests
 
 **Acceptance Criteria:**
 - [ ] Cmd+Z undoes last operation
@@ -369,7 +429,7 @@ collab-canvas/
 
 ---
 
-### PR #15: Keyboard Shortcuts (Tier 1 Feature)
+### PR #16: Keyboard Shortcuts (Tier 1 Feature)
 **Goal:** Add comprehensive keyboard shortcuts for power users
 
 **Files to Create:**
@@ -408,7 +468,7 @@ collab-canvas/
 
 ---
 
-### PR #16: Snap-to-Grid & Smart Guides (Tier 1 Feature)
+### PR #17: Snap-to-Grid & Smart Guides (Tier 1 Feature)
 **Goal:** Add grid overlay and snapping functionality
 
 **Files to Create:**
@@ -448,7 +508,7 @@ collab-canvas/
 
 ---
 
-### PR #17: Alignment Tools (Tier 2 Feature)
+### PR #18: Alignment Tools (Tier 2 Feature)
 **Goal:** Add alignment and distribution tools for multi-select
 
 **Files to Create:**
@@ -491,7 +551,7 @@ collab-canvas/
 
 ---
 
-### PR #18: Z-Index Management (Tier 2 Feature)
+### PR #19: Z-Index Management (Tier 2 Feature)
 **Goal:** Add layer ordering controls
 
 **Files to Create:**
@@ -532,7 +592,7 @@ collab-canvas/
 
 ---
 
-### PR #19: Collaborative Comments (Tier 3 Feature)
+### PR #20: Collaborative Comments (Tier 3 Feature)
 **Goal:** Add commenting system for collaboration
 
 **Files to Create:**
@@ -576,68 +636,6 @@ collab-canvas/
 - [ ] Comments can be resolved/unresolved
 - [ ] Replies to comments work correctly
 - [ ] Comment visibility can be toggled
-- [ ] All tests pass
-
----
-
-### PR #20: AI Canvas Agent
-**Goal:** Build natural language interface for canvas manipulation
-
-**Files to Create:**
-- `src/components/features/AI/AICommandInput.tsx` - Chat-style input
-- `src/components/features/AI/AICommandHistory.tsx` - Command history
-- `src/components/features/AI/AILoadingIndicator.tsx` - Loading state
-- `src/components/features/AI/AIErrorDisplay.tsx` - Error messages
-- `src/hooks/useAI.ts` - AI state management
-- `src/services/aiService.ts` - AI API calls
-- `src/types/ai.ts` - AI command types
-- `src/utils/aiHelpers.ts` - AI helper functions
-- `functions/src/ai.ts` - Firebase Function for AI endpoint (optional)
-- `tests/unit/services/aiService.test.ts` - Tests
-- `tests/unit/hooks/useAI.test.ts` - Hook tests
-
-**Files to Modify:**
-- `src/components/Canvas.tsx` - Integrate AI panel
-- `src/services/shapesService.ts` - Add AI-callable methods
-- `firestore.rules` - Add rules for AI commands (if storing)
-
-**Tasks:**
-- [ ] 20.1: Set up OpenAI or Anthropic API integration
-- [ ] 20.2: Define function calling schema
-- [ ] 20.3: Create aiService with command parsing
-- [ ] 20.4: Implement createShape() AI function
-- [ ] 20.5: Implement moveShape() AI function
-- [ ] 20.6: Implement resizeShape() AI function
-- [ ] 20.7: Implement rotateShape() AI function
-- [ ] 20.8: Implement arrangeInRow() AI function
-- [ ] 20.9: Implement createGrid() AI function
-- [ ] 20.10: Implement getCanvasState() for context
-- [ ] 20.11: Implement complex command: "create login form"
-- [ ] 20.12: Implement complex command: "create navigation bar"
-- [ ] 20.13: Create AICommandInput UI component
-- [ ] 20.14: Create useAI hook for command execution
-- [ ] 20.15: Add loading states and error handling
-- [ ] 20.16: Create AICommandHistory component
-- [ ] 20.17: Implement AI command queue for multi-user
-- [ ] 20.18: Ensure AI-generated objects sync to all users
-- [ ] 20.19: Add success/error feedback messages
-- [ ] 20.20: Write unit tests for AI service
-- [ ] 20.21: Test 6-8 distinct commands
-- [ ] 20.22: Test complex multi-step commands
-- [ ] 20.23: Test concurrent AI usage
-- [ ] 20.24: Optimize for sub-2s response times
-
-**Acceptance Criteria:**
-- [ ] 6-8 distinct command types work
-- [ ] Creation commands execute correctly
-- [ ] Manipulation commands work reliably
-- [ ] Layout commands arrange objects properly
-- [ ] Complex commands generate 3+ elements
-- [ ] AI responses are <2s for simple commands
-- [ ] Multiple users can use AI simultaneously
-- [ ] AI-generated objects sync to all users
-- [ ] Error handling is robust
-- [ ] 85%+ accuracy on valid commands
 - [ ] All tests pass
 
 ---

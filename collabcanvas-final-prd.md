@@ -402,20 +402,26 @@ Building on the completed MVP with bulletproof multiplayer infrastructure, the f
 ### 3.1 AI Infrastructure
 
 **Requirements:**
-- OpenAI GPT-4 or Anthropic Claude with function calling
-- Tool schema defining all canvas operations
+- Vercel AI SDK (`ai` package) with OpenAI/Anthropic integration
+- Tool schema using Vercel AI SDK's `tool()` function 
 - Context-aware commands using `getCanvasState()`
 - Shared state synchronization via Firestore
 - Command queue for multi-user AI usage
 
 **Architecture:**
 ```
-User Input → AI Endpoint → Function Calls → Canvas API → Firestore → All Clients
+User Input → Vercel AI SDK → Tool Functions → Canvas API → Firestore → All Clients
 ```
 
+**Technology Stack:**
+- **Package**: `ai` (Vercel AI SDK)
+- **Provider**: `@ai-sdk/openai` or `@ai-sdk/anthropic`
+- **Function Calling**: Native tool support with `generateObject()` and `tool()`
+- **Streaming**: Built-in streaming responses for better UX
+
 **Acceptance Criteria:**
-- [ ] AI endpoint deployed and accessible
-- [ ] Function calling schema defined
+- [ ] Vercel AI SDK installed and configured
+- [ ] Tool schema defined using SDK's tool() function
 - [ ] AI can read current canvas state
 - [ ] AI-generated objects sync to all users
 - [ ] Multiple users can use AI simultaneously
@@ -432,10 +438,39 @@ User Input → AI Endpoint → Function Calls → Canvas API → Firestore → A
 - "Make a 200x300 blue rectangle"
 - "Create a yellow star in the center"
 
-**Tool Functions:**
+**Vercel AI SDK Tool Functions:**
 ```javascript
-createShape(type, x, y, width, height, color)
-createText(text, x, y, fontSize, color)
+import { tool } from 'ai';
+import { z } from 'zod';
+
+const createShape = tool({
+  description: 'Create a shape on the canvas',
+  parameters: z.object({
+    type: z.enum(['rectangle', 'circle', 'text']),
+    x: z.number(),
+    y: z.number(), 
+    width: z.number(),
+    height: z.number(),
+    color: z.string()
+  }),
+  execute: async ({ type, x, y, width, height, color }) => {
+    // Canvas API implementation
+  }
+});
+
+const createText = tool({
+  description: 'Create text on the canvas',
+  parameters: z.object({
+    text: z.string(),
+    x: z.number(),
+    y: z.number(),
+    fontSize: z.number(),
+    color: z.string()
+  }),
+  execute: async ({ text, x, y, fontSize, color }) => {
+    // Canvas API implementation
+  }
+});
 ```
 
 ---
