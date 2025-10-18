@@ -29,6 +29,14 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
 }) => {
   const shapeRef = React.useRef<Konva.Circle>(null);
   const transformerRef = React.useRef<Konva.Transformer>(null);
+  
+  // Track visual radius locally to prevent snap-back during resize
+  const [visualRadius, setVisualRadius] = React.useState(shape.radius);
+  
+  // Sync visual radius with shape radius when it changes from props
+  React.useEffect(() => {
+    setVisualRadius(shape.radius);
+  }, [shape.radius]);
 
   // Update transformer when selection changes
   React.useEffect(() => {
@@ -200,8 +208,8 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
     const avgScale = (scaleX + scaleY) / 2;
     const newRadius = Math.max(10, shape.radius * avgScale); // Min radius 10px
     
-    // Apply the new radius directly to the node BEFORE resetting scale
-    node.radius(newRadius);
+    // Update visual radius immediately to prevent snap-back
+    setVisualRadius(newRadius);
     
     // Reset the node to the original position with no scale
     // This ensures the circle stays in place and only the radius changes
@@ -237,7 +245,7 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         id={shape.id}
         x={shape.x}
         y={shape.y}
-        radius={shape.radius}
+        radius={visualRadius}
         fill={shape.fill}
         stroke={shape.stroke}
         strokeWidth={shape.strokeWidth}
