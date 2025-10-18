@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
 import { useAuth } from '../hooks/useAuth';
@@ -666,7 +666,8 @@ export const Canvas: React.FC = () => {
     setContextMenu(null);
   }, []);
 
-  const contextMenuItems = useMemo((): ContextMenuItem[] => {
+  // Function to get context menu items (not memoized to avoid initialization issues)
+  const getContextMenuItems = (): ContextMenuItem[] => {
     const selectedObjects = getSelectedObjects(shapes);
     const hasSelection = selectedObjects.length > 0;
 
@@ -723,17 +724,7 @@ export const Canvas: React.FC = () => {
         disabled: !hasSelection,
       },
     ];
-  }, [
-    shapes,
-    getSelectedObjects,
-    handleCopy,
-    handleDuplicate,
-    handleBulkDelete,
-    handleBringToFront,
-    handleBringForward,
-    handleSendBackward,
-    handleSendToBack,
-  ]);
+  };
 
   // Initialize shared canvas on mount
   useEffect(() => {
@@ -1590,7 +1581,7 @@ export const Canvas: React.FC = () => {
         <ShapeContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
-          items={contextMenuItems}
+          items={getContextMenuItems()}
           onClose={closeContextMenu}
         />
       )}
