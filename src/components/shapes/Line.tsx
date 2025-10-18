@@ -12,6 +12,7 @@ interface LineComponentProps {
   onDragEnd: (id: string, x: number, y: number) => void;
   onTransformStart?: (id: string, dimensions: { x: number; y: number; x2: number; y2: number }) => void;
   onTransformEnd?: (id: string, x: number, y: number, x2: number, y2: number) => void;
+  onContextMenu?: (e: Konva.KonvaEventObject<PointerEvent>) => void;
   currentUserId?: string;
   onCursorUpdate?: (x: number, y: number) => void;
 }
@@ -24,6 +25,7 @@ export const LineComponent: React.FC<LineComponentProps> = ({
   onDragEnd,
   onTransformStart,
   onTransformEnd,
+  onContextMenu,
   currentUserId,
   onCursorUpdate,
 }) => {
@@ -295,6 +297,7 @@ export const LineComponent: React.FC<LineComponentProps> = ({
       draggable={!shape.locked}
       onClick={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
       onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+      onContextMenu={onContextMenu}
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}

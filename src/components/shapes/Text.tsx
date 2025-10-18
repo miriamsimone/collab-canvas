@@ -13,6 +13,7 @@ interface TextComponentProps {
   onTransformStart?: (id: string, dimensions: { x: number; y: number; width?: number; height?: number }) => void;
   onTransformEnd?: (id: string, x: number, y: number, width?: number, height?: number) => void;
   onTextChange?: (id: string, newText: string) => void;
+  onContextMenu?: (e: Konva.KonvaEventObject<PointerEvent>) => void;
   currentUserId?: string;
   onCursorUpdate?: (x: number, y: number) => void;
   stageRef?: React.RefObject<Konva.Stage | null>; // Needed for positioning the text input
@@ -27,6 +28,7 @@ export const TextComponent: React.FC<TextComponentProps> = ({
   onTransformStart,
   onTransformEnd,
   onTextChange,
+  onContextMenu,
   currentUserId,
   onCursorUpdate,
   stageRef,
@@ -324,6 +326,7 @@ export const TextComponent: React.FC<TextComponentProps> = ({
         draggable={!shape.locked && !isEditing}
         onClick={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
         onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onContextMenu={onContextMenu}
         onDblClick={handleDoubleClick}
         onDblTap={handleDoubleClick}
         onDragStart={handleDragStart}
