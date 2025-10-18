@@ -31,6 +31,7 @@ import { AIErrorDisplay } from './features/AI/AIErrorDisplay';
 import { AICommandHistory } from './features/AI/AICommandHistory';
 import { ShortcutsPanel } from './features/KeyboardShortcuts/ShortcutsPanel';
 import { SmartGuides } from './features/Grid/SmartGuides';
+import { GridOverlay } from './features/Grid/GridOverlay';
 import { ShapeContextMenu, type ContextMenuItem } from './features/ContextMenu/ShapeContextMenu';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
@@ -1558,6 +1559,17 @@ export const Canvas: React.FC = () => {
           onClick={handleStageClick}
           onTap={handleStageClick}
         >
+          {/* Grid Overlay Layer (drawn first, behind everything) */}
+          {gridConfig.showGrid && gridConfig.enabled && (
+            <GridOverlay
+              width={CANVAS_CONFIG.WIDTH}
+              height={CANVAS_CONFIG.HEIGHT}
+              gridSize={gridConfig.size}
+              visible={gridConfig.showGrid && gridConfig.enabled}
+              scale={scale}
+            />
+          )}
+          
           <Layer>
             {/* Canvas Background with Grid */}
             <CanvasBackground 
