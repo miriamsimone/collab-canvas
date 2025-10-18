@@ -31,8 +31,6 @@ import { AIErrorDisplay } from './features/AI/AIErrorDisplay';
 import { AICommandHistory } from './features/AI/AICommandHistory';
 import { ShortcutsPanel } from './features/KeyboardShortcuts/ShortcutsPanel';
 import { SmartGuides } from './features/Grid/SmartGuides';
-import { ZIndexControls } from './features/ZIndex/ZIndexControls';
-import { AlignmentControls } from './features/Alignment/AlignmentControls';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -376,6 +374,20 @@ export const Canvas: React.FC = () => {
     onDuplicate: handleDuplicate,
     onDelete: handleBulkDelete,
     onNudge: handleNudge,
+    // Layer (Z-Index) operations
+    onBringToFront: handleBringToFront,
+    onBringForward: handleBringForward,
+    onSendBackward: handleSendBackward,
+    onSendToBack: handleSendToBack,
+    // Alignment operations
+    onAlignLeft: handleAlignLeft,
+    onAlignCenter: handleAlignCenter,
+    onAlignRight: handleAlignRight,
+    onAlignTop: handleAlignTop,
+    onAlignMiddle: handleAlignMiddle,
+    onAlignBottom: handleAlignBottom,
+    onDistributeHorizontally: handleDistributeHorizontally,
+    onDistributeVertically: handleDistributeVertically,
     enabled: true, // Always enabled
   });
 
@@ -1239,41 +1251,6 @@ export const Canvas: React.FC = () => {
         />
       </DraggablePanel>
 
-      {/* Z-Index Controls Panel */}
-      <DraggablePanel 
-        title="Layer Order"
-        defaultPosition={{ x: 20, y: 460 }}
-        className="zindex-panel"
-      >
-        <ZIndexControls
-          hasSelection={getSelectedObjects(shapes).length > 0}
-          onBringToFront={handleBringToFront}
-          onBringForward={handleBringForward}
-          onSendBackward={handleSendBackward}
-          onSendToBack={handleSendToBack}
-        />
-      </DraggablePanel>
-
-      {/* Alignment Controls Panel */}
-      <DraggablePanel 
-        title="Alignment"
-        defaultPosition={{ x: 20, y: 680 }}
-        className="alignment-panel"
-      >
-        <AlignmentControls
-          hasSelection={getSelectedObjects(shapes).length > 0}
-          hasMultipleSelection={getSelectedObjects(shapes).length >= 2}
-          onAlignLeft={handleAlignLeft}
-          onAlignCenter={handleAlignCenter}
-          onAlignRight={handleAlignRight}
-          onAlignTop={handleAlignTop}
-          onAlignMiddle={handleAlignMiddle}
-          onAlignBottom={handleAlignBottom}
-          onDistributeHorizontally={handleDistributeHorizontally}
-          onDistributeVertically={handleDistributeVertically}
-        />
-      </DraggablePanel>
-      
       {/* Canvas Container */}
       <div className="canvas-container">
         <Stage

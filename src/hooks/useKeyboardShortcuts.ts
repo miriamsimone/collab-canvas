@@ -18,6 +18,22 @@ export interface KeyboardShortcutsConfig {
   // Nudge (move with arrow keys)
   onNudge?: (direction: 'up' | 'down' | 'left' | 'right', distance: number) => void;
   
+  // Layer (Z-Index)
+  onBringToFront?: () => void;
+  onBringForward?: () => void;
+  onSendBackward?: () => void;
+  onSendToBack?: () => void;
+  
+  // Alignment
+  onAlignLeft?: () => void;
+  onAlignCenter?: () => void;
+  onAlignRight?: () => void;
+  onAlignTop?: () => void;
+  onAlignMiddle?: () => void;
+  onAlignBottom?: () => void;
+  onDistributeHorizontally?: () => void;
+  onDistributeVertically?: () => void;
+  
   // Help
   onToggleHelp?: () => void;
   
@@ -151,6 +167,80 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
     modifiers: { shift: true },
     description: 'Nudge right (10px)',
     action: 'nudge',
+  },
+  // Layer (Z-Index) shortcuts
+  {
+    key: ']',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Bring to front',
+    action: 'bringToFront',
+  },
+  {
+    key: ']',
+    modifiers: { meta: true, ctrl: true },
+    description: 'Bring forward',
+    action: 'bringForward',
+  },
+  {
+    key: '[',
+    modifiers: { meta: true, ctrl: true },
+    description: 'Send backward',
+    action: 'sendBackward',
+  },
+  {
+    key: '[',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Send to back',
+    action: 'sendToBack',
+  },
+  // Alignment shortcuts
+  {
+    key: 'l',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Align left',
+    action: 'alignLeft',
+  },
+  {
+    key: 'e',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Align center',
+    action: 'alignCenter',
+  },
+  {
+    key: 'r',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Align right',
+    action: 'alignRight',
+  },
+  {
+    key: 't',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Align top',
+    action: 'alignTop',
+  },
+  {
+    key: 'm',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Align middle',
+    action: 'alignMiddle',
+  },
+  {
+    key: 'b',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Align bottom',
+    action: 'alignBottom',
+  },
+  {
+    key: 'h',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Distribute horizontally',
+    action: 'distributeH',
+  },
+  {
+    key: 'v',
+    modifiers: { meta: true, ctrl: true, shift: true },
+    description: 'Distribute vertically',
+    action: 'distributeV',
   },
   {
     key: '?',
@@ -289,6 +379,94 @@ export const useKeyboardShortcuts = (config: KeyboardShortcutsConfig = {}) => {
       if (e.key === 'ArrowRight') {
         e.preventDefault();
         config.onNudge('right', distance);
+        return;
+      }
+    }
+    
+    // Layer (Z-Index) operations
+    // Bring to Front (Cmd/Ctrl + Shift + ])
+    if (modifier && e.shiftKey && e.key === ']' && config.onBringToFront) {
+      e.preventDefault();
+      config.onBringToFront();
+      return;
+    }
+    
+    // Bring Forward (Cmd/Ctrl + ])
+    if (modifier && !e.shiftKey && e.key === ']' && config.onBringForward) {
+      e.preventDefault();
+      config.onBringForward();
+      return;
+    }
+    
+    // Send Backward (Cmd/Ctrl + [)
+    if (modifier && !e.shiftKey && e.key === '[' && config.onSendBackward) {
+      e.preventDefault();
+      config.onSendBackward();
+      return;
+    }
+    
+    // Send to Back (Cmd/Ctrl + Shift + [)
+    if (modifier && e.shiftKey && e.key === '[' && config.onSendToBack) {
+      e.preventDefault();
+      config.onSendToBack();
+      return;
+    }
+    
+    // Alignment operations (all require Cmd/Ctrl + Shift)
+    if (modifier && e.shiftKey) {
+      // Align Left (Cmd/Ctrl + Shift + L)
+      if (e.key === 'l' && config.onAlignLeft) {
+        e.preventDefault();
+        config.onAlignLeft();
+        return;
+      }
+      
+      // Align Center (Cmd/Ctrl + Shift + E)
+      if (e.key === 'e' && config.onAlignCenter) {
+        e.preventDefault();
+        config.onAlignCenter();
+        return;
+      }
+      
+      // Align Right (Cmd/Ctrl + Shift + R)
+      if (e.key === 'r' && config.onAlignRight) {
+        e.preventDefault();
+        config.onAlignRight();
+        return;
+      }
+      
+      // Align Top (Cmd/Ctrl + Shift + T)
+      if (e.key === 't' && config.onAlignTop) {
+        e.preventDefault();
+        config.onAlignTop();
+        return;
+      }
+      
+      // Align Middle (Cmd/Ctrl + Shift + M)
+      if (e.key === 'm' && config.onAlignMiddle) {
+        e.preventDefault();
+        config.onAlignMiddle();
+        return;
+      }
+      
+      // Align Bottom (Cmd/Ctrl + Shift + B)
+      if (e.key === 'b' && config.onAlignBottom) {
+        e.preventDefault();
+        config.onAlignBottom();
+        return;
+      }
+      
+      // Distribute Horizontally (Cmd/Ctrl + Shift + H)
+      if (e.key === 'h' && config.onDistributeHorizontally) {
+        e.preventDefault();
+        config.onDistributeHorizontally();
+        return;
+      }
+      
+      // Distribute Vertically (Cmd/Ctrl + Shift + V)
+      if (e.key === 'v' && config.onDistributeVertically) {
+        e.preventDefault();
+        config.onDistributeVertically();
         return;
       }
     }
