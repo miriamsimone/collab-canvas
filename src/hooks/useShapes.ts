@@ -1,16 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
+import type { 
   Shape, 
-  ShapeType, 
+  ShapeType
+} from '../types/shapes';
+import { 
   isRectangle, 
   isCircle, 
   isLine, 
   isText,
-  generateShapeId,
-  DEFAULT_RECTANGLE,
-  DEFAULT_CIRCLE,
-  DEFAULT_LINE,
-  DEFAULT_TEXT,
+  generateShapeId
 } from '../types/shapes';
 import {
   shapesService,
@@ -259,7 +257,7 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
     try {
       // Optimistic update - update shape locally first
       setShapes(prev => prev.map(shape => 
-        shape.id === id ? { ...shape, ...updates } : shape
+        shape.id === id ? { ...shape, ...updates } as Shape : shape
       ));
       
       // Sync to Firestore
@@ -415,7 +413,7 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
     
     // If this shape is being dragged in real-time by someone else, use RTDB position
     if (realtimeMovement && realtimeMovement.isDragging && realtimeMovement.draggedBy !== user?.uid) {
-      const updates: Partial<Shape> = {
+      const updates: any = {
         x: realtimeMovement.x,
         y: realtimeMovement.y,
       };
@@ -443,7 +441,7 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
     if (realtimeMovement && !realtimeMovement.isDragging) {
       const timeSinceUpdate = Date.now() - realtimeMovement.timestamp;
       if (timeSinceUpdate < 2000) { // 2 second grace period
-        const updates: Partial<Shape> = {
+        const updates: any = {
           x: realtimeMovement.x,
           y: realtimeMovement.y,
         };
@@ -471,11 +469,11 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
   });
 
   // Legacy compatibility - filter rectangles for backward compatibility
-  const rectangles = mergedShapes.filter(isRectangle);
+  const rectangles = mergedShapes.filter(isRectangle) as any;
 
   return {
     // State
-    shapes: mergedShapes,
+    shapes: mergedShapes as Shape[],
     rectangles, // Legacy compatibility
     loading,
     error,

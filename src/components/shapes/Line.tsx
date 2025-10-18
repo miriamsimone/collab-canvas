@@ -1,7 +1,7 @@
 import React from 'react';
 import { Line, Circle, Group, Transformer } from 'react-konva';
 import Konva from 'konva';
-import { LineShape } from '../../types/shapes';
+import type { LineShape } from '../../types/shapes';
 import { realtimeObjectService } from '../../services/realtimeObjectService';
 
 interface LineComponentProps {
@@ -283,8 +283,8 @@ export const LineComponent: React.FC<LineComponentProps> = ({
       opacity={shape.opacity || 1}
       visible={shape.visible !== false}
       draggable={!shape.locked}
-      onClick={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
-      onTap={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
+      onClick={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+      onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}

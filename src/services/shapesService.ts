@@ -10,9 +10,15 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { 
+import type { 
   Shape, 
   ShapeType,
+  RectangleShape,
+  CircleShape,
+  LineShape,
+  TextShape
+} from '../types/shapes';
+import {
   generateShapeId,
   DEFAULT_RECTANGLE,
   DEFAULT_CIRCLE,
@@ -22,16 +28,16 @@ import {
 } from '../types/shapes';
 
 // Extended shape data for Firestore
-export interface FirestoreShape extends Shape {
+export type FirestoreShape = Shape & {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastModifiedBy: string; // User ID who last modified the shape
-}
+};
 
 // Shape data for creation (without Firestore metadata)
-export interface CreateShapeData extends Shape {
+export type CreateShapeData = Shape & {
   createdBy: string;
-}
+};
 
 // Shape service class for managing Firestore operations
 export class ShapesService {
@@ -55,12 +61,12 @@ export class ShapesService {
       } as CreateShapeData;
     }
 
-    const firestoreData: FirestoreShape = {
+    const firestoreData = {
       ...preparedShape,
       createdAt: now,
       updatedAt: now,
       lastModifiedBy: preparedShape.createdBy,
-    };
+    } as any;
 
     const shapeRef = doc(db, this.collectionPath, preparedShape.id);
     await setDoc(shapeRef, firestoreData);
@@ -121,7 +127,7 @@ export class ShapesService {
         
         snapshot.forEach((docSnapshot) => {
           if (docSnapshot.exists()) {
-            const data = docSnapshot.data() as FirestoreShape;
+            const data = docSnapshot.data() as any;
             
             // Convert Firestore data back to Shape format
             const shape: Shape = {
@@ -221,7 +227,7 @@ export class ShapesService {
     overrides?: Partial<Shape>
   ): Promise<string> {
     const id = generateShapeId(type);
-    let shapeData: Shape;
+    let shapeData: any;
     
     switch (type) {
       case 'rectangle':
@@ -262,7 +268,7 @@ export class ShapesService {
           id,
           x: position.x,
           y: position.y,
-          text: overrides?.text || 'New Text',
+          text: (overrides as any)?.text || 'New Text',
           ...overrides,
         };
         break;
@@ -339,8 +345,8 @@ export const shapesService = new ShapesService();
 export const createRectangleShape = (
   position: { x: number; y: number },
   userId: string,
-  overrides?: Partial<Shape>
-): Shape => ({
+  overrides?: Partial<RectangleShape>
+): RectangleShape => ({
   ...DEFAULT_RECTANGLE,
   id: generateShapeId('rectangle'),
   x: position.x,
@@ -354,8 +360,8 @@ export const createRectangleShape = (
 export const createCircleShape = (
   position: { x: number; y: number },
   userId: string,
-  overrides?: Partial<Shape>
-): Shape => ({
+  overrides?: Partial<CircleShape>
+): CircleShape => ({
   ...DEFAULT_CIRCLE,
   id: generateShapeId('circle'),
   x: position.x,
@@ -370,8 +376,8 @@ export const createLineShape = (
   startPos: { x: number; y: number },
   endPos: { x: number; y: number },
   userId: string,
-  overrides?: Partial<Shape>
-): Shape => ({
+  overrides?: Partial<LineShape>
+): LineShape => ({
   ...DEFAULT_LINE,
   id: generateShapeId('line'),
   x: startPos.x,
@@ -388,8 +394,8 @@ export const createTextShape = (
   position: { x: number; y: number },
   text: string,
   userId: string,
-  overrides?: Partial<Shape>
-): Shape => ({
+  overrides?: Partial<TextShape>
+): TextShape => ({
   ...DEFAULT_TEXT,
   id: generateShapeId('text'),
   x: position.x,

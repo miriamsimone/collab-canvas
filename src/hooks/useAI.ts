@@ -6,7 +6,7 @@ import {
   type UseAIState,
   type UseAIActions
 } from '../types/ai';
-import { Shape } from '../types/shapes';
+import type { Shape } from '../types/shapes';
 import { useAuth } from './useAuth';
 
 interface UseAIProps {
@@ -40,8 +40,6 @@ export const useAI = ({
   onSelectByColor,
   onSelectByPosition,
   onSelectByIds,
-  onClearSelection,
-  getSelectedObjects,
   onBulkMove,
   onBulkDelete,
   onBulkChangeColor,

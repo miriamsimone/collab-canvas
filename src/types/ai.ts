@@ -16,8 +16,30 @@ export interface AIResponse {
 }
 
 export interface AIAction {
-  type: 'createRectangle' | 'selectObjects' | 'bulkOperation';
-  parameters: CreateRectangleParams | SelectObjectsParams | BulkOperationParams;
+  type: 'createRectangle' | 'createCircle' | 'createLine' | 'createText' | 'selectObjects' | 'bulkOperation';
+  parameters: CreateRectangleParams | CreateCircleParams | CreateLineParams | CreateTextParams | SelectObjectsParams | BulkOperationParams;
+}
+
+export interface CreateCircleParams {
+  x: number;
+  y: number;
+  radius: number;
+  color: string;
+}
+
+export interface CreateLineParams {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  color: string;
+}
+
+export interface CreateTextParams {
+  x: number;
+  y: number;
+  text: string;
+  fontSize?: number;
 }
 
 export interface CreateRectangleParams {

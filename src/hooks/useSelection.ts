@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Shape, getShapeBounds, getShapeCenter } from '../types/shapes';
+import { useState, useCallback } from 'react';
+import type { Shape } from '../types/shapes';
 import { findObjectsInSelection, findObjectsByColor, findObjectsByPosition } from '../utils/selectionHelpers';
 
 export interface SelectionBounds {
@@ -39,46 +39,10 @@ interface UseSelectionActions {
 
 export const useSelection = (): UseSelectionState & UseSelectionActions => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [selectionBounds, setSelectionBounds] = useState<SelectionBounds | null>(null);
+  const [selectionBounds] = useState<SelectionBounds | null>(null);
   const [isDragSelecting, setIsDragSelecting] = useState<boolean>(false);
   const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
   const [dragCurrentPos, setDragCurrentPos] = useState<{ x: number; y: number } | null>(null);
-
-  // Calculate selection bounding box
-  const calculateSelectionBounds = useCallback((objects: Shape[], selectedObjectIds: Set<string>): SelectionBounds | null => {
-    const selectedObjects = objects.filter(obj => selectedObjectIds.has(obj.id));
-    
-    if (selectedObjects.length === 0) {
-      return null;
-    }
-
-    if (selectedObjects.length === 1) {
-      const obj = selectedObjects[0];
-      const bounds = getShapeBounds(obj);
-      return bounds;
-    }
-
-    // Calculate bounds for multiple objects
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-
-    selectedObjects.forEach(obj => {
-      const bounds = getShapeBounds(obj);
-      minX = Math.min(minX, bounds.x);
-      minY = Math.min(minY, bounds.y);
-      maxX = Math.max(maxX, bounds.x + bounds.width);
-      maxY = Math.max(maxY, bounds.y + bounds.height);
-    });
-
-    return {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY,
-    };
-  }, []);
 
   // Basic selection operations
   const selectObject = useCallback((id: string) => {
@@ -192,12 +156,6 @@ export const useSelection = (): UseSelectionState & UseSelectionActions => {
     const matchingObjects = findObjectsByPosition(objects, criteria, canvasSize);
     setSelectedIds(new Set(matchingObjects.map(obj => obj.id)));
   }, []);
-
-  // Update selection bounds when selection changes
-  const updateSelectionBounds = useCallback((objects: Shape[]) => {
-    const bounds = calculateSelectionBounds(objects, selectedIds);
-    setSelectionBounds(bounds);
-  }, [selectedIds, calculateSelectionBounds]);
 
   return {
     // State

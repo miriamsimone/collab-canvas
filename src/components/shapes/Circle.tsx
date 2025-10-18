@@ -1,7 +1,7 @@
 import React from 'react';
 import { Circle, Transformer } from 'react-konva';
 import Konva from 'konva';
-import { CircleShape } from '../../types/shapes';
+import type { CircleShape } from '../../types/shapes';
 import { realtimeObjectService } from '../../services/realtimeObjectService';
 
 interface CircleComponentProps {
@@ -230,8 +230,8 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         visible={shape.visible !== false}
         rotation={shape.rotation || 0}
         draggable={!shape.locked}
-        onClick={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
-        onTap={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
+        onClick={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}

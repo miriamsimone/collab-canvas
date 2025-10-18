@@ -43,7 +43,6 @@ export const Canvas: React.FC = () => {
   // Real-time shapes management
   const {
     shapes,
-    rectangles, // Legacy compatibility
     loading: shapesLoading,
     error: shapesError,
     isConnected,

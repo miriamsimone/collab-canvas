@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Text, Transformer } from 'react-konva';
 import Konva from 'konva';
-import { TextShape } from '../../types/shapes';
+import type { TextShape } from '../../types/shapes';
 import { realtimeObjectService } from '../../services/realtimeObjectService';
 
 interface TextComponentProps {
@@ -32,7 +32,6 @@ export const TextComponent: React.FC<TextComponentProps> = ({
   const textRef = useRef<Konva.Text>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [tempText, setTempText] = useState(shape.text);
   
   // Update transformer when selection changes
   useEffect(() => {
@@ -138,7 +137,6 @@ export const TextComponent: React.FC<TextComponentProps> = ({
   const handleDoubleClick = () => {
     if (shape.locked) return;
     setIsEditing(true);
-    setTempText(shape.text);
   };
 
   const handleTextEdit = () => {
@@ -314,8 +312,8 @@ export const TextComponent: React.FC<TextComponentProps> = ({
         opacity={shape.opacity || 1}
         visible={shape.visible !== false && !isEditing}
         draggable={!shape.locked && !isEditing}
-        onClick={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
-        onTap={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
+        onClick={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
         onDblClick={handleDoubleClick}
         onDblTap={handleDoubleClick}
         onDragStart={handleDragStart}

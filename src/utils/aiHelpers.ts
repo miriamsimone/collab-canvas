@@ -1,4 +1,4 @@
-import { type CanvasObjectData } from '../components/CanvasObject';
+import type { Shape } from '../types/shapes';
 import { type CanvasState } from '../types/ai';
 import { CANVAS_CONFIG } from '../hooks/useCanvas';
 
@@ -7,17 +7,17 @@ import { CANVAS_CONFIG } from '../hooks/useCanvas';
  * Returns basic rectangle positions and types for AI decision making
  */
 export function getCanvasState(
-  rectangles: CanvasObjectData[], 
+  shapes: Shape[], 
   canvasSize?: { width: number; height: number }
 ): CanvasState {
   return {
-    rectangles: rectangles.map(rectangle => ({
-      id: rectangle.id,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
-      fill: rectangle.fill,
+    rectangles: shapes.map(shape => ({
+      id: shape.id,
+      x: shape.x,
+      y: shape.y,
+      width: (shape as any).width || 100,
+      height: (shape as any).height || 100,
+      fill: (shape as any).fill || '#000000',
     })),
     canvasSize: canvasSize || {
       width: CANVAS_CONFIG.WIDTH,

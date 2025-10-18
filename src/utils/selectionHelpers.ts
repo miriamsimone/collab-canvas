@@ -1,4 +1,5 @@
-import { Shape, getShapeBounds, getShapeCenter } from '../types/shapes';
+import type { Shape } from '../types/shapes';
+import { getShapeBounds, getShapeCenter } from '../types/shapes';
 
 export interface Rectangle {
   x: number;

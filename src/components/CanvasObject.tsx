@@ -241,8 +241,8 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         stroke={object.stroke}
         strokeWidth={object.strokeWidth}
         draggable
-        onClick={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
-        onTap={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
+        onClick={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
