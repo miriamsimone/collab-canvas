@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
 import { useAuth } from '../hooks/useAuth';
@@ -666,10 +666,9 @@ export const Canvas: React.FC = () => {
     setContextMenu(null);
   }, []);
 
-  const getContextMenuItems = useCallback((): ContextMenuItem[] => {
+  const contextMenuItems = useMemo((): ContextMenuItem[] => {
     const selectedObjects = getSelectedObjects(shapes);
     const hasSelection = selectedObjects.length > 0;
-    const hasMultipleSelection = selectedObjects.length >= 2;
 
     return [
       {
@@ -1591,7 +1590,7 @@ export const Canvas: React.FC = () => {
         <ShapeContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
-          items={getContextMenuItems()}
+          items={contextMenuItems}
           onClose={closeContextMenu}
         />
       )}
