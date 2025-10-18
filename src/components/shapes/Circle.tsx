@@ -130,10 +130,6 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
     const stage = node.getStage();
     
     try {
-      // Keep the circle locked to its original position during resize
-      node.x(shape.x);
-      node.y(shape.y);
-      
       // Get current scale values to calculate new radius
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
@@ -144,8 +140,8 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
 
       // Update circle position and size in RTDB during transform
       await realtimeObjectService.updateObjectPosition(shape.id, {
-        x: shape.x, // Use original position, not node position
-        y: shape.y,
+        x: node.x(),
+        y: node.y(),
         width: currentRadius * 2,
         height: currentRadius * 2,
         isDragging: true,
@@ -305,12 +301,18 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
           anchorSize={8}
           // Keep aspect ratio for circles
           keepRatio={true}
-          // Enable resize anchors
+          // Scale from center to prevent position shift
+          centeredScaling={true}
+          // Enable resize anchors (middle anchors work better for centered scaling)
           enabledAnchors={[
             'top-left',
             'top-right',
             'bottom-right',
-            'bottom-left'
+            'bottom-left',
+            'top-center',
+            'middle-right',
+            'bottom-center',
+            'middle-left'
           ]}
         />
       )}
