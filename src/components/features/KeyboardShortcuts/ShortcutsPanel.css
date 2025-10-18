@@ -1,0 +1,264 @@
+/* Shortcuts Panel Backdrop */
+.shortcuts-panel-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Shortcuts Panel Container */
+.shortcuts-panel {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Panel Header */
+.shortcuts-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.shortcuts-panel-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.shortcuts-panel-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.shortcuts-panel-close:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+/* Panel Content */
+.shortcuts-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* Category */
+.shortcuts-category {
+  margin-bottom: 24px;
+}
+
+.shortcuts-category:last-child {
+  margin-bottom: 0;
+}
+
+.shortcuts-category-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 12px 0;
+}
+
+/* Shortcuts List */
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.shortcut-item:hover {
+  background-color: #f9fafb;
+}
+
+.shortcut-description {
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.shortcut-keys {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Panel Footer */
+.shortcuts-panel-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.shortcuts-panel-tip {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.shortcuts-panel-tip strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.shortcuts-panel-tip kbd {
+  display: inline-block;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: 0 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .shortcuts-panel {
+    max-width: 100%;
+    width: 100%;
+    max-height: 90vh;
+    margin: 20px;
+  }
+  
+  .shortcuts-panel-header {
+    padding: 16px 20px;
+  }
+  
+  .shortcuts-panel-content {
+    padding: 20px;
+  }
+  
+  .shortcut-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+/* Dark Mode Support (optional) */
+@media (prefers-color-scheme: dark) {
+  .shortcuts-panel {
+    background: #1f2937;
+  }
+  
+  .shortcuts-panel-header {
+    border-bottom-color: #374151;
+  }
+  
+  .shortcuts-panel-header h2 {
+    color: #f9fafb;
+  }
+  
+  .shortcuts-panel-close {
+    color: #9ca3af;
+  }
+  
+  .shortcuts-panel-close:hover {
+    background-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .shortcuts-category-title {
+    color: #9ca3af;
+  }
+  
+  .shortcut-item:hover {
+    background-color: #374151;
+  }
+  
+  .shortcut-description {
+    color: #f9fafb;
+  }
+  
+  .shortcut-keys {
+    color: #f9fafb;
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+  
+  .shortcuts-panel-footer {
+    background-color: #111827;
+    border-top-color: #374151;
+  }
+  
+  .shortcuts-panel-tip {
+    color: #9ca3af;
+  }
+  
+  .shortcuts-panel-tip strong {
+    color: #f9fafb;
+  }
+  
+  .shortcuts-panel-tip kbd {
+    color: #f9fafb;
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+}
+

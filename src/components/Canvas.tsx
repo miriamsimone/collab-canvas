@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
 import { useAuth } from '../hooks/useAuth';
@@ -7,7 +7,11 @@ import { useShapes } from '../hooks/useShapes';
 import { usePresence } from '../hooks/usePresence';
 import { useAI } from '../hooks/useAI';
 import { useSelection } from '../hooks/useSelection';
+import { useUndoRedo } from '../hooks/useUndoRedo';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { canvasService } from '../services/canvasService';
+import { CreateShapeCommand, BatchCommand } from '../services/commandService';
+import { copyShapesToClipboard, getShapesFromClipboard, duplicateShapes } from '../utils/clipboardHelpers';
 import { CanvasBackground } from './CanvasBackground';
 import { Toolbar } from './Toolbar';
 import { CanvasObject } from './CanvasObject';
@@ -22,6 +26,7 @@ import { AICommandInput } from './features/AI/AICommandInput';
 import { AILoadingIndicator } from './features/AI/AILoadingIndicator';
 import { AIErrorDisplay } from './features/AI/AIErrorDisplay';
 import { AICommandHistory } from './features/AI/AICommandHistory';
+import { ShortcutsPanel } from './features/KeyboardShortcuts/ShortcutsPanel';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -75,6 +80,12 @@ export const Canvas: React.FC = () => {
     selectByColor,
     selectByPosition,
   } = useSelection();
+
+  // Undo/Redo management  
+  const {
+    executeCommand,
+    // Note: canUndo, canRedo, undo, redo will be used for UI buttons in future PR
+  } = useUndoRedo();
 
   // Real-time presence/cursor management
   const {
@@ -163,6 +174,126 @@ export const Canvas: React.FC = () => {
     }
   };
 
+  // Keyboard Shortcuts Handlers
+  const handleCopy = useCallback(() => {
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length === 0) {
+      console.log('No objects selected to copy');
+      return;
+    }
+    
+    copyShapesToClipboard(selectedObjects);
+    console.log(`Copied ${selectedObjects.length} object(s)`);
+  }, [shapes, getSelectedObjects]);
+
+  const handlePaste = useCallback(async () => {
+    if (!user || !userProfile) return;
+    
+    const shapesToPaste = getShapesFromClipboard();
+    if (!shapesToPaste || shapesToPaste.length === 0) {
+      console.log('Clipboard is empty');
+      return;
+    }
+    
+    // Duplicate shapes with offset
+    const duplicatedShapes = duplicateShapes(shapesToPaste, 20, 20);
+    
+    try {
+      // Create all shapes with command pattern for undo/redo
+      const commands = duplicatedShapes.map(shape => 
+        new CreateShapeCommand({ shape }, user.uid)
+      );
+      
+      const batchCommand = new BatchCommand(
+        { commands },
+        `Paste ${duplicatedShapes.length} object(s)`
+      );
+      
+      await executeCommand(batchCommand);
+      
+      // Select the pasted objects
+      selectMultiple(duplicatedShapes.map(s => s.id));
+      console.log(`Pasted ${duplicatedShapes.length} object(s)`);
+    } catch (error) {
+      console.error('Failed to paste objects:', error);
+      setCanvasError('Failed to paste objects. Please try again.');
+    }
+  }, [user, userProfile, executeCommand, selectMultiple]);
+
+  const handleCut = useCallback(async () => {
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length === 0) {
+      console.log('No objects selected to cut');
+      return;
+    }
+    
+    // Copy to clipboard first
+    copyShapesToClipboard(selectedObjects);
+    
+    // Then delete
+    await handleBulkDelete();
+    console.log(`Cut ${selectedObjects.length} object(s)`);
+  }, [shapes, getSelectedObjects, handleBulkDelete]);
+
+  const handleDuplicate = useCallback(async () => {
+    if (!user || !userProfile) return;
+    
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length === 0) {
+      console.log('No objects selected to duplicate');
+      return;
+    }
+    
+    // Duplicate shapes with offset
+    const duplicatedShapes = duplicateShapes(selectedObjects, 20, 20);
+    
+    try {
+      // Create all shapes with command pattern for undo/redo
+      const commands = duplicatedShapes.map(shape => 
+        new CreateShapeCommand({ shape }, user.uid)
+      );
+      
+      const batchCommand = new BatchCommand(
+        { commands },
+        `Duplicate ${duplicatedShapes.length} object(s)`
+      );
+      
+      await executeCommand(batchCommand);
+      
+      // Select the duplicated objects
+      selectMultiple(duplicatedShapes.map(s => s.id));
+      console.log(`Duplicated ${duplicatedShapes.length} object(s)`);
+    } catch (error) {
+      console.error('Failed to duplicate objects:', error);
+      setCanvasError('Failed to duplicate objects. Please try again.');
+    }
+  }, [user, userProfile, shapes, getSelectedObjects, executeCommand, selectMultiple]);
+
+  const handleNudge = useCallback(async (direction: 'up' | 'down' | 'left' | 'right', distance: number) => {
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length === 0) return;
+    
+    let deltaX = 0;
+    let deltaY = 0;
+    
+    switch (direction) {
+      case 'up':
+        deltaY = -distance;
+        break;
+      case 'down':
+        deltaY = distance;
+        break;
+      case 'left':
+        deltaX = -distance;
+        break;
+      case 'right':
+        deltaX = distance;
+        break;
+    }
+    
+    await handleBulkMove(deltaX, deltaY);
+  }, [shapes, getSelectedObjects, handleBulkMove]);
+
   // AI shape creation handlers
   const handleAICreateRectangle = async (x: number, y: number, width: number, height: number, color: string): Promise<void> => {
     try {
@@ -227,6 +358,19 @@ export const Canvas: React.FC = () => {
     onBulkMove: handleBulkMove,
     onBulkDelete: handleBulkDelete,
     onBulkChangeColor: handleBulkChangeColor,
+  });
+
+  // Set up keyboard shortcuts (after AI hook to access aiLoading)
+  const { isHelpVisible, setIsHelpVisible } = useKeyboardShortcuts({
+    onSelectAll: () => selectAll(shapes),
+    onClearSelection: clearSelection,
+    onCopy: handleCopy,
+    onPaste: handlePaste,
+    onCut: handleCut,
+    onDuplicate: handleDuplicate,
+    onDelete: handleBulkDelete,
+    onNudge: handleNudge,
+    enabled: true, // Always enabled
   });
 
   // Initialize shared canvas on mount
@@ -794,6 +938,12 @@ export const Canvas: React.FC = () => {
           </div>
         </div>
       </DraggablePanel>
+
+      {/* Keyboard Shortcuts Panel */}
+      <ShortcutsPanel 
+        isVisible={isHelpVisible}
+        onClose={() => setIsHelpVisible(false)}
+      />
     </div>
   );
 };
