@@ -130,6 +130,10 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
     const stage = node.getStage();
     
     try {
+      // Keep the circle locked to its original position during resize
+      node.x(shape.x);
+      node.y(shape.y);
+      
       // Get current scale values to calculate new radius
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
@@ -140,8 +144,8 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
 
       // Update circle position and size in RTDB during transform
       await realtimeObjectService.updateObjectPosition(shape.id, {
-        x: node.x(),
-        y: node.y(),
+        x: shape.x, // Use original position, not node position
+        y: shape.y,
         width: currentRadius * 2,
         height: currentRadius * 2,
         isDragging: true,
@@ -191,29 +195,28 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
   const handleTransformEnd = async () => {
     const node = shapeRef.current;
     if (!node) return;
-
+    
     // Get scale values and calculate new radius
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-    
-    // Reset scale and apply to radius instead
-    node.scaleX(1);
-    node.scaleY(1);
     
     // For circles, use average scale to maintain circular shape
     const avgScale = (scaleX + scaleY) / 2;
     const newRadius = Math.max(10, shape.radius * avgScale); // Min radius 10px
     
-    // Get the current position (circle should stay at shape.x, shape.y)
-    const currentX = shape.x;
-    const currentY = shape.y;
+    // Reset the node to the original position with no scale
+    // This ensures the circle stays in place and only the radius changes
+    node.x(shape.x);
+    node.y(shape.y);
+    node.scaleX(1);
+    node.scaleY(1);
     
     // Call the transform callback if provided (for Firestore persistence)
     if (onTransformEnd) {
-      onTransformEnd(shape.id, currentX, currentY, newRadius);
+      onTransformEnd(shape.id, shape.x, shape.y, newRadius);
     } else {
       // Fallback to drag end callback
-      onDragEnd(shape.id, currentX, currentY);
+      onDragEnd(shape.id, shape.x, shape.y);
     }
     
     // Add grace period before stopping RTDB state (same as drag)
