@@ -37,6 +37,10 @@ export const CommentInput: React.FC<CommentInputProps> = ({
       className="comment-input-overlay"
       style={{ left: x, top: y }}
     >
+      {/* Visual indicator circle showing where comment will be placed */}
+      <div className="comment-pin-indicator">
+        💬
+      </div>
       <div className="comment-input-container">
         <form onSubmit={handleSubmit}>
           <textarea
