@@ -31,6 +31,7 @@ import { AIErrorDisplay } from './features/AI/AIErrorDisplay';
 import { AICommandHistory } from './features/AI/AICommandHistory';
 import { ShortcutsPanel } from './features/KeyboardShortcuts/ShortcutsPanel';
 import { SmartGuides } from './features/Grid/SmartGuides';
+import { ShapeContextMenu, type ContextMenuItem } from './features/ContextMenu/ShapeContextMenu';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -105,6 +106,13 @@ export const Canvas: React.FC = () => {
     width: window.innerWidth,
     height: window.innerHeight - 60, // Account for header
   });
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Local UI state  
   const [isDraggingRectangle, setIsDraggingRectangle] = useState<boolean>(false);
@@ -632,6 +640,101 @@ export const Canvas: React.FC = () => {
       console.error('Failed to distribute vertically:', error);
     }
   }, [user, getSelectedObjects, shapes, distributeVertically, executeCommand]);
+
+  // Context menu handlers
+  const handleContextMenu = useCallback((e: Konva.KonvaEventObject<PointerEvent>) => {
+    e.evt.preventDefault();
+    
+    // Get the clicked shape
+    const clickedShape = e.target;
+    const shapeId = clickedShape.id();
+    
+    // If the clicked shape is not selected, select only it
+    if (shapeId && !isSelected(shapeId)) {
+      selectObject(shapeId);
+    }
+    
+    // Show context menu at cursor position
+    setContextMenu({
+      visible: true,
+      x: e.evt.clientX,
+      y: e.evt.clientY,
+    });
+  }, [isSelected, selectObject]);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const getContextMenuItems = useCallback((): ContextMenuItem[] => {
+    const selectedObjects = getSelectedObjects(shapes);
+    const hasSelection = selectedObjects.length > 0;
+    const hasMultipleSelection = selectedObjects.length >= 2;
+
+    return [
+      {
+        id: 'copy',
+        label: 'Copy',
+        shortcut: '⌘C',
+        onClick: handleCopy,
+        disabled: !hasSelection,
+      },
+      {
+        id: 'duplicate',
+        label: 'Duplicate',
+        shortcut: '⌘D',
+        onClick: handleDuplicate,
+        disabled: !hasSelection,
+      },
+      {
+        id: 'delete',
+        label: 'Delete',
+        shortcut: '⌫',
+        onClick: handleBulkDelete,
+        disabled: !hasSelection,
+        separator: true,
+      },
+      {
+        id: 'bring-to-front',
+        label: 'Bring to Front',
+        shortcut: '⌘⇧]',
+        onClick: handleBringToFront,
+        disabled: !hasSelection,
+        separator: true,
+      },
+      {
+        id: 'bring-forward',
+        label: 'Bring Forward',
+        shortcut: '⌘]',
+        onClick: handleBringForward,
+        disabled: !hasSelection,
+      },
+      {
+        id: 'send-backward',
+        label: 'Send Backward',
+        shortcut: '⌘[',
+        onClick: handleSendBackward,
+        disabled: !hasSelection,
+      },
+      {
+        id: 'send-to-back',
+        label: 'Send to Back',
+        shortcut: '⌘⇧[',
+        onClick: handleSendToBack,
+        disabled: !hasSelection,
+      },
+    ];
+  }, [
+    shapes,
+    getSelectedObjects,
+    handleCopy,
+    handleDuplicate,
+    handleBulkDelete,
+    handleBringToFront,
+    handleBringForward,
+    handleSendBackward,
+    handleSendToBack,
+  ]);
 
   // Initialize shared canvas on mount
   useEffect(() => {
@@ -1313,6 +1416,7 @@ export const Canvas: React.FC = () => {
                     onDragEnd={handleShapeDragEnd}
                     onTransformStart={handleTransformStart}
                     onTransformEnd={handleRectangleTransformEnd}
+                    onContextMenu={handleContextMenu}
                     currentUserId={user?.uid}
                     onCursorUpdate={updateCursorPosition}
                   />
@@ -1328,6 +1432,7 @@ export const Canvas: React.FC = () => {
                     onDragEnd={handleShapeDragEnd}
                     onTransformStart={handleTransformStart}
                     onTransformEnd={handleCircleTransformEnd}
+                    onContextMenu={handleContextMenu}
                     currentUserId={user?.uid}
                     onCursorUpdate={updateCursorPosition}
                   />
@@ -1343,6 +1448,7 @@ export const Canvas: React.FC = () => {
                     onDragEnd={handleShapeDragEnd}
                     onTransformStart={handleTransformStart}
                     onTransformEnd={handleLineTransformEnd}
+                    onContextMenu={handleContextMenu}
                     currentUserId={user?.uid}
                     onCursorUpdate={updateCursorPosition}
                   />
@@ -1359,6 +1465,7 @@ export const Canvas: React.FC = () => {
                     onTransformStart={handleTransformStart}
                     onTransformEnd={handleTextTransformEnd}
                     onTextChange={handleTextChange}
+                    onContextMenu={handleContextMenu}
                     currentUserId={user?.uid}
                     onCursorUpdate={updateCursorPosition}
                     stageRef={stageRef}
@@ -1478,6 +1585,16 @@ export const Canvas: React.FC = () => {
         isVisible={isHelpVisible}
         onClose={() => setIsHelpVisible(false)}
       />
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ShapeContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={getContextMenuItems()}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   );
 };

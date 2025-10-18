@@ -12,6 +12,7 @@ interface CircleComponentProps {
   onDragEnd: (id: string, x: number, y: number) => void;
   onTransformStart?: (id: string, dimensions: { x: number; y: number; radius: number }) => void;
   onTransformEnd?: (id: string, x: number, y: number, radius: number) => void;
+  onContextMenu?: (e: Konva.KonvaEventObject<PointerEvent>) => void;
   currentUserId?: string;
   onCursorUpdate?: (x: number, y: number) => void;
 }
@@ -24,6 +25,7 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
   onDragEnd,
   onTransformStart,
   onTransformEnd,
+  onContextMenu,
   currentUserId,
   onCursorUpdate,
 }) => {
@@ -255,6 +257,7 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         draggable={!shape.locked}
         onClick={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
         onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onContextMenu={onContextMenu}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}

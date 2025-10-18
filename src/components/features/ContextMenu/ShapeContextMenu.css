@@ -1,0 +1,89 @@
+/* Shape Context Menu Styling */
+.shape-context-menu {
+  position: fixed;
+  z-index: 10000;
+  min-width: 200px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 1px rgba(0, 0, 0, 0.1);
+  padding: 6px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #1f2937;
+  transition: background-color 0.15s;
+}
+
+.context-menu-item:hover:not(.disabled) {
+  background: rgba(0, 122, 204, 0.1);
+}
+
+.context-menu-item:active:not(.disabled) {
+  background: rgba(0, 122, 204, 0.15);
+}
+
+.context-menu-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.context-menu-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.context-menu-shortcut {
+  margin-left: 24px;
+  font-size: 12px;
+  color: #6b7280;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.context-menu-separator {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+  margin: 6px 0;
+}
+
+/* macOS-style appearance */
+@media (prefers-color-scheme: dark) {
+  .shape-context-menu {
+    background: #2d2d2d;
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .context-menu-item {
+    color: #e5e7eb;
+  }
+
+  .context-menu-item:hover:not(.disabled) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .context-menu-item:active:not(.disabled) {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .context-menu-shortcut {
+    color: #9ca3af;
+  }
+
+  .context-menu-separator {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+

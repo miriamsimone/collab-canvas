@@ -22,6 +22,7 @@ interface CanvasObjectProps {
   onDragEnd: (id: string, x: number, y: number) => void;
   onTransformStart?: (id: string, dimensions: { x: number; y: number; width: number; height: number }) => void; // For resize undo support
   onTransformEnd?: (id: string, x: number, y: number, width: number, height: number) => void; // For resize handling
+  onContextMenu?: (e: Konva.KonvaEventObject<PointerEvent>) => void; // For right-click menu
   currentUserId?: string; // For RTDB real-time dragging
   onCursorUpdate?: (x: number, y: number) => void; // For cursor updates during drag/resize
 }
@@ -34,6 +35,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
   onDragEnd,
   onTransformStart,
   onTransformEnd,
+  onContextMenu,
   currentUserId,
   onCursorUpdate,
 }) => {
@@ -253,6 +255,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         draggable
         onClick={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
         onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onContextMenu={onContextMenu}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
