@@ -8,8 +8,9 @@ interface CircleComponentProps {
   shape: CircleShape;
   isSelected: boolean;
   onSelect: (event?: { shiftKey?: boolean }) => void;
-  onDragStart: () => void;
+  onDragStart: (id: string, x: number, y: number) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
+  onTransformStart?: (id: string, dimensions: { x: number; y: number; radius: number }) => void;
   onTransformEnd?: (id: string, x: number, y: number, radius: number) => void;
   currentUserId?: string;
   onCursorUpdate?: (x: number, y: number) => void;
@@ -21,6 +22,7 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
   onSelect,
   onDragStart,
   onDragEnd,
+  onTransformStart,
   onTransformEnd,
   currentUserId,
   onCursorUpdate,
@@ -59,7 +61,7 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
       }
     }
     
-    onDragStart();
+    onDragStart(shape.id, shape.x, shape.y);
   };
 
   const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -162,6 +164,13 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
   };
 
   const handleTransformStart = async () => {
+    // Capture initial dimensions for undo/redo
+    onTransformStart?.(shape.id, {
+      x: shape.x,
+      y: shape.y,
+      radius: shape.radius,
+    });
+
     // Start real-time transform tracking in RTDB
     if (currentUserId) {
       try {

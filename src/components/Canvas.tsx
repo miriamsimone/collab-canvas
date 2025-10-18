@@ -464,25 +464,106 @@ export const Canvas: React.FC = () => {
   }, [activeTool, isDragging]);
 
   // Shape interaction handlers
-  const handleShapeDragStart = () => {
-    setIsDraggingRectangle(true); // Keep existing state name for compatibility
+  const [dragStartPositions, setDragStartPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [transformStartDimensions, setTransformStartDimensions] = useState<Record<string, any>>({});
+
+  const handleShapeDragStart = (id: string, x: number, y: number) => {
+    setIsDraggingRectangle(true);
+    // Store the starting position for undo/redo
+    setDragStartPositions(prev => ({
+      ...prev,
+      [id]: { x, y }
+    }));
   };
 
-  // Handle shape drag end (position updates with real-time sync)
-  const handleShapeDragEnd = async (id: string, x: number, y: number) => {
+  const handleTransformStart = (id: string, dimensions: any) => {
+    // Store starting dimensions for undo/redo
+    setTransformStartDimensions(prev => ({
+      ...prev,
+      [id]: dimensions
+    }));
+  };
+
+  // Handle shape drag end (position updates with real-time sync and undo support)
+  const handleShapeDragEnd = async (id: string, newX: number, newY: number) => {
+    if (!user) return;
+    
+    const startPos = dragStartPositions[id];
+    if (!startPos) {
+      // Fallback if we don't have start position - just update without undo
+      try {
+        await updateShape(id, { x: newX, y: newY });
+      } catch (error) {
+        console.error('Failed to update shape position:', error);
+      }
+      setIsDraggingRectangle(false);
+      return;
+    }
+
     try {
-      await updateShape(id, { x, y });
+      // Create a MoveShapeCommand for undo/redo support
+      const { MoveShapeCommand } = await import('../services/commandService');
+      const moveCommand = new MoveShapeCommand(
+        {
+          shapeId: id,
+          oldX: startPos.x,
+          oldY: startPos.y,
+          newX,
+          newY,
+        },
+        user.uid
+      );
+      
+      await executeCommand(moveCommand);
+      
+      // Clean up stored position
+      setDragStartPositions(prev => {
+        const newPositions = { ...prev };
+        delete newPositions[id];
+        return newPositions;
+      });
     } catch (error) {
       console.error('Failed to update shape position:', error);
-      // Error handling is managed by useShapes hook
     }
     setIsDraggingRectangle(false);
   };
 
-  // Handle rectangle transform end (resize operations with real-time sync)
+  // Handle rectangle transform end (resize operations with real-time sync and undo support)
   const handleRectangleTransformEnd = async (id: string, x: number, y: number, width: number, height: number) => {
+    if (!user) return;
+    
+    const startDims = transformStartDimensions[id];
+    if (!startDims) {
+      // Fallback if we don't have start dimensions - just update without undo
+      try {
+        await updateShapeTransform(id, x, y, { width, height });
+      } catch (error) {
+        console.error('Failed to update rectangle transform:', error);
+        setCanvasError('Failed to update rectangle size. Please try again.');
+      }
+      setIsDraggingRectangle(false);
+      return;
+    }
+
     try {
-      await updateShapeTransform(id, x, y, { width, height });
+      const { ResizeShapeCommand } = await import('../services/commandService');
+      const resizeCommand = new ResizeShapeCommand(
+        {
+          shapeId: id,
+          oldDimensions: startDims,
+          newDimensions: { x, y, width, height },
+        },
+        user.uid
+      );
+      
+      await executeCommand(resizeCommand);
+      
+      // Clean up stored dimensions
+      setTransformStartDimensions(prev => {
+        const newDims = { ...prev };
+        delete newDims[id];
+        return newDims;
+      });
     } catch (error) {
       console.error('Failed to update rectangle transform:', error);
       setCanvasError('Failed to update rectangle size. Please try again.');
@@ -490,10 +571,40 @@ export const Canvas: React.FC = () => {
     setIsDraggingRectangle(false);
   };
 
-  // Handle circle transform end (radius changes)
+  // Handle circle transform end (radius changes with undo support)
   const handleCircleTransformEnd = async (id: string, x: number, y: number, radius: number) => {
+    if (!user) return;
+    
+    const startDims = transformStartDimensions[id];
+    if (!startDims) {
+      try {
+        await updateShapeTransform(id, x, y, { radius });
+      } catch (error) {
+        console.error('Failed to update circle transform:', error);
+        setCanvasError('Failed to update circle size. Please try again.');
+      }
+      setIsDraggingRectangle(false);
+      return;
+    }
+
     try {
-      await updateShapeTransform(id, x, y, { radius });
+      const { ResizeShapeCommand } = await import('../services/commandService');
+      const resizeCommand = new ResizeShapeCommand(
+        {
+          shapeId: id,
+          oldDimensions: startDims,
+          newDimensions: { x, y, radius },
+        },
+        user.uid
+      );
+      
+      await executeCommand(resizeCommand);
+      
+      setTransformStartDimensions(prev => {
+        const newDims = { ...prev };
+        delete newDims[id];
+        return newDims;
+      });
     } catch (error) {
       console.error('Failed to update circle transform:', error);
       setCanvasError('Failed to update circle size. Please try again.');
@@ -501,10 +612,40 @@ export const Canvas: React.FC = () => {
     setIsDraggingRectangle(false);
   };
 
-  // Handle line transform end (endpoint changes)
+  // Handle line transform end (endpoint changes with undo support)
   const handleLineTransformEnd = async (id: string, x: number, y: number, x2: number, y2: number) => {
+    if (!user) return;
+    
+    const startDims = transformStartDimensions[id];
+    if (!startDims) {
+      try {
+        await updateShapeTransform(id, x, y, { x2, y2 });
+      } catch (error) {
+        console.error('Failed to update line transform:', error);
+        setCanvasError('Failed to update line. Please try again.');
+      }
+      setIsDraggingRectangle(false);
+      return;
+    }
+
     try {
-      await updateShapeTransform(id, x, y, { x2, y2 });
+      const { ResizeShapeCommand } = await import('../services/commandService');
+      const resizeCommand = new ResizeShapeCommand(
+        {
+          shapeId: id,
+          oldDimensions: startDims,
+          newDimensions: { x, y, x2, y2 },
+        },
+        user.uid
+      );
+      
+      await executeCommand(resizeCommand);
+      
+      setTransformStartDimensions(prev => {
+        const newDims = { ...prev };
+        delete newDims[id];
+        return newDims;
+      });
     } catch (error) {
       console.error('Failed to update line transform:', error);
       setCanvasError('Failed to update line. Please try again.');
@@ -512,10 +653,40 @@ export const Canvas: React.FC = () => {
     setIsDraggingRectangle(false);
   };
 
-  // Handle text transform end (size changes) and content changes
+  // Handle text transform end (size changes with undo support)
   const handleTextTransformEnd = async (id: string, x: number, y: number, width?: number, height?: number) => {
+    if (!user) return;
+    
+    const startDims = transformStartDimensions[id];
+    if (!startDims) {
+      try {
+        await updateShapeTransform(id, x, y, { width, height });
+      } catch (error) {
+        console.error('Failed to update text transform:', error);
+        setCanvasError('Failed to update text. Please try again.');
+      }
+      setIsDraggingRectangle(false);
+      return;
+    }
+
     try {
-      await updateShapeTransform(id, x, y, { width, height });
+      const { ResizeShapeCommand } = await import('../services/commandService');
+      const resizeCommand = new ResizeShapeCommand(
+        {
+          shapeId: id,
+          oldDimensions: startDims,
+          newDimensions: { x, y, width, height },
+        },
+        user.uid
+      );
+      
+      await executeCommand(resizeCommand);
+      
+      setTransformStartDimensions(prev => {
+        const newDims = { ...prev };
+        delete newDims[id];
+        return newDims;
+      });
     } catch (error) {
       console.error('Failed to update text transform:', error);
       setCanvasError('Failed to update text. Please try again.');
@@ -550,36 +721,79 @@ export const Canvas: React.FC = () => {
     if (isDragging || isDraggingRectangle || isDragSelecting) return;
     
     const stage = stageRef.current;
-    if (!stage) return;
+    if (!stage || !user || !userProfile) return;
 
     const pos = getCanvasPointerPosition(stage);
     if (!pos) return;
 
+    // Import utilities
+    const { CreateShapeCommand } = await import('../services/commandService');
+    const { createRectangleShape, createCircleShape, createLineShape, createTextShape } = await import('../services/shapesService');
+    const { generateShapeId } = await import('../types/shapes');
+    
+    const colors = ['#007ACC', '#28A745', '#DC3545', '#FFC107', '#6F42C1', '#FD7E14'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
     if (activeTool === 'rectangle') {
       try {
-        const newRectangle = await createRectangle(pos.x, pos.y);
+        // Build shape object without saving (command will handle saving)
+        const newRectangle = createRectangleShape({ x: pos.x, y: pos.y }, user.uid, {
+          id: generateShapeId('rectangle'),
+          width: 120,
+          height: 80,
+          fill: `${randomColor}40`,
+          stroke: randomColor,
+          strokeWidth: 2,
+        });
+        const createCommand = new CreateShapeCommand({ shape: newRectangle }, user.uid);
+        await executeCommand(createCommand);
         selectObject(newRectangle.id);
       } catch (error) {
         console.error('Failed to create rectangle:', error);
       }
     } else if (activeTool === 'circle') {
       try {
-        const newCircle = await createCircle(pos.x, pos.y);
+        const newCircle = createCircleShape({ x: pos.x, y: pos.y }, user.uid, {
+          id: generateShapeId('circle'),
+          radius: 50,
+          fill: `${randomColor}40`,
+          stroke: randomColor,
+          strokeWidth: 2,
+        });
+        const createCommand = new CreateShapeCommand({ shape: newCircle }, user.uid);
+        await executeCommand(createCommand);
         selectObject(newCircle.id);
       } catch (error) {
         console.error('Failed to create circle:', error);
       }
     } else if (activeTool === 'line') {
       try {
-        // Create line with default endpoint 100px to the right
-        const newLine = await createLine(pos.x, pos.y, pos.x + 100, pos.y);
+        const newLine = createLineShape(
+          { x: pos.x, y: pos.y },
+          { x: pos.x + 100, y: pos.y },
+          user.uid,
+          {
+            id: generateShapeId('line'),
+            stroke: randomColor,
+            strokeWidth: 3,
+          }
+        );
+        const createCommand = new CreateShapeCommand({ shape: newLine }, user.uid);
+        await executeCommand(createCommand);
         selectObject(newLine.id);
       } catch (error) {
         console.error('Failed to create line:', error);
       }
     } else if (activeTool === 'text') {
       try {
-        const newText = await createText(pos.x, pos.y, 'New Text');
+        const newText = createTextShape({ x: pos.x, y: pos.y }, 'New Text', user.uid, {
+          id: generateShapeId('text'),
+          fontSize: 16,
+          fontFamily: 'Arial, sans-serif',
+          fill: '#000000',
+        });
+        const createCommand = new CreateShapeCommand({ shape: newText }, user.uid);
+        await executeCommand(createCommand);
         selectObject(newText.id);
       } catch (error) {
         console.error('Failed to create text:', error);
@@ -784,6 +998,7 @@ export const Canvas: React.FC = () => {
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
                     onDragStart={handleShapeDragStart}
                     onDragEnd={handleShapeDragEnd}
+                    onTransformStart={handleTransformStart}
                     onTransformEnd={handleRectangleTransformEnd}
                     currentUserId={user?.uid}
                     onCursorUpdate={updateCursorPosition}
@@ -798,6 +1013,7 @@ export const Canvas: React.FC = () => {
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
                     onDragStart={handleShapeDragStart}
                     onDragEnd={handleShapeDragEnd}
+                    onTransformStart={handleTransformStart}
                     onTransformEnd={handleCircleTransformEnd}
                     currentUserId={user?.uid}
                     onCursorUpdate={updateCursorPosition}
@@ -812,6 +1028,7 @@ export const Canvas: React.FC = () => {
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
                     onDragStart={handleShapeDragStart}
                     onDragEnd={handleShapeDragEnd}
+                    onTransformStart={handleTransformStart}
                     onTransformEnd={handleLineTransformEnd}
                     currentUserId={user?.uid}
                     onCursorUpdate={updateCursorPosition}
@@ -826,6 +1043,7 @@ export const Canvas: React.FC = () => {
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
                     onDragStart={handleShapeDragStart}
                     onDragEnd={handleShapeDragEnd}
+                    onTransformStart={handleTransformStart}
                     onTransformEnd={handleTextTransformEnd}
                     onTextChange={handleTextChange}
                     currentUserId={user?.uid}

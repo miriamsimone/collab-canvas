@@ -8,8 +8,9 @@ interface LineComponentProps {
   shape: LineShape;
   isSelected: boolean;
   onSelect: (event?: { shiftKey?: boolean }) => void;
-  onDragStart: () => void;
+  onDragStart: (id: string, x: number, y: number) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
+  onTransformStart?: (id: string, dimensions: { x: number; y: number; x2: number; y2: number }) => void;
   onTransformEnd?: (id: string, x: number, y: number, x2: number, y2: number) => void;
   currentUserId?: string;
   onCursorUpdate?: (x: number, y: number) => void;
@@ -21,6 +22,7 @@ export const LineComponent: React.FC<LineComponentProps> = ({
   onSelect,
   onDragStart,
   onDragEnd,
+  onTransformStart,
   onTransformEnd,
   currentUserId,
   onCursorUpdate,
@@ -68,7 +70,7 @@ export const LineComponent: React.FC<LineComponentProps> = ({
       }
     }
     
-    onDragStart();
+    onDragStart(shape.id, shape.x, shape.y);
   };
 
   const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -144,6 +146,14 @@ export const LineComponent: React.FC<LineComponentProps> = ({
   };
 
   const handleTransformStart = async () => {
+    // Capture initial dimensions for undo/redo
+    onTransformStart?.(shape.id, {
+      x: shape.x,
+      y: shape.y,
+      x2: shape.x2,
+      y2: shape.y2,
+    });
+
     if (currentUserId) {
       try {
         const lineWidth = Math.abs(shape.x2 - shape.x);

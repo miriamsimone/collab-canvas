@@ -18,8 +18,9 @@ interface CanvasObjectProps {
   object: CanvasObjectData;
   isSelected: boolean;
   onSelect: (event?: { shiftKey?: boolean }) => void;
-  onDragStart: () => void;
+  onDragStart: (id: string, x: number, y: number) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
+  onTransformStart?: (id: string, dimensions: { x: number; y: number; width: number; height: number }) => void; // For resize undo support
   onTransformEnd?: (id: string, x: number, y: number, width: number, height: number) => void; // For resize handling
   currentUserId?: string; // For RTDB real-time dragging
   onCursorUpdate?: (x: number, y: number) => void; // For cursor updates during drag/resize
@@ -31,6 +32,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
   onSelect,
   onDragStart,  
   onDragEnd,
+  onTransformStart,
   onTransformEnd,
   currentUserId,
   onCursorUpdate,
@@ -69,7 +71,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
       }
     }
     
-    onDragStart();
+    onDragStart(object.id, object.x, object.y);
   };
 
   const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -172,6 +174,14 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
   };
 
   const handleTransformStart = async () => {
+    // Capture initial dimensions for undo/redo
+    onTransformStart?.(object.id, {
+      x: object.x,
+      y: object.y,
+      width: object.width,
+      height: object.height,
+    });
+
     // Start real-time transform tracking in RTDB
     if (currentUserId) {
       try {

@@ -8,8 +8,9 @@ interface TextComponentProps {
   shape: TextShape;
   isSelected: boolean;
   onSelect: (event?: { shiftKey?: boolean }) => void;
-  onDragStart: () => void;
+  onDragStart: (id: string, x: number, y: number) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
+  onTransformStart?: (id: string, dimensions: { x: number; y: number; width?: number; height?: number }) => void;
   onTransformEnd?: (id: string, x: number, y: number, width?: number, height?: number) => void;
   onTextChange?: (id: string, newText: string) => void;
   currentUserId?: string;
@@ -23,6 +24,7 @@ export const TextComponent: React.FC<TextComponentProps> = ({
   onSelect,
   onDragStart,
   onDragEnd,
+  onTransformStart,
   onTransformEnd,
   onTextChange,
   currentUserId,
@@ -81,7 +83,7 @@ export const TextComponent: React.FC<TextComponentProps> = ({
       }
     }
     
-    onDragStart();
+    onDragStart(shape.id, shape.x, shape.y);
   };
 
   const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -201,6 +203,14 @@ export const TextComponent: React.FC<TextComponentProps> = ({
   };
 
   const handleTransformStart = async () => {
+    // Capture initial dimensions for undo/redo
+    onTransformStart?.(shape.id, {
+      x: shape.x,
+      y: shape.y,
+      width: shape.width,
+      height: shape.height,
+    });
+
     if (currentUserId) {
       try {
         await realtimeObjectService.updateObjectPosition(shape.id, {

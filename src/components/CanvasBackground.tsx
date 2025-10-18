@@ -25,6 +25,7 @@ export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({ scale }) => 
         fill="#ffffff"
         stroke="#e0e0e0"
         strokeWidth={2}
+        listening={false} // Don't interfere with mouse events for drag selection
       />
       
       {/* Grid Lines */}
