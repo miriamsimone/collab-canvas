@@ -200,6 +200,9 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
     const avgScale = (scaleX + scaleY) / 2;
     const newRadius = Math.max(10, shape.radius * avgScale); // Min radius 10px
     
+    // Apply the new radius directly to the node BEFORE resetting scale
+    node.radius(newRadius);
+    
     // Reset the node to the original position with no scale
     // This ensures the circle stays in place and only the radius changes
     node.x(shape.x);
@@ -303,16 +306,12 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
           keepRatio={true}
           // Scale from center to prevent position shift
           centeredScaling={true}
-          // Enable resize anchors (middle anchors work better for centered scaling)
+          // Only enable corner anchors (middle anchors can cause movement)
           enabledAnchors={[
             'top-left',
             'top-right',
             'bottom-right',
-            'bottom-left',
-            'top-center',
-            'middle-right',
-            'bottom-center',
-            'middle-left'
+            'bottom-left'
           ]}
         />
       )}
