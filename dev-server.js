@@ -107,8 +107,33 @@ app.post('/api/ai/command', async (req, res) => {
       }).optional(),
     });
 
+    const resizeShapeSchema = z.object({
+      shapeId: z.string().optional(),
+      width: z.number().min(10).max(1000).optional(),
+      height: z.number().min(10).max(1000).optional(),
+      scale: z.number().min(0.1).max(10).optional(),
+    });
+
+    const rotateShapeSchema = z.object({
+      shapeId: z.string().optional(),
+      degrees: z.number().min(-360).max(360),
+    });
+
+    const alignObjectsSchema = z.object({
+      alignment: z.enum(['left', 'center', 'right', 'top', 'middle', 'bottom']),
+    });
+
+    const distributeObjectsSchema = z.object({
+      direction: z.enum(['horizontal', 'vertical']),
+    });
+
+    const zIndexSchema = z.object({
+      operation: z.enum(['bringToFront', 'sendToBack', 'bringForward', 'sendBackward']),
+      shapeId: z.string().optional(),
+    });
+
     // System prompt
-    const systemPrompt = `You are an AI assistant that helps users manage shapes on a canvas. You can create rectangles, circles, lines, and text, select objects, and perform bulk operations.
+    const systemPrompt = `You are an AI assistant that helps users manage shapes on a canvas. You can create rectangles, circles, lines, and text, select objects, and perform bulk operations, resize, rotate, align, distribute, and manage layers.
 
 Current canvas state:
 - Canvas size: ${canvasState.canvasSize.width}x${canvasState.canvasSize.height} pixels
@@ -127,26 +152,60 @@ ${canvasState.rectangles.length > 0 ?
     return `  - Shape "${shape.id}" at (${shape.x}, ${shape.y})`;
   }).join('\n') : '  - No existing shapes'}
 
-You can perform these operations:
-1. CREATE SHAPES: Generate createRectangle, createCircle, createLine, or createText actions
-2. SELECT OBJECTS: Generate selectObjects actions for various selection methods
-3. BULK OPERATIONS: Generate bulkOperation actions for selected objects
+You can perform these types of operations:
 
-Shape Creation Examples:
-- "create a red rectangle" -> createRectangle action
-- "add a blue circle" -> createCircle action
-- "draw a line from top left to bottom right" -> createLine action
-- "add text that says hello" -> createText action
+1. CREATE SHAPES:
+   - CREATE RECTANGLES, CIRCLES, LINES, TEXT
+   - Convert color names to hex format (e.g., "red" becomes "#ff0000")
+   - Choose reasonable positions that don't overlap with existing shapes
 
-Selection Examples:
-- "select all shapes" -> selectObjects with method "all"
-- "select red shapes" -> selectObjects with method "byColor" 
-- "select objects in top half" -> selectObjects with method "byPosition"
+2. SELECT OBJECTS:
+   - Select all, by color, by position, or specific objects
 
-Bulk Operation Examples:
-- "move selected objects right" -> bulkOperation with operation "move"
-- "delete all red shapes" -> selectObjects + bulkOperation
-- "change selected to blue" -> bulkOperation with operation "changeColor"`;
+3. BULK OPERATIONS:
+   - Move, delete, or change color of selected objects
+
+4. RESIZE SHAPES:
+   - Resize by width/height or scale factor
+   - "make the circle twice as big" -> resizeShape with scale: 2
+   - "resize the rectangle to 300x200" -> resizeShape with width: 300, height: 200
+
+5. ROTATE SHAPES:
+   - Rotate shapes by degrees
+   - "rotate the text 45 degrees" -> rotateShape with degrees: 45
+
+6. ALIGN OBJECTS:
+   - Align selected objects (left, center, right, top, middle, bottom)
+   - "align all objects to the left" -> alignObjects with alignment: 'left'
+
+7. DISTRIBUTE OBJECTS:
+   - Distribute selected objects evenly (horizontal or vertical)
+   - "distribute horizontally" -> distributeObjects with direction: 'horizontal'
+
+8. Z-INDEX (LAYER MANAGEMENT):
+   - Bring to front, send to back, bring forward, send backward
+   - "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
+
+9. COMPLEX MULTI-STEP COMMANDS:
+   - For complex requests like "create a login form", break it into multiple actions
+   - Example: "create a login form" ->
+     * createText for "Username" label
+     * createRectangle for username input field
+     * createText for "Password" label
+     * createRectangle for password input field
+     * createRectangle for "Login" button
+   - Space elements vertically with consistent gaps (30-40px)
+   - Align elements for a clean layout
+
+Examples:
+- "create a red rectangle at 100, 100" -> createRectangle
+- "make the circle twice as big" -> resizeShape with scale: 2
+- "rotate the text 45 degrees" -> rotateShape with degrees: 45
+- "align all selected objects to the left" -> alignObjects
+- "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
+- "create a login form" -> multiple createText + createRectangle actions arranged vertically
+
+For complex commands, return multiple actions that will be executed in sequence.`;
 
     // Generate AI response
     const result = await generateObject({
@@ -157,7 +216,19 @@ Bulk Operation Examples:
         isValidCommand: z.boolean(),
         explanation: z.string(),
         actions: z.array(z.object({
-          type: z.enum(['createRectangle', 'createCircle', 'createLine', 'createText', 'selectObjects', 'bulkOperation']),
+          type: z.enum([
+            'createRectangle', 
+            'createCircle', 
+            'createLine', 
+            'createText', 
+            'selectObjects', 
+            'bulkOperation',
+            'resizeShape',
+            'rotateShape',
+            'alignObjects',
+            'distributeObjects',
+            'zIndex'
+          ]),
           parameters: z.union([
             createRectangleSchema,
             createCircleSchema,
@@ -165,6 +236,11 @@ Bulk Operation Examples:
             createTextSchema,
             selectObjectsSchema,
             bulkOperationSchema,
+            resizeShapeSchema,
+            rotateShapeSchema,
+            alignObjectsSchema,
+            distributeObjectsSchema,
+            zIndexSchema,
           ]),
         })),
       }),

@@ -343,6 +343,165 @@ export const Canvas: React.FC = () => {
     }
   };
 
+  // AI transform operations handlers
+  const handleAIResize = async (shapeId: string | undefined, width?: number, height?: number, scale?: number): Promise<void> => {
+    try {
+      // Get selected objects or specific shape
+      let targetShapes = shapeId ? shapes.filter(s => s.id === shapeId) : getSelectedObjects(shapes);
+      
+      if (targetShapes.length === 0) {
+        console.warn('No shapes to resize');
+        return;
+      }
+      
+      for (const shape of targetShapes) {
+        // Only resize shapes with width/height (rectangles, not circles or lines)
+        if (shape.type === 'rectangle') {
+          let newWidth = shape.width;
+          let newHeight = shape.height;
+          
+          if (scale) {
+            // Apply scale factor
+            newWidth = shape.width * scale;
+            newHeight = shape.height * scale;
+          } else {
+            // Use specific width/height if provided
+            if (width) newWidth = width;
+            if (height) newHeight = height;
+          }
+          
+          await updateShape(shape.id, { width: newWidth, height: newHeight });
+        } else if (shape.type === 'circle') {
+          // For circles, scale the radius
+          if (scale) {
+            await updateShape(shape.id, { radius: shape.radius * scale });
+          } else if (width) {
+            // Treat width as new diameter
+            await updateShape(shape.id, { radius: width / 2 });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to resize shape:', error);
+      throw error;
+    }
+  };
+
+  const handleAIRotate = async (shapeId: string | undefined, degrees: number): Promise<void> => {
+    try {
+      // Get selected objects or specific shape
+      let targetShapes = shapeId ? shapes.filter(s => s.id === shapeId) : getSelectedObjects(shapes);
+      
+      if (targetShapes.length === 0) {
+        console.warn('No shapes to rotate');
+        return;
+      }
+      
+      for (const shape of targetShapes) {
+        const currentRotation = shape.rotation || 0;
+        await updateShape(shape.id, { rotation: currentRotation + degrees });
+      }
+    } catch (error) {
+      console.error('Failed to rotate shape:', error);
+      throw error;
+    }
+  };
+
+  const handleAIAlign = async (alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom'): Promise<void> => {
+    try {
+      if (!user) return;
+      const selectedObjects = getSelectedObjects(shapes);
+      if (selectedObjects.length === 0) {
+        console.warn('No shapes selected for alignment');
+        return;
+      }
+      
+      // Use appropriate alignment function
+      let alignFunc;
+      switch (alignment) {
+        case 'left': alignFunc = alignLeft; break;
+        case 'center': alignFunc = alignCenter; break;
+        case 'right': alignFunc = alignRight; break;
+        case 'top': alignFunc = alignTop; break;
+        case 'middle': alignFunc = alignMiddle; break;
+        case 'bottom': alignFunc = alignBottom; break;
+        default: return;
+      }
+      
+      const updates = alignFunc(selectedObjects);
+      if (updates.length === 0) return;
+      
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: alignment }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to align shapes:', error);
+      throw error;
+    }
+  };
+
+  const handleAIDistribute = async (direction: 'horizontal' | 'vertical'): Promise<void> => {
+    try {
+      if (!user) return;
+      const selectedObjects = getSelectedObjects(shapes);
+      if (selectedObjects.length < 3) {
+        console.warn('Need at least 3 shapes for distribution');
+        return;
+      }
+      
+      const distributeFunc = direction === 'horizontal' ? distributeHorizontally : distributeVertically;
+      const updates = distributeFunc(selectedObjects);
+      if (updates.length === 0) return;
+      
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: `distribute-${direction}` }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to distribute shapes:', error);
+      throw error;
+    }
+  };
+
+  const handleAIZIndex = async (operation: 'bringToFront' | 'sendToBack' | 'bringForward' | 'sendBackward', shapeId?: string): Promise<void> => {
+    try {
+      if (!user) return;
+      
+      // Get target shape IDs
+      let targetIds: string[];
+      if (shapeId) {
+        targetIds = [shapeId];
+      } else {
+        const selectedObjects = getSelectedObjects(shapes);
+        targetIds = selectedObjects.map(obj => obj.id);
+      }
+      
+      if (targetIds.length === 0) {
+        console.warn('No shapes for z-index operation');
+        return;
+      }
+      
+      // Use appropriate z-index function
+      let zIndexFunc;
+      switch (operation) {
+        case 'bringToFront': zIndexFunc = bringToFront; break;
+        case 'sendToBack': zIndexFunc = sendToBack; break;
+        case 'bringForward': zIndexFunc = bringForward; break;
+        case 'sendBackward': zIndexFunc = sendBackward; break;
+        default: return;
+      }
+      
+      const { updates } = zIndexFunc(targetIds, shapes);
+      if (updates.length === 0) return;
+      
+      const { ChangeZIndexCommand } = await import('../services/commandService');
+      const command = new ChangeZIndexCommand({ updates }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to change z-index:', error);
+      throw error;
+    }
+  };
+
   // AI command processing
   const {
     isLoading: aiLoading,
@@ -370,6 +529,14 @@ export const Canvas: React.FC = () => {
     onBulkMove: handleBulkMove,
     onBulkDelete: handleBulkDelete,
     onBulkChangeColor: handleBulkChangeColor,
+    // Transform operations
+    onResize: handleAIResize,
+    onRotate: handleAIRotate,
+    // Alignment operations
+    onAlign: handleAIAlign,
+    onDistribute: handleAIDistribute,
+    // Z-index operations
+    onZIndex: handleAIZIndex,
   });
 
   // Grid and snap-to-grid functionality
@@ -378,8 +545,6 @@ export const Canvas: React.FC = () => {
     smartGuides,
     toggleSnapToGrid,
     snapPointToGrid,
-    calculateSmartGuides,
-    updateSmartGuides,
     clearSmartGuides,
   } = useGrid();
 

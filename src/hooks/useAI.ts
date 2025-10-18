@@ -27,6 +27,14 @@ interface UseAIProps {
   onBulkMove: (deltaX: number, deltaY: number) => Promise<void>;
   onBulkDelete: () => Promise<void>;
   onBulkChangeColor: (newColor: string) => Promise<void>;
+  // Transform operations
+  onResize?: (shapeId: string | undefined, width?: number, height?: number, scale?: number) => Promise<void>;
+  onRotate?: (shapeId: string | undefined, degrees: number) => Promise<void>;
+  // Alignment operations
+  onAlign?: (alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => Promise<void>;
+  onDistribute?: (direction: 'horizontal' | 'vertical') => Promise<void>;
+  // Z-index operations
+  onZIndex?: (operation: 'bringToFront' | 'sendToBack' | 'bringForward' | 'sendBackward', shapeId?: string) => Promise<void>;
 }
 
 export const useAI = ({ 
@@ -43,6 +51,11 @@ export const useAI = ({
   onBulkMove,
   onBulkDelete,
   onBulkChangeColor,
+  onResize,
+  onRotate,
+  onAlign,
+  onDistribute,
+  onZIndex,
 }: UseAIProps): UseAIState & UseAIActions => {
   const { user } = useAuth();
   
@@ -168,6 +181,33 @@ export const useAI = ({
                   await onBulkChangeColor(params.operationData.newColor);
                 }
                 break;
+            }
+          } else if (action.type === 'resizeShape') {
+            if (onResize) {
+              const params = action.parameters as any;
+              const { shapeId, width, height, scale } = params;
+              await onResize(shapeId, width, height, scale);
+            }
+          } else if (action.type === 'rotateShape') {
+            if (onRotate) {
+              const params = action.parameters as any;
+              const { shapeId, degrees } = params;
+              await onRotate(shapeId, degrees);
+            }
+          } else if (action.type === 'alignObjects') {
+            if (onAlign) {
+              const params = action.parameters as any;
+              await onAlign(params.alignment);
+            }
+          } else if (action.type === 'distributeObjects') {
+            if (onDistribute) {
+              const params = action.parameters as any;
+              await onDistribute(params.direction);
+            }
+          } else if (action.type === 'zIndex') {
+            if (onZIndex) {
+              const params = action.parameters as any;
+              await onZIndex(params.operation, params.shapeId);
             }
           }
         }

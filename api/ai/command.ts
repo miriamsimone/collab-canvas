@@ -52,6 +52,31 @@ const bulkOperationSchema = z.object({
   }).optional().describe('Operation-specific data'),
 });
 
+const resizeShapeSchema = z.object({
+  shapeId: z.string().optional().describe('ID of shape to resize (if not provided, resizes selected objects)'),
+  width: z.number().min(10).max(1000).optional().describe('New width in pixels'),
+  height: z.number().min(10).max(1000).optional().describe('New height in pixels'),
+  scale: z.number().min(0.1).max(10).optional().describe('Scale factor (e.g., 2 = twice as big, 0.5 = half size)'),
+});
+
+const rotateShapeSchema = z.object({
+  shapeId: z.string().optional().describe('ID of shape to rotate (if not provided, rotates selected objects)'),
+  degrees: z.number().min(-360).max(360).describe('Rotation angle in degrees'),
+});
+
+const alignObjectsSchema = z.object({
+  alignment: z.enum(['left', 'center', 'right', 'top', 'middle', 'bottom']).describe('Alignment type'),
+});
+
+const distributeObjectsSchema = z.object({
+  direction: z.enum(['horizontal', 'vertical']).describe('Distribution direction'),
+});
+
+const zIndexSchema = z.object({
+  operation: z.enum(['bringToFront', 'sendToBack', 'bringForward', 'sendBackward']).describe('Z-index operation'),
+  shapeId: z.string().optional().describe('ID of shape (if not provided, applies to selected objects)'),
+});
+
 // Input validation schema
 const requestSchema = z.object({
   prompt: z.string().min(1).max(500),
@@ -216,41 +241,57 @@ ${canvasState.rectangles.length > 0 ?
 You can perform these types of operations:
 
 1. CREATE SHAPES:
-   - CREATE RECTANGLES: Parse creation commands and extract rectangle parameters (width, height)
-   - CREATE CIRCLES: Parse creation commands and extract circle parameters (radius)
-   - CREATE LINES: Parse creation commands and extract line parameters (start and end points)
-   - CREATE TEXT: Parse creation commands and extract text parameters (content, font size)
-   - Choose reasonable positions that don't overlap with existing shapes
+   - CREATE RECTANGLES, CIRCLES, LINES, TEXT
    - Convert color names to hex format (e.g., "red" becomes "#ff0000")
-   - Default to reasonable sizes if not specified
+   - Choose reasonable positions that don't overlap with existing shapes
 
 2. SELECT OBJECTS:
-   - Select all shapes: "select all" or "select everything"
-   - Select by color: "select all red shapes" or "select blue objects"
-   - Select by position: "select shapes in top half" or "select objects on the left"
-   - Select specific objects: "select the red rectangle" (identify by properties)
+   - Select all, by color, by position, or specific objects
 
-3. BULK OPERATIONS (on selected objects):
-   - Move objects: "move selected objects 50 pixels right" or "move them to center"
-   - Delete objects: "delete selected shapes" or "remove all red ones"  
-   - Change color: "make selected objects blue" or "change them to green"
+3. BULK OPERATIONS:
+   - Move, delete, or change color of selected objects
 
-Shape Creation Examples:
-- "create a red rectangle" -> createRectangle action
-- "add a blue circle" -> createCircle action
-- "draw a line from top left to bottom right" -> createLine action
-- "add text that says hello" -> createText action
+4. RESIZE SHAPES:
+   - Resize by width/height or scale factor
+   - "make the circle twice as big" -> resizeShape with scale: 2
+   - "resize the rectangle to 300x200" -> resizeShape with width: 300, height: 200
 
-Selection Examples:
-- "select all blue shapes" -> selectObjects with byColor method
-- "select objects in top half" -> selectObjects with byPosition method
+5. ROTATE SHAPES:
+   - Rotate shapes by degrees
+   - "rotate the text 45 degrees" -> rotateShape with degrees: 45
 
-Bulk Operation Examples:
-- "move selected objects 100 pixels right" -> bulkOperation with move
-- "delete all red shapes" -> selectObjects (byColor) + bulkOperation (delete)
-- "change selected objects to green" -> bulkOperation with changeColor
+6. ALIGN OBJECTS:
+   - Align selected objects (left, center, right, top, middle, bottom)
+   - "align all objects to the left" -> alignObjects with alignment: 'left'
 
-For commands that involve both selection and operation (like "delete all red rectangles"), you can return multiple actions that will be executed in sequence.`;
+7. DISTRIBUTE OBJECTS:
+   - Distribute selected objects evenly (horizontal or vertical)
+   - "distribute horizontally" -> distributeObjects with direction: 'horizontal'
+
+8. Z-INDEX (LAYER MANAGEMENT):
+   - Bring to front, send to back, bring forward, send backward
+   - "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
+
+9. COMPLEX MULTI-STEP COMMANDS:
+   - For complex requests like "create a login form", break it into multiple actions
+   - Example: "create a login form" ->
+     * createText for "Username" label
+     * createRectangle for username input field
+     * createText for "Password" label
+     * createRectangle for password input field
+     * createRectangle for "Login" button
+   - Space elements vertically with consistent gaps (30-40px)
+   - Align elements for a clean layout
+
+Examples:
+- "create a red rectangle at 100, 100" -> createRectangle
+- "make the circle twice as big" -> resizeShape with scale: 2
+- "rotate the text 45 degrees" -> rotateShape with degrees: 45
+- "align all selected objects to the left" -> alignObjects
+- "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
+- "create a login form" -> multiple createText + createRectangle actions arranged vertically
+
+For complex commands, return multiple actions that will be executed in sequence.`;
 
     // Call OpenAI API
     const result = await generateObject({
@@ -261,7 +302,19 @@ For commands that involve both selection and operation (like "delete all red rec
         isValidCommand: z.boolean().describe('Whether the command is a valid canvas operation'),
         explanation: z.string().describe('Brief explanation of what you understood from the command'),
         actions: z.array(z.object({
-          type: z.enum(['createRectangle', 'createCircle', 'createLine', 'createText', 'selectObjects', 'bulkOperation']).describe('Type of action to perform'),
+          type: z.enum([
+            'createRectangle', 
+            'createCircle', 
+            'createLine', 
+            'createText', 
+            'selectObjects', 
+            'bulkOperation',
+            'resizeShape',
+            'rotateShape',
+            'alignObjects',
+            'distributeObjects',
+            'zIndex'
+          ]).describe('Type of action to perform'),
           parameters: z.union([
             createRectangleSchema,
             createCircleSchema,
@@ -269,6 +322,11 @@ For commands that involve both selection and operation (like "delete all red rec
             createTextSchema,
             selectObjectsSchema,
             bulkOperationSchema,
+            resizeShapeSchema,
+            rotateShapeSchema,
+            alignObjectsSchema,
+            distributeObjectsSchema,
+            zIndexSchema,
           ]).describe('Parameters for the action'),
         })).describe('List of actions to execute in order'),
       }),
@@ -401,6 +459,82 @@ For commands that involve both selection and operation (like "delete all red rec
         validatedActions.push({
           type: 'bulkOperation',
           parameters: bulkParams,
+        });
+      } else if (action.type === 'resizeShape') {
+        const resizeParams = action.parameters as any;
+        
+        // Validate that either width/height or scale is provided
+        if (!resizeParams.width && !resizeParams.height && !resizeParams.scale) {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: 'Resize operation requires width, height, or scale parameter',
+          });
+        }
+        
+        validatedActions.push({
+          type: 'resizeShape',
+          parameters: resizeParams,
+        });
+      } else if (action.type === 'rotateShape') {
+        const rotateParams = action.parameters as any;
+        
+        if (typeof rotateParams.degrees !== 'number') {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: 'Rotation requires degrees parameter',
+          });
+        }
+        
+        validatedActions.push({
+          type: 'rotateShape',
+          parameters: rotateParams,
+        });
+      } else if (action.type === 'alignObjects') {
+        const alignParams = action.parameters as any;
+        
+        if (!alignParams.alignment) {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: 'Alignment operation requires alignment parameter',
+          });
+        }
+        
+        validatedActions.push({
+          type: 'alignObjects',
+          parameters: alignParams,
+        });
+      } else if (action.type === 'distributeObjects') {
+        const distributeParams = action.parameters as any;
+        
+        if (!distributeParams.direction) {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: 'Distribute operation requires direction parameter',
+          });
+        }
+        
+        validatedActions.push({
+          type: 'distributeObjects',
+          parameters: distributeParams,
+        });
+      } else if (action.type === 'zIndex') {
+        const zIndexParams = action.parameters as any;
+        
+        if (!zIndexParams.operation) {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: 'Z-index operation requires operation parameter',
+          });
+        }
+        
+        validatedActions.push({
+          type: 'zIndex',
+          parameters: zIndexParams,
         });
       }
     }
