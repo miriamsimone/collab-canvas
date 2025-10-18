@@ -11,10 +11,35 @@ import { useAuth } from './useAuth';
 
 interface UseAIProps {
   rectangles: CanvasObjectData[];
+  canvasSize: { width: number; height: number };
   onCreateRectangle: (x: number, y: number, width: number, height: number, color: string) => Promise<void>;
+  // Selection functions
+  onSelectAll: (objects: CanvasObjectData[]) => void;
+  onSelectByColor: (objects: CanvasObjectData[], color: string) => void;
+  onSelectByPosition: (objects: CanvasObjectData[], position: 'top-half' | 'bottom-half' | 'left-half' | 'right-half', canvasSize: { width: number; height: number }) => void;
+  onSelectByIds: (ids: string[]) => void;
+  onClearSelection: () => void;
+  getSelectedObjects: (allObjects: CanvasObjectData[]) => CanvasObjectData[];
+  // Bulk operation functions
+  onBulkMove: (deltaX: number, deltaY: number) => Promise<void>;
+  onBulkDelete: () => Promise<void>;
+  onBulkChangeColor: (newColor: string) => Promise<void>;
 }
 
-export const useAI = ({ rectangles, onCreateRectangle }: UseAIProps): UseAIState & UseAIActions => {
+export const useAI = ({ 
+  rectangles, 
+  canvasSize,
+  onCreateRectangle, 
+  onSelectAll,
+  onSelectByColor,
+  onSelectByPosition,
+  onSelectByIds,
+  onClearSelection,
+  getSelectedObjects,
+  onBulkMove,
+  onBulkDelete,
+  onBulkChangeColor,
+}: UseAIProps): UseAIState & UseAIActions => {
   const { user } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +79,7 @@ export const useAI = ({ rectangles, onCreateRectangle }: UseAIProps): UseAIState
 
     try {
       // Get current canvas state for AI context
-      const canvasState = getCanvasState(rectangles);
+      const canvasState = getCanvasState(rectangles, canvasSize);
       
       // Process command with AI service
       const response = await aiService.processCommand(prompt, canvasState);
@@ -78,8 +103,50 @@ export const useAI = ({ rectangles, onCreateRectangle }: UseAIProps): UseAIState
       if (response.actions && response.actions.length > 0) {
         for (const action of response.actions) {
           if (action.type === 'createRectangle') {
-            const { x, y, width, height, color } = action.parameters;
+            const params = action.parameters as any;
+            const { x, y, width, height, color } = params;
             await onCreateRectangle(x, y, width, height, color);
+          } else if (action.type === 'selectObjects') {
+            const params = action.parameters as any;
+            
+            switch (params.method) {
+              case 'all':
+                onSelectAll(rectangles);
+                break;
+              case 'byColor':
+                if (params.criteria?.color) {
+                  onSelectByColor(rectangles, params.criteria.color);
+                }
+                break;
+              case 'byPosition':
+                if (params.criteria?.position) {
+                  onSelectByPosition(rectangles, params.criteria.position, canvasSize);
+                }
+                break;
+              case 'byIds':
+                if (params.criteria?.objectIds) {
+                  onSelectByIds(params.criteria.objectIds);
+                }
+                break;
+            }
+          } else if (action.type === 'bulkOperation') {
+            const params = action.parameters as any;
+            
+            switch (params.operation) {
+              case 'move':
+                if (params.operationData?.deltaX !== undefined && params.operationData?.deltaY !== undefined) {
+                  await onBulkMove(params.operationData.deltaX, params.operationData.deltaY);
+                }
+                break;
+              case 'delete':
+                await onBulkDelete();
+                break;
+              case 'changeColor':
+                if (params.operationData?.newColor) {
+                  await onBulkChangeColor(params.operationData.newColor);
+                }
+                break;
+            }
           }
         }
       }

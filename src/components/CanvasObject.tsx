@@ -17,7 +17,7 @@ export interface CanvasObjectData {
 interface CanvasObjectProps {
   object: CanvasObjectData;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (event?: { shiftKey?: boolean }) => void;
   onDragStart: () => void;
   onDragEnd: (id: string, x: number, y: number) => void;
   onTransformEnd?: (id: string, x: number, y: number, width: number, height: number) => void; // For resize handling
@@ -241,8 +241,8 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         stroke={object.stroke}
         strokeWidth={object.strokeWidth}
         draggable
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
+        onTap={(e) => onSelect({ shiftKey: e.evt?.shiftKey })}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}

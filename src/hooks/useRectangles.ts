@@ -51,13 +51,24 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     const baseColor = fillColor ? fillColor.replace('#', '') : randomColor.replace('#', '');
     
+    // Ensure all rectangles are semi-transparent by default
+    let transparentFill: string;
+    if (fillColor) {
+      // If fillColor is provided, make it semi-transparent
+      const cleanColor = fillColor.replace('#', '').substring(0, 6); // Remove # and any existing alpha
+      transparentFill = `#${cleanColor}40`; // Add 25% opacity (40 in hex)
+    } else {
+      // Use random color with transparency
+      transparentFill = randomColor + '40'; // Add 25% opacity
+    }
+    
     const newRectangle: CanvasObjectData = {
       id: generateRectangleId(),
       x,
       y,
       width,
       height,
-      fill: fillColor || (randomColor + '20'), // Use provided color or add transparency to random
+      fill: transparentFill,
       stroke: `#${baseColor}`,
       strokeWidth: 2,
     };

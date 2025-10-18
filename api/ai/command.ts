@@ -12,6 +12,24 @@ const createRectangleSchema = z.object({
   color: z.string().describe('Color of the rectangle (hex format like #ff0000 or color name like "red")'),
 });
 
+const selectObjectsSchema = z.object({
+  method: z.enum(['all', 'byColor', 'byPosition', 'byIds']).describe('Selection method to use'),
+  criteria: z.object({
+    color: z.string().optional().describe('Hex color to select by (for byColor method)'),
+    position: z.enum(['top-half', 'bottom-half', 'left-half', 'right-half']).optional().describe('Canvas position to select by'),
+    objectIds: z.array(z.string()).optional().describe('Specific object IDs to select'),
+  }).optional().describe('Selection criteria based on method'),
+});
+
+const bulkOperationSchema = z.object({
+  operation: z.enum(['move', 'delete', 'changeColor']).describe('Bulk operation to perform on selected objects'),
+  operationData: z.object({
+    deltaX: z.number().optional().describe('X offset for move operation'),
+    deltaY: z.number().optional().describe('Y offset for move operation'),
+    newColor: z.string().optional().describe('New color for changeColor operation'),
+  }).optional().describe('Operation-specific data'),
+});
+
 // Input validation schema
 const requestSchema = z.object({
   prompt: z.string().min(1).max(500),
@@ -154,27 +172,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     // Create system prompt with canvas context
-    const systemPrompt = `You are an AI assistant that helps users create rectangles on a canvas.
+    const systemPrompt = `You are an AI assistant that helps users manage objects on a canvas. You can create rectangles, select objects, and perform bulk operations.
 
 Current canvas state:
 - Canvas size: ${canvasState.canvasSize.width}x${canvasState.canvasSize.height} pixels (large canvas, coordinates up to ${canvasState.canvasSize.width} are valid)
 - Existing rectangles: ${canvasState.rectangles.length}
 ${canvasState.rectangles.length > 0 ? 
   canvasState.rectangles.map(r => 
-    `  - Rectangle at (${r.x}, ${r.y}) with size ${r.width}x${r.height}, color ${r.fill}`
+    `  - Rectangle "${r.id}" at (${r.x}, ${r.y}) with size ${r.width}x${r.height}, color ${r.fill}`
   ).join('\n') : '  - No existing rectangles'}
 
-Parse the user's command and extract rectangle creation parameters. 
-The canvas is large (${canvasState.canvasSize.width}x${canvasState.canvasSize.height}), so coordinates up to ${canvasState.canvasSize.width} are perfectly valid.
-If the user doesn't specify exact coordinates, choose reasonable positions that don't overlap with existing rectangles.
-Convert color names to hex format (e.g., "red" becomes "#ff0000").
-Default to reasonable sizes if not specified (e.g., 100x80 pixels).
+You can perform these types of operations:
+
+1. CREATE RECTANGLES:
+   - Parse creation commands and extract rectangle parameters
+   - Choose reasonable positions that don't overlap with existing rectangles
+   - Convert color names to hex format (e.g., "red" becomes "#ff0000")
+   - Default to reasonable sizes if not specified (e.g., 100x80 pixels)
+
+2. SELECT OBJECTS:
+   - Select all rectangles: "select all" or "select everything"
+   - Select by color: "select all red rectangles" or "select blue objects"
+   - Select by position: "select rectangles in top half" or "select objects on the left"
+   - Select specific objects: "select the red rectangle" (identify by properties)
+
+3. BULK OPERATIONS (on selected objects):
+   - Move objects: "move selected objects 50 pixels right" or "move them to center"
+   - Delete objects: "delete selected rectangles" or "remove all red ones"
+   - Change color: "make selected objects blue" or "change them to green"
 
 Examples:
-- "create a red rectangle" -> place at available space, 100x80 size, #ff0000 color
-- "add a blue square at 200, 150" -> place at (200,150), square size like 100x100, #0000ff color
-- "make a green rectangle 150 wide and 100 tall" -> available position, 150x100 size, #00ff00 color
-- "create a rectangle at 2000, 3000" -> place at (2000,3000), valid coordinates on this large canvas`;
+- "create a red rectangle" -> createRectangle action
+- "select all blue rectangles" -> selectObjects with byColor method
+- "select objects in top half" -> selectObjects with byPosition method
+- "move selected objects 100 pixels right" -> bulkOperation with move
+- "delete all red rectangles" -> selectObjects (byColor) + bulkOperation (delete)
+- "change selected objects to green" -> bulkOperation with changeColor
+
+For commands that involve both selection and operation (like "delete all red rectangles"), you can return multiple actions that will be executed in sequence.`;
 
     // Call OpenAI API
     const result = await generateObject({
@@ -182,50 +217,98 @@ Examples:
       system: systemPrompt,
       prompt: `User command: "${prompt}"`,
       schema: z.object({
-        shouldCreateRectangle: z.boolean().describe('Whether the command is asking to create a rectangle'),
+        isValidCommand: z.boolean().describe('Whether the command is a valid canvas operation'),
         explanation: z.string().describe('Brief explanation of what you understood from the command'),
-        rectangle: createRectangleSchema.optional().describe('Rectangle parameters if shouldCreateRectangle is true'),
+        actions: z.array(z.object({
+          type: z.enum(['createRectangle', 'selectObjects', 'bulkOperation']).describe('Type of action to perform'),
+          parameters: z.union([
+            createRectangleSchema,
+            selectObjectsSchema,
+            bulkOperationSchema,
+          ]).describe('Parameters for the action'),
+        })).describe('List of actions to execute in order'),
       }),
     });
 
-    const { shouldCreateRectangle, explanation, rectangle } = result.object;
+    const { isValidCommand, explanation, actions } = result.object;
 
-    if (!shouldCreateRectangle) {
+    if (!isValidCommand || !actions || actions.length === 0) {
       return res.status(200).json({
         success: false,
         message: explanation,
-        error: 'Command not recognized as a rectangle creation request',
+        error: 'Command not recognized as a valid canvas operation',
       });
     }
 
-    if (!rectangle) {
-      return res.status(200).json({
-        success: false,
-        message: explanation,
-        error: 'Could not extract rectangle parameters from command',
-      });
-    }
-
-    // Validate and normalize the parameters
-    const colorWithHex = parseColorName(rectangle.color);
-    const paramsToValidate = { ...rectangle, color: colorWithHex };
+    // Process and validate each action
+    const validatedActions = [];
     
-    const validation = validateCreateRectangleParams(paramsToValidate);
-    if (!validation.isValid) {
-      return res.status(200).json({
-        success: false,
-        message: explanation,
-        error: `Invalid parameters: ${validation.error}`,
-      });
+    for (const action of actions) {
+      if (action.type === 'createRectangle') {
+        const rectangle = action.parameters as any;
+        const colorWithHex = parseColorName(rectangle.color);
+        const paramsToValidate = { ...rectangle, color: colorWithHex };
+        
+        const validation = validateCreateRectangleParams(paramsToValidate);
+        if (!validation.isValid) {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: `Invalid rectangle parameters: ${validation.error}`,
+          });
+        }
+        
+        validatedActions.push({
+          type: 'createRectangle',
+          parameters: validation.validated!,
+        });
+      } else if (action.type === 'selectObjects') {
+        // Validate selection parameters
+        const selectParams = action.parameters as any;
+        if (!selectParams.method) {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: 'Selection method is required',
+          });
+        }
+        
+        // Convert color names to hex for selection
+        if (selectParams.criteria?.color) {
+          selectParams.criteria.color = parseColorName(selectParams.criteria.color);
+        }
+        
+        validatedActions.push({
+          type: 'selectObjects',
+          parameters: selectParams,
+        });
+      } else if (action.type === 'bulkOperation') {
+        // Validate bulk operation parameters
+        const bulkParams = action.parameters as any;
+        if (!bulkParams.operation) {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: 'Bulk operation type is required',
+          });
+        }
+        
+        // Convert color names to hex for color operations
+        if (bulkParams.operationData?.newColor) {
+          bulkParams.operationData.newColor = parseColorName(bulkParams.operationData.newColor);
+        }
+        
+        validatedActions.push({
+          type: 'bulkOperation',
+          parameters: bulkParams,
+        });
+      }
     }
 
     return res.status(200).json({
       success: true,
       message: explanation,
-      actions: [{
-        type: 'createRectangle',
-        parameters: validation.validated!,
-      }],
+      actions: validatedActions,
     });
 
   } catch (error: any) {

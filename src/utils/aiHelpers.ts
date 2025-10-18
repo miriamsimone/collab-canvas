@@ -6,7 +6,10 @@ import { CANVAS_CONFIG } from '../hooks/useCanvas';
  * Get current canvas state for AI context
  * Returns basic rectangle positions and types for AI decision making
  */
-export function getCanvasState(rectangles: CanvasObjectData[]): CanvasState {
+export function getCanvasState(
+  rectangles: CanvasObjectData[], 
+  canvasSize?: { width: number; height: number }
+): CanvasState {
   return {
     rectangles: rectangles.map(rectangle => ({
       id: rectangle.id,
@@ -16,7 +19,7 @@ export function getCanvasState(rectangles: CanvasObjectData[]): CanvasState {
       height: rectangle.height,
       fill: rectangle.fill,
     })),
-    canvasSize: {
+    canvasSize: canvasSize || {
       width: CANVAS_CONFIG.WIDTH,
       height: CANVAS_CONFIG.HEIGHT,
     },
