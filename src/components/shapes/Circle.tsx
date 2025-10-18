@@ -204,12 +204,16 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
     const avgScale = (scaleX + scaleY) / 2;
     const newRadius = Math.max(10, shape.radius * avgScale); // Min radius 10px
     
+    // Get the current position (circle should stay at shape.x, shape.y)
+    const currentX = shape.x;
+    const currentY = shape.y;
+    
     // Call the transform callback if provided (for Firestore persistence)
     if (onTransformEnd) {
-      onTransformEnd(shape.id, node.x(), node.y(), newRadius);
+      onTransformEnd(shape.id, currentX, currentY, newRadius);
     } else {
       // Fallback to drag end callback
-      onDragEnd(shape.id, node.x(), node.y());
+      onDragEnd(shape.id, currentX, currentY);
     }
     
     // Add grace period before stopping RTDB state (same as drag)

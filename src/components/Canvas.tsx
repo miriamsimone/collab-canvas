@@ -553,11 +553,20 @@ export const Canvas: React.FC = () => {
   const handleRectangleTransformEnd = async (id: string, x: number, y: number, width: number, height: number) => {
     if (!user) return;
     
+    // Apply snap-to-grid if enabled
+    const snappedPos = snapPointToGrid(x, y);
+    const finalX = snappedPos.x;
+    const finalY = snappedPos.y;
+    
+    // Optionally snap size to grid multiples
+    const finalWidth = gridConfig.enabled ? Math.round(width / gridConfig.size) * gridConfig.size : width;
+    const finalHeight = gridConfig.enabled ? Math.round(height / gridConfig.size) * gridConfig.size : height;
+    
     const startDims = transformStartDimensions[id];
     if (!startDims) {
       // Fallback if we don't have start dimensions - just update without undo
       try {
-        await updateShapeTransform(id, x, y, { width, height });
+        await updateShapeTransform(id, finalX, finalY, { width: finalWidth, height: finalHeight });
       } catch (error) {
         console.error('Failed to update rectangle transform:', error);
         setCanvasError('Failed to update rectangle size. Please try again.');
@@ -572,7 +581,7 @@ export const Canvas: React.FC = () => {
         {
           shapeId: id,
           oldDimensions: startDims,
-          newDimensions: { x, y, width, height },
+          newDimensions: { x: finalX, y: finalY, width: finalWidth, height: finalHeight },
         },
         user.uid
       );
@@ -596,10 +605,18 @@ export const Canvas: React.FC = () => {
   const handleCircleTransformEnd = async (id: string, x: number, y: number, radius: number) => {
     if (!user) return;
     
+    // Apply snap-to-grid if enabled
+    const snappedPos = snapPointToGrid(x, y);
+    const finalX = snappedPos.x;
+    const finalY = snappedPos.y;
+    
+    // Optionally snap radius to grid multiples
+    const finalRadius = gridConfig.enabled ? Math.round(radius / gridConfig.size) * gridConfig.size : radius;
+    
     const startDims = transformStartDimensions[id];
     if (!startDims) {
       try {
-        await updateShapeTransform(id, x, y, { radius });
+        await updateShapeTransform(id, finalX, finalY, { radius: finalRadius });
       } catch (error) {
         console.error('Failed to update circle transform:', error);
         setCanvasError('Failed to update circle size. Please try again.');
@@ -614,7 +631,7 @@ export const Canvas: React.FC = () => {
         {
           shapeId: id,
           oldDimensions: startDims,
-          newDimensions: { x, y, radius },
+          newDimensions: { x: finalX, y: finalY, radius: finalRadius },
         },
         user.uid
       );
@@ -637,10 +654,18 @@ export const Canvas: React.FC = () => {
   const handleLineTransformEnd = async (id: string, x: number, y: number, x2: number, y2: number) => {
     if (!user) return;
     
+    // Apply snap-to-grid if enabled
+    const snappedStart = snapPointToGrid(x, y);
+    const snappedEnd = snapPointToGrid(x2, y2);
+    const finalX = snappedStart.x;
+    const finalY = snappedStart.y;
+    const finalX2 = snappedEnd.x;
+    const finalY2 = snappedEnd.y;
+    
     const startDims = transformStartDimensions[id];
     if (!startDims) {
       try {
-        await updateShapeTransform(id, x, y, { x2, y2 });
+        await updateShapeTransform(id, finalX, finalY, { x2: finalX2, y2: finalY2 });
       } catch (error) {
         console.error('Failed to update line transform:', error);
         setCanvasError('Failed to update line. Please try again.');
@@ -655,7 +680,7 @@ export const Canvas: React.FC = () => {
         {
           shapeId: id,
           oldDimensions: startDims,
-          newDimensions: { x, y, x2, y2 },
+          newDimensions: { x: finalX, y: finalY, x2: finalX2, y2: finalY2 },
         },
         user.uid
       );
@@ -678,10 +703,19 @@ export const Canvas: React.FC = () => {
   const handleTextTransformEnd = async (id: string, x: number, y: number, width?: number, height?: number) => {
     if (!user) return;
     
+    // Apply snap-to-grid if enabled
+    const snappedPos = snapPointToGrid(x, y);
+    const finalX = snappedPos.x;
+    const finalY = snappedPos.y;
+    
+    // Optionally snap size to grid multiples
+    const finalWidth = width && gridConfig.enabled ? Math.round(width / gridConfig.size) * gridConfig.size : width;
+    const finalHeight = height && gridConfig.enabled ? Math.round(height / gridConfig.size) * gridConfig.size : height;
+    
     const startDims = transformStartDimensions[id];
     if (!startDims) {
       try {
-        await updateShapeTransform(id, x, y, { width, height });
+        await updateShapeTransform(id, finalX, finalY, { width: finalWidth, height: finalHeight });
       } catch (error) {
         console.error('Failed to update text transform:', error);
         setCanvasError('Failed to update text. Please try again.');
@@ -696,7 +730,7 @@ export const Canvas: React.FC = () => {
         {
           shapeId: id,
           oldDimensions: startDims,
-          newDimensions: { x, y, width, height },
+          newDimensions: { x: finalX, y: finalY, width: finalWidth, height: finalHeight },
         },
         user.uid
       );
