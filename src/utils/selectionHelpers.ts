@@ -1,4 +1,4 @@
-import { CanvasObjectData } from '../components/CanvasObject';
+import { Shape, getShapeBounds, getShapeCenter } from '../types/shapes';
 
 export interface Rectangle {
   x: number;
@@ -41,19 +41,15 @@ export const isPointInRectangle = (point: { x: number; y: number }, rect: Rectan
 /**
  * Calculate the bounding box that contains all given objects
  */
-export const calculateBoundingBox = (objects: CanvasObjectData[]): SelectionBounds | null => {
+export const calculateBoundingBox = (objects: Shape[]): SelectionBounds | null => {
   if (objects.length === 0) {
     return null;
   }
 
   if (objects.length === 1) {
     const obj = objects[0];
-    return {
-      x: obj.x,
-      y: obj.y,
-      width: obj.width,
-      height: obj.height,
-    };
+    const bounds = getShapeBounds(obj);
+    return bounds;
   }
 
   let minX = Infinity;
@@ -62,10 +58,11 @@ export const calculateBoundingBox = (objects: CanvasObjectData[]): SelectionBoun
   let maxY = -Infinity;
 
   objects.forEach(obj => {
-    minX = Math.min(minX, obj.x);
-    minY = Math.min(minY, obj.y);
-    maxX = Math.max(maxX, obj.x + obj.width);
-    maxY = Math.max(maxY, obj.y + obj.height);
+    const bounds = getShapeBounds(obj);
+    minX = Math.min(minX, bounds.x);
+    minY = Math.min(minY, bounds.y);
+    maxX = Math.max(maxX, bounds.x + bounds.width);
+    maxY = Math.max(maxY, bounds.y + bounds.height);
   });
 
   return {
@@ -80,22 +77,39 @@ export const calculateBoundingBox = (objects: CanvasObjectData[]): SelectionBoun
  * Find objects within a selection rectangle
  */
 export const findObjectsInSelection = (
-  objects: CanvasObjectData[], 
+  objects: Shape[], 
   selectionRect: Rectangle
-): CanvasObjectData[] => {
-  return objects.filter(obj => isRectangleIntersecting(obj, selectionRect));
+): Shape[] => {
+  return objects.filter(obj => {
+    const bounds = getShapeBounds(obj);
+    return isRectangleIntersecting(bounds, selectionRect);
+  });
 };
 
 /**
  * Find objects by color (checks both fill and stroke)
  */
-export const findObjectsByColor = (objects: CanvasObjectData[], color: string): CanvasObjectData[] => {
+export const findObjectsByColor = (objects: Shape[], color: string): Shape[] => {
   const normalizeColor = (c: string) => c.toLowerCase().replace(/[^a-f0-9]/g, '');
   const targetColor = normalizeColor(color);
 
   return objects.filter(obj => {
-    const objFill = normalizeColor(obj.fill);
-    const objStroke = normalizeColor(obj.stroke);
+    // Handle different shape types and their color properties
+    let objFill = '';
+    let objStroke = '';
+    
+    if (obj.type === 'rectangle' || obj.type === 'circle') {
+      objFill = normalizeColor(obj.fill);
+      objStroke = normalizeColor(obj.stroke);
+    } else if (obj.type === 'line') {
+      objStroke = normalizeColor(obj.stroke);
+    } else if (obj.type === 'text') {
+      objFill = normalizeColor(obj.fill);
+      if (obj.stroke) {
+        objStroke = normalizeColor(obj.stroke);
+      }
+    }
+    
     return objFill.includes(targetColor) || objStroke.includes(targetColor);
   });
 };
@@ -104,26 +118,25 @@ export const findObjectsByColor = (objects: CanvasObjectData[], color: string): 
  * Find objects by position criteria
  */
 export const findObjectsByPosition = (
-  objects: CanvasObjectData[],
+  objects: Shape[],
   criteria: 'top-half' | 'bottom-half' | 'left-half' | 'right-half',
   canvasSize: { width: number; height: number }
-): CanvasObjectData[] => {
+): Shape[] => {
   const centerX = canvasSize.width / 2;
   const centerY = canvasSize.height / 2;
 
   return objects.filter(obj => {
-    const objCenterX = obj.x + obj.width / 2;
-    const objCenterY = obj.y + obj.height / 2;
+    const center = getShapeCenter(obj);
 
     switch (criteria) {
       case 'top-half':
-        return objCenterY < centerY;
+        return center.y < centerY;
       case 'bottom-half':
-        return objCenterY > centerY;
+        return center.y > centerY;
       case 'left-half':
-        return objCenterX < centerX;
+        return center.x < centerX;
       case 'right-half':
-        return objCenterX > centerX;
+        return center.x > centerX;
       default:
         return false;
     }
@@ -133,7 +146,7 @@ export const findObjectsByPosition = (
 /**
  * Calculate center point of multiple objects
  */
-export const calculateSelectionCenter = (objects: CanvasObjectData[]): { x: number; y: number } | null => {
+export const calculateSelectionCenter = (objects: Shape[]): { x: number; y: number } | null => {
   if (objects.length === 0) {
     return null;
   }
@@ -153,21 +166,26 @@ export const calculateSelectionCenter = (objects: CanvasObjectData[]): { x: numb
  * Move multiple objects by a delta
  */
 export const moveObjectsByDelta = (
-  objects: CanvasObjectData[], 
+  objects: Shape[], 
   deltaX: number, 
   deltaY: number
-): CanvasObjectData[] => {
+): Shape[] => {
   return objects.map(obj => ({
     ...obj,
     x: obj.x + deltaX,
     y: obj.y + deltaY,
+    // Handle line endpoints
+    ...(obj.type === 'line' && {
+      x2: obj.x2 + deltaX,
+      y2: obj.y2 + deltaY,
+    }),
   }));
 };
 
 /**
  * Validate if objects can be selected (basic validation)
  */
-export const validateSelection = (objects: CanvasObjectData[], objectIds: string[]): boolean => {
+export const validateSelection = (objects: Shape[], objectIds: string[]): boolean => {
   const existingIds = new Set(objects.map(obj => obj.id));
   return objectIds.every(id => existingIds.has(id));
 };
@@ -175,7 +193,7 @@ export const validateSelection = (objects: CanvasObjectData[], objectIds: string
 /**
  * Get objects sorted by z-index or creation order
  */
-export const sortObjectsByLayer = (objects: CanvasObjectData[]): CanvasObjectData[] => {
+export const sortObjectsByLayer = (objects: Shape[]): Shape[] => {
   // For now, maintain original order (first created = bottom layer)
   // This can be extended when z-index is implemented
   return [...objects];
@@ -195,16 +213,26 @@ export const calculateDuplicateOffset = (index: number = 0): { x: number; y: num
 /**
  * Check if selection is valid for bulk operations
  */
-export const canPerformBulkOperation = (selectedObjects: CanvasObjectData[]): boolean => {
+export const canPerformBulkOperation = (selectedObjects: Shape[]): boolean => {
   return selectedObjects.length > 0;
 };
 
 /**
  * Group objects by type (useful for type-specific operations)
  */
-export const groupObjectsByType = (objects: CanvasObjectData[]): Record<string, CanvasObjectData[]> => {
-  // For now, all objects are rectangles, but this will be useful when we add more shapes
-  return {
-    rectangle: objects, // All current objects are rectangles
+export const groupObjectsByType = (objects: Shape[]): Record<string, Shape[]> => {
+  const groups: Record<string, Shape[]> = {
+    rectangle: [],
+    circle: [],
+    line: [],
+    text: [],
   };
+
+  objects.forEach(obj => {
+    if (groups[obj.type]) {
+      groups[obj.type].push(obj);
+    }
+  });
+
+  return groups;
 };

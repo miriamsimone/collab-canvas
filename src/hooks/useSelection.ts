@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { CanvasObjectData } from '../components/CanvasObject';
+import { Shape, getShapeBounds, getShapeCenter } from '../types/shapes';
+import { findObjectsInSelection, findObjectsByColor, findObjectsByPosition } from '../utils/selectionHelpers';
 
 export interface SelectionBounds {
   x: number;
@@ -22,18 +23,18 @@ interface UseSelectionActions {
   toggleSelection: (id: string) => void;
   addToSelection: (id: string) => void;
   clearSelection: () => void;
-  selectAll: (objects: CanvasObjectData[]) => void;
+  selectAll: (objects: Shape[]) => void;
   selectMultiple: (ids: string[]) => void;
   isSelected: (id: string) => boolean;
-  getSelectedObjects: (allObjects: CanvasObjectData[]) => CanvasObjectData[];
+  getSelectedObjects: (allObjects: Shape[]) => Shape[];
   // Drag selection
   startDragSelection: (x: number, y: number) => void;
   updateDragSelection: (x: number, y: number) => void;
-  endDragSelection: (objects: CanvasObjectData[]) => void;
+  endDragSelection: (objects: Shape[]) => void;
   // Selection queries for AI
-  selectByType: (objects: CanvasObjectData[], type?: string) => void;
-  selectByColor: (objects: CanvasObjectData[], color: string) => void;
-  selectByPosition: (objects: CanvasObjectData[], criteria: 'top-half' | 'bottom-half' | 'left-half' | 'right-half', canvasSize: { width: number; height: number }) => void;
+  selectByType: (objects: Shape[], type?: string) => void;
+  selectByColor: (objects: Shape[], color: string) => void;
+  selectByPosition: (objects: Shape[], criteria: 'top-half' | 'bottom-half' | 'left-half' | 'right-half', canvasSize: { width: number; height: number }) => void;
 }
 
 export const useSelection = (): UseSelectionState & UseSelectionActions => {
@@ -44,7 +45,7 @@ export const useSelection = (): UseSelectionState & UseSelectionActions => {
   const [dragCurrentPos, setDragCurrentPos] = useState<{ x: number; y: number } | null>(null);
 
   // Calculate selection bounding box
-  const calculateSelectionBounds = useCallback((objects: CanvasObjectData[], selectedObjectIds: Set<string>): SelectionBounds | null => {
+  const calculateSelectionBounds = useCallback((objects: Shape[], selectedObjectIds: Set<string>): SelectionBounds | null => {
     const selectedObjects = objects.filter(obj => selectedObjectIds.has(obj.id));
     
     if (selectedObjects.length === 0) {
@@ -53,12 +54,8 @@ export const useSelection = (): UseSelectionState & UseSelectionActions => {
 
     if (selectedObjects.length === 1) {
       const obj = selectedObjects[0];
-      return {
-        x: obj.x,
-        y: obj.y,
-        width: obj.width,
-        height: obj.height,
-      };
+      const bounds = getShapeBounds(obj);
+      return bounds;
     }
 
     // Calculate bounds for multiple objects
@@ -68,10 +65,11 @@ export const useSelection = (): UseSelectionState & UseSelectionActions => {
     let maxY = -Infinity;
 
     selectedObjects.forEach(obj => {
-      minX = Math.min(minX, obj.x);
-      minY = Math.min(minY, obj.y);
-      maxX = Math.max(maxX, obj.x + obj.width);
-      maxY = Math.max(maxY, obj.y + obj.height);
+      const bounds = getShapeBounds(obj);
+      minX = Math.min(minX, bounds.x);
+      minY = Math.min(minY, bounds.y);
+      maxX = Math.max(maxX, bounds.x + bounds.width);
+      maxY = Math.max(maxY, bounds.y + bounds.height);
     });
 
     return {
@@ -115,7 +113,7 @@ export const useSelection = (): UseSelectionState & UseSelectionActions => {
     setSelectedIds(new Set());
   }, []);
 
-  const selectAll = useCallback((objects: CanvasObjectData[]) => {
+  const selectAll = useCallback((objects: Shape[]) => {
     setSelectedIds(new Set(objects.map(obj => obj.id)));
   }, []);
 
@@ -127,7 +125,7 @@ export const useSelection = (): UseSelectionState & UseSelectionActions => {
     return selectedIds.has(id);
   }, [selectedIds]);
 
-  const getSelectedObjects = useCallback((allObjects: CanvasObjectData[]): CanvasObjectData[] => {
+  const getSelectedObjects = useCallback((allObjects: Shape[]): Shape[] => {
     return allObjects.filter(obj => selectedIds.has(obj.id));
   }, [selectedIds]);
 
@@ -144,7 +142,7 @@ export const useSelection = (): UseSelectionState & UseSelectionActions => {
     }
   }, [isDragSelecting]);
 
-  const endDragSelection = useCallback((objects: CanvasObjectData[]) => {
+  const endDragSelection = useCallback((objects: Shape[]) => {
     if (!isDragSelecting || !dragStartPos || !dragCurrentPos) {
       setIsDragSelecting(false);
       setDragStartPos(null);
@@ -160,16 +158,8 @@ export const useSelection = (): UseSelectionState & UseSelectionActions => {
       height: Math.abs(dragCurrentPos.y - dragStartPos.y),
     };
 
-    // Find objects that intersect with selection rectangle
-    const intersectingObjects = objects.filter(obj => {
-      // Check if object intersects with selection rectangle
-      return !(
-        obj.x > selectionRect.x + selectionRect.width ||
-        obj.x + obj.width < selectionRect.x ||
-        obj.y > selectionRect.y + selectionRect.height ||
-        obj.y + obj.height < selectionRect.y
-      );
-    });
+    // Find objects that intersect with selection rectangle using helper function
+    const intersectingObjects = findObjectsInSelection(objects, selectionRect);
 
     // Select all intersecting objects
     setSelectedIds(new Set(intersectingObjects.map(obj => obj.id)));
@@ -181,61 +171,30 @@ export const useSelection = (): UseSelectionState & UseSelectionActions => {
   }, [isDragSelecting, dragStartPos, dragCurrentPos]);
 
   // AI-powered selection operations
-  const selectByType = useCallback((objects: CanvasObjectData[], type?: string) => {
-    // For now, since we only have rectangles, select all
-    // This will be extended when we add circles, text, etc.
+  const selectByType = useCallback((objects: Shape[], type?: string) => {
     const matchingObjects = type 
-      ? objects.filter(obj => (obj as any).type === type)
+      ? objects.filter(obj => obj.type === type)
       : objects; // Select all if no type specified
     
     setSelectedIds(new Set(matchingObjects.map(obj => obj.id)));
   }, []);
 
-  const selectByColor = useCallback((objects: CanvasObjectData[], color: string) => {
-    // Normalize color format for comparison
-    const normalizeColor = (c: string) => c.toLowerCase().replace(/[^a-f0-9]/g, '');
-    const targetColor = normalizeColor(color);
-
-    const matchingObjects = objects.filter(obj => {
-      const objFill = normalizeColor(obj.fill);
-      const objStroke = normalizeColor(obj.stroke);
-      return objFill.includes(targetColor) || objStroke.includes(targetColor);
-    });
-
+  const selectByColor = useCallback((objects: Shape[], color: string) => {
+    const matchingObjects = findObjectsByColor(objects, color);
     setSelectedIds(new Set(matchingObjects.map(obj => obj.id)));
   }, []);
 
   const selectByPosition = useCallback((
-    objects: CanvasObjectData[], 
+    objects: Shape[], 
     criteria: 'top-half' | 'bottom-half' | 'left-half' | 'right-half',
     canvasSize: { width: number; height: number }
   ) => {
-    const centerX = canvasSize.width / 2;
-    const centerY = canvasSize.height / 2;
-
-    const matchingObjects = objects.filter(obj => {
-      const objCenterX = obj.x + obj.width / 2;
-      const objCenterY = obj.y + obj.height / 2;
-
-      switch (criteria) {
-        case 'top-half':
-          return objCenterY < centerY;
-        case 'bottom-half':
-          return objCenterY > centerY;
-        case 'left-half':
-          return objCenterX < centerX;
-        case 'right-half':
-          return objCenterX > centerX;
-        default:
-          return false;
-      }
-    });
-
+    const matchingObjects = findObjectsByPosition(objects, criteria, canvasSize);
     setSelectedIds(new Set(matchingObjects.map(obj => obj.id)));
   }, []);
 
   // Update selection bounds when selection changes
-  const updateSelectionBounds = useCallback((objects: CanvasObjectData[]) => {
+  const updateSelectionBounds = useCallback((objects: Shape[]) => {
     const bounds = calculateSelectionBounds(objects, selectedIds);
     setSelectionBounds(bounds);
   }, [selectedIds, calculateSelectionBounds]);

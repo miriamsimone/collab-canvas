@@ -1232,3 +1232,131 @@ body {
   margin-top: 8px;
   font-style: italic;
 }
+
+/* Draggable Panel Styles */
+.draggable-panel {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.2s ease;
+  overflow: hidden;
+  min-width: 200px;
+  position: fixed;
+  z-index: 100;
+}
+
+.draggable-panel:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.draggable-panel .panel-header {
+  cursor: grab;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-bottom: 1px solid #e2e8f0;
+  user-select: none;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.draggable-panel .panel-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.draggable-panel .panel-header:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+}
+
+.draggable-panel .panel-header:active {
+  cursor: grabbing;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+}
+
+.draggable-panel .drag-grip {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  color: #64748b;
+}
+
+.draggable-panel .panel-content {
+  pointer-events: auto;
+}
+
+/* Specific panel styles */
+.toolbar-panel {
+  width: auto;
+  min-width: 180px;
+}
+
+.toolbar-panel .toolbar {
+  position: static;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+}
+
+.presence-panel {
+  width: 280px;
+  max-width: 300px;
+}
+
+.presence-panel .presence-list {
+  position: static;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  width: 100%;
+}
+
+.ai-assistant-panel {
+  width: 320px;
+  max-width: 340px;
+}
+
+.ai-assistant-panel .ai-panel {
+  position: static;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  width: 100%;
+}
+
+.ai-assistant-panel .ai-panel-content {
+  padding: 16px;
+}
+
+/* Override existing fixed positioning for panels */
+.toolbar {
+  position: relative;
+}
+
+.presence-list {
+  position: relative;
+}
+
+.ai-panel {
+  position: relative;
+}
+
+/* Dragging state styles */
+.draggable-panel.dragging {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  z-index: 1001 !important;
+}
+
+.draggable-panel.dragging .panel-header {
+  cursor: grabbing !important;
+}

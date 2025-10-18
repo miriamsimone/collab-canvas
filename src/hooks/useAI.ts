@@ -6,20 +6,23 @@ import {
   type UseAIState,
   type UseAIActions
 } from '../types/ai';
-import { type CanvasObjectData } from '../components/CanvasObject';
+import { Shape } from '../types/shapes';
 import { useAuth } from './useAuth';
 
 interface UseAIProps {
-  rectangles: CanvasObjectData[];
+  rectangles: Shape[]; // Keep rectangles name for backward compatibility
   canvasSize: { width: number; height: number };
   onCreateRectangle: (x: number, y: number, width: number, height: number, color: string) => Promise<void>;
+  onCreateCircle?: (x: number, y: number, radius: number, color: string) => Promise<void>;
+  onCreateLine?: (x1: number, y1: number, x2: number, y2: number, color: string) => Promise<void>;
+  onCreateText?: (x: number, y: number, text: string, fontSize?: number) => Promise<void>;
   // Selection functions
-  onSelectAll: (objects: CanvasObjectData[]) => void;
-  onSelectByColor: (objects: CanvasObjectData[], color: string) => void;
-  onSelectByPosition: (objects: CanvasObjectData[], position: 'top-half' | 'bottom-half' | 'left-half' | 'right-half', canvasSize: { width: number; height: number }) => void;
+  onSelectAll: (objects: Shape[]) => void;
+  onSelectByColor: (objects: Shape[], color: string) => void;
+  onSelectByPosition: (objects: Shape[], position: 'top-half' | 'bottom-half' | 'left-half' | 'right-half', canvasSize: { width: number; height: number }) => void;
   onSelectByIds: (ids: string[]) => void;
   onClearSelection: () => void;
-  getSelectedObjects: (allObjects: CanvasObjectData[]) => CanvasObjectData[];
+  getSelectedObjects: (allObjects: Shape[]) => Shape[];
   // Bulk operation functions
   onBulkMove: (deltaX: number, deltaY: number) => Promise<void>;
   onBulkDelete: () => Promise<void>;
@@ -29,7 +32,10 @@ interface UseAIProps {
 export const useAI = ({ 
   rectangles, 
   canvasSize,
-  onCreateRectangle, 
+  onCreateRectangle,
+  onCreateCircle,
+  onCreateLine,
+  onCreateText,
   onSelectAll,
   onSelectByColor,
   onSelectByPosition,
@@ -106,6 +112,24 @@ export const useAI = ({
             const params = action.parameters as any;
             const { x, y, width, height, color } = params;
             await onCreateRectangle(x, y, width, height, color);
+          } else if (action.type === 'createCircle') {
+            if (onCreateCircle) {
+              const params = action.parameters as any;
+              const { x, y, radius, color } = params;
+              await onCreateCircle(x, y, radius, color);
+            }
+          } else if (action.type === 'createLine') {
+            if (onCreateLine) {
+              const params = action.parameters as any;
+              const { x1, y1, x2, y2, color } = params;
+              await onCreateLine(x1, y1, x2, y2, color);
+            }
+          } else if (action.type === 'createText') {
+            if (onCreateText) {
+              const params = action.parameters as any;
+              const { x, y, text, fontSize } = params;
+              await onCreateText(x, y, text, fontSize);
+            }
           } else if (action.type === 'selectObjects') {
             const params = action.parameters as any;
             

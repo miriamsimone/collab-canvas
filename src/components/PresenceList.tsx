@@ -4,6 +4,7 @@ import { type PresenceData, generateUserColor } from '../services/presenceServic
 interface PresenceListProps {
   presenceData: Record<string, PresenceData>;
   currentUserId?: string;
+  currentUserDisplayName?: string;
   isConnected: boolean;
   loading: boolean;
 }
@@ -11,6 +12,7 @@ interface PresenceListProps {
 export const PresenceList: React.FC<PresenceListProps> = ({
   presenceData,
   currentUserId,
+  currentUserDisplayName,
   isConnected,
   loading
 }) => {
@@ -56,7 +58,7 @@ export const PresenceList: React.FC<PresenceListProps> = ({
                 className="user-color" 
                 style={{ backgroundColor: generateUserColor(currentUserId) }}
               ></div>
-              <span className="user-name">You</span>
+              <span className="user-name">{currentUserDisplayName || 'You'} (You)</span>
               <div className="user-status online">●</div>
             </div>
           )}

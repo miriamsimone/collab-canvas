@@ -76,6 +76,28 @@ app.post('/api/ai/command', async (req, res) => {
       }).optional(),
     });
 
+    const createCircleSchema = z.object({
+      x: z.number().min(0).max(5000),
+      y: z.number().min(0).max(5000),
+      radius: z.number().min(5).max(500),
+      color: z.string(),
+    });
+
+    const createLineSchema = z.object({
+      x1: z.number().min(0).max(5000),
+      y1: z.number().min(0).max(5000),
+      x2: z.number().min(0).max(5000),
+      y2: z.number().min(0).max(5000),
+      color: z.string(),
+    });
+
+    const createTextSchema = z.object({
+      x: z.number().min(0).max(5000),
+      y: z.number().min(0).max(5000),
+      text: z.string().min(1).max(200),
+      fontSize: z.number().min(8).max(72).optional(),
+    });
+
     const bulkOperationSchema = z.object({
       operation: z.enum(['move', 'delete', 'changeColor']),
       operationData: z.object({
@@ -86,28 +108,44 @@ app.post('/api/ai/command', async (req, res) => {
     });
 
     // System prompt
-    const systemPrompt = `You are an AI assistant that helps users manage objects on a canvas. You can create rectangles, select objects, and perform bulk operations.
+    const systemPrompt = `You are an AI assistant that helps users manage shapes on a canvas. You can create rectangles, circles, lines, and text, select objects, and perform bulk operations.
 
 Current canvas state:
 - Canvas size: ${canvasState.canvasSize.width}x${canvasState.canvasSize.height} pixels
-- Existing rectangles: ${canvasState.rectangles.length}
+- Existing shapes: ${canvasState.rectangles.length}
 ${canvasState.rectangles.length > 0 ? 
-  canvasState.rectangles.map(r => 
-    `  - Rectangle "${r.id}" at (${r.x}, ${r.y}) with size ${r.width}x${r.height}, color ${r.fill}`
-  ).join('\n') : '  - No existing rectangles'}
+  canvasState.rectangles.map(shape => {
+    if (shape.type === 'rectangle') {
+      return `  - Rectangle "${shape.id}" at (${shape.x}, ${shape.y}) with size ${shape.width}x${shape.height}, color ${shape.fill}`;
+    } else if (shape.type === 'circle') {
+      return `  - Circle "${shape.id}" at (${shape.x}, ${shape.y}) with radius ${shape.radius}, color ${shape.fill}`;
+    } else if (shape.type === 'line') {
+      return `  - Line "${shape.id}" from (${shape.x}, ${shape.y}) to (${shape.x2}, ${shape.y2}), color ${shape.stroke}`;
+    } else if (shape.type === 'text') {
+      return `  - Text "${shape.id}" at (${shape.x}, ${shape.y}) saying "${shape.text}", font size ${shape.fontSize}`;
+    }
+    return `  - Shape "${shape.id}" at (${shape.x}, ${shape.y})`;
+  }).join('\n') : '  - No existing shapes'}
 
 You can perform these operations:
-1. CREATE RECTANGLES: Parse creation commands and generate createRectangle actions
+1. CREATE SHAPES: Generate createRectangle, createCircle, createLine, or createText actions
 2. SELECT OBJECTS: Generate selectObjects actions for various selection methods
 3. BULK OPERATIONS: Generate bulkOperation actions for selected objects
 
-Examples:
+Shape Creation Examples:
 - "create a red rectangle" -> createRectangle action
-- "select all rectangles" -> selectObjects with method "all"
-- "select red rectangles" -> selectObjects with method "byColor" 
+- "add a blue circle" -> createCircle action
+- "draw a line from top left to bottom right" -> createLine action
+- "add text that says hello" -> createText action
+
+Selection Examples:
+- "select all shapes" -> selectObjects with method "all"
+- "select red shapes" -> selectObjects with method "byColor" 
 - "select objects in top half" -> selectObjects with method "byPosition"
+
+Bulk Operation Examples:
 - "move selected objects right" -> bulkOperation with operation "move"
-- "delete all red rectangles" -> selectObjects + bulkOperation
+- "delete all red shapes" -> selectObjects + bulkOperation
 - "change selected to blue" -> bulkOperation with operation "changeColor"`;
 
     // Generate AI response
@@ -119,9 +157,12 @@ Examples:
         isValidCommand: z.boolean(),
         explanation: z.string(),
         actions: z.array(z.object({
-          type: z.enum(['createRectangle', 'selectObjects', 'bulkOperation']),
+          type: z.enum(['createRectangle', 'createCircle', 'createLine', 'createText', 'selectObjects', 'bulkOperation']),
           parameters: z.union([
             createRectangleSchema,
+            createCircleSchema,
+            createLineSchema,
+            createTextSchema,
             selectObjectsSchema,
             bulkOperationSchema,
           ]),
@@ -164,6 +205,55 @@ Examples:
         }
         
         params.color = color;
+      } else if (action.type === 'createCircle') {
+        // Handle circle color
+        const params = action.parameters;
+        let color = params.color;
+        
+        // Convert common color names to hex
+        if (color && !color.startsWith('#')) {
+          const colorMap = {
+            'red': '#ff0000', 'blue': '#0000ff', 'green': '#00ff00',
+            'yellow': '#ffff00', 'orange': '#ffa500', 'purple': '#800080',
+            'pink': '#ffc0cb', 'black': '#000000', 'white': '#ffffff',
+            'gray': '#808080', 'grey': '#808080'
+          };
+          color = colorMap[color.toLowerCase()] || '#' + color;
+        }
+        
+        if (color && !color.startsWith('#')) {
+          color = '#' + color;
+        }
+        
+        params.color = color;
+      } else if (action.type === 'createLine') {
+        // Handle line color
+        const params = action.parameters;
+        let color = params.color;
+        
+        // Convert common color names to hex
+        if (color && !color.startsWith('#')) {
+          const colorMap = {
+            'red': '#ff0000', 'blue': '#0000ff', 'green': '#00ff00',
+            'yellow': '#ffff00', 'orange': '#ffa500', 'purple': '#800080',
+            'pink': '#ffc0cb', 'black': '#000000', 'white': '#ffffff',
+            'gray': '#808080', 'grey': '#808080'
+          };
+          color = colorMap[color.toLowerCase()] || '#' + color;
+        }
+        
+        if (color && !color.startsWith('#')) {
+          color = '#' + color;
+        }
+        
+        params.color = color;
+      } else if (action.type === 'createText') {
+        // Handle text - no color processing needed as text uses default colors
+        // but we can set a default fontSize if not provided
+        const params = action.parameters;
+        if (!params.fontSize) {
+          params.fontSize = 16; // Default font size
+        }
       } else if (action.type === 'bulkOperation' && action.parameters.operation === 'changeColor') {
         // Handle bulk color change operations
         const params = action.parameters;
