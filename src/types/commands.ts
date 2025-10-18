@@ -105,6 +105,17 @@ export interface AICommandData {
 }
 
 /**
+ * Command data for changing z-index (layer order)
+ */
+export interface ChangeZIndexCommandData {
+  updates: Array<{
+    shapeId: string;
+    oldZIndex: number;
+    newZIndex: number;
+  }>;
+}
+
+/**
  * Command history entry
  */
 export interface CommandHistoryEntry {

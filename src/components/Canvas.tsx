@@ -10,6 +10,7 @@ import { useSelection } from '../hooks/useSelection';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useGrid } from '../hooks/useGrid';
+import { useZIndex } from '../hooks/useZIndex';
 import { canvasService } from '../services/canvasService';
 import { CreateShapeCommand, BatchCommand } from '../services/commandService';
 import { copyShapesToClipboard, getShapesFromClipboard, duplicateShapes } from '../utils/clipboardHelpers';
@@ -29,6 +30,7 @@ import { AIErrorDisplay } from './features/AI/AIErrorDisplay';
 import { AICommandHistory } from './features/AI/AICommandHistory';
 import { ShortcutsPanel } from './features/KeyboardShortcuts/ShortcutsPanel';
 import { SmartGuides } from './features/Grid/SmartGuides';
+import { ZIndexControls } from './features/ZIndex/ZIndexControls';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -385,6 +387,88 @@ export const Canvas: React.FC = () => {
     updateSmartGuides,
     clearSmartGuides,
   } = useGrid();
+
+  // Z-Index management for layer ordering
+  const {
+    bringToFront,
+    sendToBack,
+    bringForward,
+    sendBackward,
+    sortShapesByZIndex,
+  } = useZIndex();
+
+  // Z-Index handlers
+  const handleBringToFront = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    const selectedIds = selectedObjects.map(obj => obj.id);
+    if (selectedIds.length === 0) return;
+
+    const { updates } = bringToFront(selectedIds, shapes);
+    if (updates.length === 0) return;
+
+    try {
+      const { ChangeZIndexCommand } = await import('../services/commandService');
+      const command = new ChangeZIndexCommand({ updates }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to bring to front:', error);
+    }
+  }, [user, getSelectedObjects, shapes, bringToFront, executeCommand]);
+
+  const handleSendToBack = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    const selectedIds = selectedObjects.map(obj => obj.id);
+    if (selectedIds.length === 0) return;
+
+    const { updates } = sendToBack(selectedIds, shapes);
+    if (updates.length === 0) return;
+
+    try {
+      const { ChangeZIndexCommand } = await import('../services/commandService');
+      const command = new ChangeZIndexCommand({ updates }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to send to back:', error);
+    }
+  }, [user, getSelectedObjects, shapes, sendToBack, executeCommand]);
+
+  const handleBringForward = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    const selectedIds = selectedObjects.map(obj => obj.id);
+    if (selectedIds.length === 0) return;
+
+    const { updates } = bringForward(selectedIds, shapes);
+    if (updates.length === 0) return;
+
+    try {
+      const { ChangeZIndexCommand } = await import('../services/commandService');
+      const command = new ChangeZIndexCommand({ updates }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to bring forward:', error);
+    }
+  }, [user, getSelectedObjects, shapes, bringForward, executeCommand]);
+
+  const handleSendBackward = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    const selectedIds = selectedObjects.map(obj => obj.id);
+    if (selectedIds.length === 0) return;
+
+    const { updates } = sendBackward(selectedIds, shapes);
+    if (updates.length === 0) return;
+
+    try {
+      const { ChangeZIndexCommand } = await import('../services/commandService');
+      const command = new ChangeZIndexCommand({ updates }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to send backward:', error);
+    }
+  }, [user, getSelectedObjects, shapes, sendBackward, executeCommand]);
 
   // Initialize shared canvas on mount
   useEffect(() => {
@@ -1003,6 +1087,21 @@ export const Canvas: React.FC = () => {
           onToggleSnapToGrid={toggleSnapToGrid}
         />
       </DraggablePanel>
+
+      {/* Z-Index Controls Panel */}
+      <DraggablePanel 
+        title="Layer Order"
+        defaultPosition={{ x: 20, y: 460 }}
+        className="zindex-panel"
+      >
+        <ZIndexControls
+          hasSelection={getSelectedObjects(shapes).length > 0}
+          onBringToFront={handleBringToFront}
+          onBringForward={handleBringForward}
+          onSendBackward={handleSendBackward}
+          onSendToBack={handleSendToBack}
+        />
+      </DraggablePanel>
       
       {/* Canvas Container */}
       <div className="canvas-container">
@@ -1052,8 +1151,8 @@ export const Canvas: React.FC = () => {
               gridSize={gridConfig.size}
             />
             
-            {/* Render All Shapes */}
-            {shapes.map((shape) => {
+            {/* Render All Shapes (sorted by z-index) */}
+            {sortShapesByZIndex(shapes).map((shape) => {
               // Render different components based on shape type
               if (shape.type === 'rectangle') {
                 return (

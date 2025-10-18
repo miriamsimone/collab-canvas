@@ -1,0 +1,73 @@
+/* Z-Index Controls Styling */
+.zindex-controls {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.zindex-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.zindex-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.zindex-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  background: transparent;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.zindex-button:hover:not(:disabled) {
+  border-color: #007ACC;
+  background: rgba(0, 122, 204, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.zindex-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.zindex-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zindex-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.zindex-label {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.zindex-hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+  font-style: italic;
+}
+

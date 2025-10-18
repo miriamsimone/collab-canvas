@@ -11,6 +11,7 @@ import type {
   UpdateTextCommandData,
   BatchCommandData,
   AICommandData,
+  ChangeZIndexCommandData,
 } from '../types/commands';
 import type { Shape } from '../types/shapes';
 import { shapesService } from './shapesService';
@@ -301,6 +302,45 @@ export class AICommand implements Command {
     // Restore deleted shapes
     for (const shape of this.data.deletedShapes) {
       await shapesService.createShape(shape, this.userId);
+    }
+  }
+}
+
+/**
+ * ChangeZIndexCommand - Handles changing z-index (layer order) of shapes
+ */
+export class ChangeZIndexCommand implements Command {
+  readonly id: string;
+  readonly type = 'change-zindex';
+  readonly timestamp: number;
+  readonly description: string;
+  
+  private data: ChangeZIndexCommandData;
+  private userId: string;
+  
+  constructor(data: ChangeZIndexCommandData, userId: string) {
+    this.id = generateCommandId();
+    this.timestamp = Date.now();
+    this.data = data;
+    this.userId = userId;
+    
+    const count = data.updates.length;
+    this.description = count === 1 
+      ? 'Change layer order'
+      : `Change layer order (${count} shapes)`;
+  }
+  
+  async execute(): Promise<void> {
+    // Apply new z-index values
+    for (const { shapeId, newZIndex } of this.data.updates) {
+      await shapesService.updateShape(shapeId, { zIndex: newZIndex }, this.userId);
+    }
+  }
+  
+  async undo(): Promise<void> {
+    // Restore old z-index values
+    for (const { shapeId, oldZIndex } of this.data.updates) {
+      await shapesService.updateShape(shapeId, { zIndex: oldZIndex }, this.userId);
     }
   }
 }
