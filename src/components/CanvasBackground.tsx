@@ -4,15 +4,27 @@ import { CANVAS_DIMENSIONS, generateGridLines } from '../utils/canvasHelpers';
 
 interface CanvasBackgroundProps {
   scale: number;
+  snapToGridEnabled?: boolean;
+  gridSize?: number;
 }
 
-export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({ scale }) => {
-  // Only show grid when zoomed in enough to see it clearly
-  const showGrid = scale > 0.3;
-  const gridSize = scale > 0.8 ? 50 : 100; // Larger grid when zoomed out
-  const gridOpacity = Math.min(scale * 0.5, 0.3);
+export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({ 
+  scale,
+  snapToGridEnabled = false,
+  gridSize = 20,
+}) => {
+  // Show grid when zoomed in enough OR when snap-to-grid is enabled
+  const showGrid = scale > 0.3 || snapToGridEnabled;
   
-  const { vertical, horizontal } = generateGridLines(gridSize);
+  // Use custom grid size if snap-to-grid is enabled, otherwise use default zoom-based sizing
+  const effectiveGridSize = snapToGridEnabled ? gridSize : (scale > 0.8 ? 50 : 100);
+  
+  // More visible grid when snap-to-grid is enabled
+  const gridOpacity = snapToGridEnabled ? 0.4 : Math.min(scale * 0.5, 0.3);
+  const gridStroke = snapToGridEnabled ? '#10b981' : '#f0f0f0';
+  const gridStrokeWidth = snapToGridEnabled ? 1.5 : 1;
+  
+  const { vertical, horizontal } = generateGridLines(effectiveGridSize);
 
   return (
     <>
@@ -36,8 +48,8 @@ export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({ scale }) => 
             <Line
               key={`v-${x}`}
               points={[x, 0, x, CANVAS_DIMENSIONS.HEIGHT]}
-              stroke="#f0f0f0"
-              strokeWidth={1}
+              stroke={gridStroke}
+              strokeWidth={gridStrokeWidth}
               opacity={gridOpacity}
               listening={false} // Don't interfere with mouse events
             />
@@ -48,8 +60,8 @@ export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({ scale }) => 
             <Line
               key={`h-${y}`}
               points={[0, y, CANVAS_DIMENSIONS.WIDTH, y]}
-              stroke="#f0f0f0"
-              strokeWidth={1}
+              stroke={gridStroke}
+              strokeWidth={gridStrokeWidth}
               opacity={gridOpacity}
               listening={false} // Don't interfere with mouse events
             />

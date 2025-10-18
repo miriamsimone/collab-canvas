@@ -9,6 +9,7 @@ import { useAI } from '../hooks/useAI';
 import { useSelection } from '../hooks/useSelection';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useGrid } from '../hooks/useGrid';
 import { canvasService } from '../services/canvasService';
 import { CreateShapeCommand, BatchCommand } from '../services/commandService';
 import { copyShapesToClipboard, getShapesFromClipboard, duplicateShapes } from '../utils/clipboardHelpers';
@@ -27,6 +28,7 @@ import { AILoadingIndicator } from './features/AI/AILoadingIndicator';
 import { AIErrorDisplay } from './features/AI/AIErrorDisplay';
 import { AICommandHistory } from './features/AI/AICommandHistory';
 import { ShortcutsPanel } from './features/KeyboardShortcuts/ShortcutsPanel';
+import { SmartGuides } from './features/Grid/SmartGuides';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -373,6 +375,17 @@ export const Canvas: React.FC = () => {
     enabled: true, // Always enabled
   });
 
+  // Grid and snap-to-grid functionality
+  const {
+    gridConfig,
+    smartGuides,
+    toggleSnapToGrid,
+    snapPointToGrid,
+    calculateSmartGuides,
+    updateSmartGuides,
+    clearSmartGuides,
+  } = useGrid();
+
   // Initialize shared canvas on mount
   useEffect(() => {
     const initializeCanvas = async () => {
@@ -488,11 +501,19 @@ export const Canvas: React.FC = () => {
   const handleShapeDragEnd = async (id: string, newX: number, newY: number) => {
     if (!user) return;
     
+    // Clear smart guides after drag
+    clearSmartGuides();
+    
+    // Apply snap-to-grid if enabled
+    const snapped = snapPointToGrid(newX, newY);
+    const finalX = snapped.x;
+    const finalY = snapped.y;
+    
     const startPos = dragStartPositions[id];
     if (!startPos) {
       // Fallback if we don't have start position - just update without undo
       try {
-        await updateShape(id, { x: newX, y: newY });
+        await updateShape(id, { x: finalX, y: finalY });
       } catch (error) {
         console.error('Failed to update shape position:', error);
       }
@@ -508,8 +529,8 @@ export const Canvas: React.FC = () => {
           shapeId: id,
           oldX: startPos.x,
           oldY: startPos.y,
-          newX,
-          newY,
+          newX: finalX,
+          newY: finalY,
         },
         user.uid
       );
@@ -726,6 +747,11 @@ export const Canvas: React.FC = () => {
     const pos = getCanvasPointerPosition(stage);
     if (!pos) return;
 
+    // Apply snap-to-grid if enabled
+    const snapped = snapPointToGrid(pos.x, pos.y);
+    const clickX = snapped.x;
+    const clickY = snapped.y;
+
     // Import utilities
     const { CreateShapeCommand } = await import('../services/commandService');
     const { createRectangleShape, createCircleShape, createLineShape, createTextShape } = await import('../services/shapesService');
@@ -737,7 +763,7 @@ export const Canvas: React.FC = () => {
     if (activeTool === 'rectangle') {
       try {
         // Build shape object without saving (command will handle saving)
-        const newRectangle = createRectangleShape({ x: pos.x, y: pos.y }, user.uid, {
+        const newRectangle = createRectangleShape({ x: clickX, y: clickY }, user.uid, {
           id: generateShapeId('rectangle'),
           width: 120,
           height: 80,
@@ -753,7 +779,7 @@ export const Canvas: React.FC = () => {
       }
     } else if (activeTool === 'circle') {
       try {
-        const newCircle = createCircleShape({ x: pos.x, y: pos.y }, user.uid, {
+        const newCircle = createCircleShape({ x: clickX, y: clickY }, user.uid, {
           id: generateShapeId('circle'),
           radius: 50,
           fill: `${randomColor}40`,
@@ -769,8 +795,8 @@ export const Canvas: React.FC = () => {
     } else if (activeTool === 'line') {
       try {
         const newLine = createLineShape(
-          { x: pos.x, y: pos.y },
-          { x: pos.x + 100, y: pos.y },
+          { x: clickX, y: clickY },
+          { x: clickX + 100, y: clickY },
           user.uid,
           {
             id: generateShapeId('line'),
@@ -786,7 +812,7 @@ export const Canvas: React.FC = () => {
       }
     } else if (activeTool === 'text') {
       try {
-        const newText = createTextShape({ x: pos.x, y: pos.y }, 'New Text', user.uid, {
+        const newText = createTextShape({ x: clickX, y: clickY }, 'New Text', user.uid, {
           id: generateShapeId('text'),
           fontSize: 16,
           fontFamily: 'Arial, sans-serif',
@@ -939,6 +965,8 @@ export const Canvas: React.FC = () => {
         <Toolbar 
           activeTool={activeTool}
           onToolChange={setActiveTool}
+          snapToGridEnabled={gridConfig.enabled}
+          onToggleSnapToGrid={toggleSnapToGrid}
         />
       </DraggablePanel>
       
@@ -984,7 +1012,11 @@ export const Canvas: React.FC = () => {
         >
           <Layer>
             {/* Canvas Background with Grid */}
-            <CanvasBackground scale={scale} />
+            <CanvasBackground 
+              scale={scale} 
+              snapToGridEnabled={gridConfig.enabled}
+              gridSize={gridConfig.size}
+            />
             
             {/* Render All Shapes */}
             {shapes.map((shape) => {
@@ -1061,6 +1093,9 @@ export const Canvas: React.FC = () => {
               currentPos={dragCurrentPos}
               isVisible={isDragSelecting}
             />
+
+            {/* Smart Guides for alignment */}
+            <SmartGuides guides={smartGuides} />
           </Layer>
         </Stage>
         

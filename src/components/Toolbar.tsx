@@ -5,9 +5,16 @@ export type ToolType = 'select' | 'pan' | 'rectangle' | 'circle' | 'line' | 'tex
 interface ToolbarProps {
   activeTool: ToolType;
   onToolChange: (tool: ToolType) => void;
+  snapToGridEnabled?: boolean;
+  onToggleSnapToGrid?: () => void;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ activeTool, onToolChange }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ 
+  activeTool, 
+  onToolChange,
+  snapToGridEnabled = false,
+  onToggleSnapToGrid,
+}) => {
   const tools = [
     {
       id: 'select' as const,
@@ -102,6 +109,28 @@ export const Toolbar: React.FC<ToolbarProps> = ({ activeTool, onToolChange }) =>
             {getToolInstructions(activeTool)}
           </p>
         </div>
+
+        {onToggleSnapToGrid && (
+          <div className="toolbar-section">
+            <h4 className="toolbar-section-title">Grid & Snap</h4>
+            <button
+              className={`toolbar-toggle-button ${snapToGridEnabled ? 'active' : ''}`}
+              onClick={onToggleSnapToGrid}
+              title={snapToGridEnabled ? 'Disable snap to grid' : 'Enable snap to grid'}
+              type="button"
+            >
+              <span className="toggle-icon">
+                {snapToGridEnabled ? '🟩' : '⬜'}
+              </span>
+              <span className="toggle-label">
+                Snap to Grid
+              </span>
+              <span className="toggle-status">
+                {snapToGridEnabled ? 'ON' : 'OFF'}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

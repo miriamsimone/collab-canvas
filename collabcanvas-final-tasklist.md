@@ -204,13 +204,33 @@ collab-canvas/
   - Undo/redo integration
 - **Impact**: Natural language canvas manipulation with 6/8 command categories working
 
+#### PR #15: Undo/Redo System ✅ **COMPLETE**
+- **Status**: 100% Complete - Full command pattern implementation
+- **Key Achievements**:
+  - Command pattern with Command interface and CommandService
+  - Full undo/redo for create, move, resize, delete operations
+  - Batch commands for multi-shape operations
+  - Keyboard shortcuts (Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z)
+  - Integration with all canvas operations
+  - useUndoRedo hook with state management
+- **Impact**: Professional-grade undo/redo for all canvas operations
+
+#### PR #16: Keyboard Shortcuts ✅ **COMPLETE**
+- **Status**: 100% Complete - Comprehensive keyboard shortcut system
+- **Key Achievements**:
+  - useKeyboardShortcuts hook with global event handling
+  - Copy/Paste/Cut/Duplicate/Delete shortcuts
+  - Select All (Cmd/Ctrl+A) and Clear Selection (Esc)
+  - Arrow key nudging (1px or 10px with Shift)
+  - Help panel with '?' key toggle
+  - ShortcutsPanel component with shortcut reference
+- **Impact**: Power user productivity features
+
 ### 🔄 TODO FEATURES (Priority Order)
 
 #### High Priority (Required for A Grade):
-1. **PR #15: Undo/Redo System** - Tier 1 Feature (Critical for AI integration)
-2. **Complete PR #12 AI Commands** - Remaining 2/8 categories
-3. **PR #16: Keyboard Shortcuts** - Tier 1 Feature (Quick wins)
-4. **PR #18: Alignment Tools + AI** - Tier 2 Feature (Enhances AI)
+1. **Complete PR #12 AI Commands** - Remaining 2/8 categories + undo integration
+2. **PR #18: Alignment Tools + AI** - Tier 2 Feature (Enhances AI)
 
 #### Medium Priority (Polish & Extra Points):
 5. **PR #17: Snap-to-Grid** - Tier 1 Feature
@@ -226,21 +246,25 @@ collab-canvas/
 
 ### 📈 Current Grade Estimate
 
-**Completed Work Score: ~70-75/100 points**
+**Completed Work Score: ~78-82/100 points**
 - Core Infrastructure: 28/30 (excellent with RTDB)
-- Canvas Features: 14/20 (multi-shape, multi-select done)
+- Canvas Features: 18/20 (multi-shape, multi-select, undo/redo, keyboard shortcuts)
 - AI Agent: 18/25 (6/8 categories working)
-- Technical Implementation: 8/10 (solid architecture)
-- Bonus: +1 (innovation with RTDB)
+- Technical Implementation: 10/10 (solid architecture with command pattern)
+- Bonus: +2 (innovation with RTDB + comprehensive undo/redo)
 
-**Remaining Work to A Grade (90+): ~15-20 points needed**
-- Complete AI commands: +4 points
-- Add Undo/Redo: +3 points  
-- Add 2-3 more Tier 1/2 features: +6 points
-- Documentation & Demo: +4 points
-- Polish & optimization: +2 points
+**Recent Additions (+8 points):**
+- ✅ Undo/Redo System: +3 points
+- ✅ Keyboard Shortcuts: +3 points
+- ✅ Improved architecture: +2 points
 
-**Path to 90+ points is clear and achievable!**
+**Remaining Work to A Grade (90+): ~8-12 points needed**
+- Complete remaining AI commands: +3 points
+- Add AI undo/redo integration: +2 points
+- Add 1-2 more Tier 1/2 features: +4 points
+- Documentation & Demo: +3 points
+
+**Path to 90+ points is now very achievable!**
 
 ---
 
