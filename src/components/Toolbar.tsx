@@ -1,12 +1,13 @@
 import React from 'react';
 
-export type ToolType = 'select' | 'pan' | 'rectangle' | 'circle' | 'line' | 'text';
+export type ToolType = 'select' | 'pan' | 'rectangle' | 'circle' | 'line' | 'text' | 'comment';
 
 interface ToolbarProps {
   activeTool: ToolType;
   onToolChange: (tool: ToolType) => void;
   snapToGridEnabled?: boolean;
   onToggleSnapToGrid?: () => void;
+  unresolvedCommentsCount?: number;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({ 
@@ -14,6 +15,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onToolChange,
   snapToGridEnabled = false,
   onToggleSnapToGrid,
+  unresolvedCommentsCount = 0,
 }) => {
   const tools = [
     {
@@ -60,6 +62,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       icon: '📝',
       description: 'Click to add text',
     },
+    {
+      id: 'comment' as const,
+      name: 'Comment',
+      icon: '💬',
+      description: 'Click to add comments',
+      badge: unresolvedCommentsCount > 0 ? unresolvedCommentsCount : undefined,
+    },
   ];
 
   const getToolInstructions = (tool: ToolType): string => {
@@ -76,6 +85,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         return 'Click and drag to create lines between two points';
       case 'text':
         return 'Click on canvas to add text, double-click to edit';
+      case 'comment':
+        return 'Click on canvas to add comments, click comment pins to view threads';
       default:
         return 'Select a tool to get started';
     }

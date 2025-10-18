@@ -1,0 +1,77 @@
+.comment-input-overlay {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.comment-input-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+.comment-input-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.comment-input-textarea:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.comment-input-textarea:disabled {
+  background: #F3F4F6;
+  cursor: not-allowed;
+}
+
+.comment-input-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.comment-input-button {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.comment-input-button.cancel {
+  background: #F3F4F6;
+  color: #374151;
+}
+
+.comment-input-button.cancel:hover:not(:disabled) {
+  background: #E5E7EB;
+}
+
+.comment-input-button.submit {
+  background: #3B82F6;
+  color: white;
+}
+
+.comment-input-button.submit:hover:not(:disabled) {
+  background: #2563EB;
+}
+
+.comment-input-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
