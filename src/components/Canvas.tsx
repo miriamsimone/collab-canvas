@@ -11,6 +11,7 @@ import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useGrid } from '../hooks/useGrid';
 import { useZIndex } from '../hooks/useZIndex';
+import { useAlignment } from '../hooks/useAlignment';
 import { canvasService } from '../services/canvasService';
 import { CreateShapeCommand, BatchCommand } from '../services/commandService';
 import { copyShapesToClipboard, getShapesFromClipboard, duplicateShapes } from '../utils/clipboardHelpers';
@@ -31,6 +32,7 @@ import { AICommandHistory } from './features/AI/AICommandHistory';
 import { ShortcutsPanel } from './features/KeyboardShortcuts/ShortcutsPanel';
 import { SmartGuides } from './features/Grid/SmartGuides';
 import { ZIndexControls } from './features/ZIndex/ZIndexControls';
+import { AlignmentControls } from './features/Alignment/AlignmentControls';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 
 export const Canvas: React.FC = () => {
@@ -397,6 +399,18 @@ export const Canvas: React.FC = () => {
     sortShapesByZIndex,
   } = useZIndex();
 
+  // Alignment management
+  const {
+    alignLeft,
+    alignCenter,
+    alignRight,
+    alignTop,
+    alignMiddle,
+    alignBottom,
+    distributeHorizontally,
+    distributeVertically,
+  } = useAlignment();
+
   // Z-Index handlers
   const handleBringToFront = useCallback(async () => {
     if (!user) return;
@@ -469,6 +483,143 @@ export const Canvas: React.FC = () => {
       console.error('Failed to send backward:', error);
     }
   }, [user, getSelectedObjects, shapes, sendBackward, executeCommand]);
+
+  // Alignment handlers
+  const handleAlignLeft = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length < 2) return;
+
+    const updates = alignLeft(selectedObjects);
+    if (updates.length === 0) return;
+
+    try {
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: 'left' }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to align left:', error);
+    }
+  }, [user, getSelectedObjects, shapes, alignLeft, executeCommand]);
+
+  const handleAlignCenter = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length < 2) return;
+
+    const updates = alignCenter(selectedObjects);
+    if (updates.length === 0) return;
+
+    try {
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: 'center' }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to align center:', error);
+    }
+  }, [user, getSelectedObjects, shapes, alignCenter, executeCommand]);
+
+  const handleAlignRight = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length < 2) return;
+
+    const updates = alignRight(selectedObjects);
+    if (updates.length === 0) return;
+
+    try {
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: 'right' }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to align right:', error);
+    }
+  }, [user, getSelectedObjects, shapes, alignRight, executeCommand]);
+
+  const handleAlignTop = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length < 2) return;
+
+    const updates = alignTop(selectedObjects);
+    if (updates.length === 0) return;
+
+    try {
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: 'top' }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to align top:', error);
+    }
+  }, [user, getSelectedObjects, shapes, alignTop, executeCommand]);
+
+  const handleAlignMiddle = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length < 2) return;
+
+    const updates = alignMiddle(selectedObjects);
+    if (updates.length === 0) return;
+
+    try {
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: 'middle' }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to align middle:', error);
+    }
+  }, [user, getSelectedObjects, shapes, alignMiddle, executeCommand]);
+
+  const handleAlignBottom = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length < 2) return;
+
+    const updates = alignBottom(selectedObjects);
+    if (updates.length === 0) return;
+
+    try {
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: 'bottom' }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to align bottom:', error);
+    }
+  }, [user, getSelectedObjects, shapes, alignBottom, executeCommand]);
+
+  const handleDistributeHorizontally = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length < 3) return;
+
+    const updates = distributeHorizontally(selectedObjects);
+    if (updates.length === 0) return;
+
+    try {
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: 'distribute-h' }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to distribute horizontally:', error);
+    }
+  }, [user, getSelectedObjects, shapes, distributeHorizontally, executeCommand]);
+
+  const handleDistributeVertically = useCallback(async () => {
+    if (!user) return;
+    const selectedObjects = getSelectedObjects(shapes);
+    if (selectedObjects.length < 3) return;
+
+    const updates = distributeVertically(selectedObjects);
+    if (updates.length === 0) return;
+
+    try {
+      const { AlignShapesCommand } = await import('../services/commandService');
+      const command = new AlignShapesCommand({ updates, alignmentType: 'distribute-v' }, user.uid);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('Failed to distribute vertically:', error);
+    }
+  }, [user, getSelectedObjects, shapes, distributeVertically, executeCommand]);
 
   // Initialize shared canvas on mount
   useEffect(() => {
@@ -1100,6 +1251,26 @@ export const Canvas: React.FC = () => {
           onBringForward={handleBringForward}
           onSendBackward={handleSendBackward}
           onSendToBack={handleSendToBack}
+        />
+      </DraggablePanel>
+
+      {/* Alignment Controls Panel */}
+      <DraggablePanel 
+        title="Alignment"
+        defaultPosition={{ x: 20, y: 680 }}
+        className="alignment-panel"
+      >
+        <AlignmentControls
+          hasSelection={getSelectedObjects(shapes).length > 0}
+          hasMultipleSelection={getSelectedObjects(shapes).length >= 2}
+          onAlignLeft={handleAlignLeft}
+          onAlignCenter={handleAlignCenter}
+          onAlignRight={handleAlignRight}
+          onAlignTop={handleAlignTop}
+          onAlignMiddle={handleAlignMiddle}
+          onAlignBottom={handleAlignBottom}
+          onDistributeHorizontally={handleDistributeHorizontally}
+          onDistributeVertically={handleDistributeVertically}
         />
       </DraggablePanel>
       

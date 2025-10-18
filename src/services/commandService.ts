@@ -12,6 +12,7 @@ import type {
   BatchCommandData,
   AICommandData,
   ChangeZIndexCommandData,
+  AlignShapesCommandData,
 } from '../types/commands';
 import type { Shape } from '../types/shapes';
 import { shapesService } from './shapesService';
@@ -341,6 +342,45 @@ export class ChangeZIndexCommand implements Command {
     // Restore old z-index values
     for (const { shapeId, oldZIndex } of this.data.updates) {
       await shapesService.updateShape(shapeId, { zIndex: oldZIndex }, this.userId);
+    }
+  }
+}
+
+/**
+ * AlignShapesCommand - Handles aligning multiple shapes
+ */
+export class AlignShapesCommand implements Command {
+  readonly id: string;
+  readonly type = 'align-shapes';
+  readonly timestamp: number;
+  readonly description: string;
+  
+  private data: AlignShapesCommandData;
+  private userId: string;
+  
+  constructor(data: AlignShapesCommandData, userId: string) {
+    this.id = generateCommandId();
+    this.timestamp = Date.now();
+    this.data = data;
+    this.userId = userId;
+    
+    const count = data.updates.length;
+    this.description = count === 1 
+      ? `Align: ${data.alignmentType}`
+      : `Align ${count} shapes: ${data.alignmentType}`;
+  }
+  
+  async execute(): Promise<void> {
+    // Apply new positions
+    for (const { shapeId, newX, newY } of this.data.updates) {
+      await shapesService.updateShape(shapeId, { x: newX, y: newY }, this.userId);
+    }
+  }
+  
+  async undo(): Promise<void> {
+    // Restore old positions
+    for (const { shapeId, oldX, oldY } of this.data.updates) {
+      await shapesService.updateShape(shapeId, { x: oldX, y: oldY }, this.userId);
     }
   }
 }

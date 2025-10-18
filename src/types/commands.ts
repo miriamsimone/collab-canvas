@@ -116,6 +116,20 @@ export interface ChangeZIndexCommandData {
 }
 
 /**
+ * Command data for aligning shapes
+ */
+export interface AlignShapesCommandData {
+  updates: Array<{
+    shapeId: string;
+    oldX: number;
+    oldY: number;
+    newX: number;
+    newY: number;
+  }>;
+  alignmentType: string;
+}
+
+/**
  * Command history entry
  */
 export interface CommandHistoryEntry {

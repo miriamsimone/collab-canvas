@@ -1,0 +1,87 @@
+/* Alignment Controls Styling */
+.alignment-controls {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.alignment-section {
+  margin-bottom: 16px;
+}
+
+.alignment-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.alignment-section-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.alignment-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.alignment-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  background: transparent;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10px;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.alignment-button:hover:not(:disabled) {
+  border-color: #007ACC;
+  background: rgba(0, 122, 204, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.alignment-button:active:not(:disabled) {
+  transform: translateY(0);
+  background: rgba(0, 122, 204, 0.1);
+}
+
+.alignment-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.alignment-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.alignment-label {
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.alignment-hint {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Distribute section - 2 columns instead of 3 */
+.alignment-section:last-of-type .alignment-buttons {
+  grid-template-columns: repeat(2, 1fr);
+}
+
