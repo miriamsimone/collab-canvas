@@ -2,7 +2,17 @@
 
 ## 🤖 Overview
 
-The AI Canvas Agent allows users to create rectangles using natural language commands like "create a red rectangle at 200, 150". This feature uses the Vercel AI SDK with OpenAI GPT-4o-mini for fast, reliable command processing.
+The AI Canvas Agent allows users to create rectangles using natural language commands like "create a red rectangle at 200, 150". This feature uses a secure Vercel API route with OpenAI GPT-4o-mini for fast, reliable command processing.
+
+## 🔒 Security Architecture
+
+The AI implementation uses a **secure server-side architecture**:
+
+- **Client-Side**: Sends commands to `/api/ai/command` Vercel API route
+- **Server-Side**: API route processes commands using OpenAI API with secure key storage
+- **Benefit**: OpenAI API key is never exposed to the browser or client-side code
+
+This prevents API key theft and unauthorized usage.
 
 ## 📋 Prerequisites
 
@@ -25,12 +35,12 @@ Create a `.env.local` file in the project root with your API key:
 
 ```bash
 # .env.local
-VITE_OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 **Important:**
 - Replace `your_openai_api_key_here` with your actual OpenAI API key
-- Keep the `VITE_` prefix (required for Vite to expose the variable)
+- No `VITE_` prefix - this keeps the API key secure on the server-side only
 - Never commit this file to version control (it's already in `.gitignore`)
 
 ### 3. Restart Development Server
@@ -76,7 +86,7 @@ The AI understands both color names and hex codes:
 
 1. Check that `.env.local` file exists in project root
 2. Verify the API key starts with `sk-`
-3. Ensure the variable name is `VITE_OPENAI_API_KEY`
+3. Ensure the variable name is `OPENAI_API_KEY`
 4. Restart the development server
 
 ### "Rate limit exceeded"

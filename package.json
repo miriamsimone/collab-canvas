@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.52",
+    "@vercel/node": "^5.4.0",
     "ai": "^5.0.76",
     "firebase": "^12.4.0",
     "konva": "^10.0.2",
