@@ -447,15 +447,3 @@ class CommandService {
 export const commandService = new CommandService();
 export default commandService;
 
-// Export command classes for direct use
-export {
-  CreateShapeCommand,
-  DeleteShapeCommand,
-  MoveShapeCommand,
-  ResizeShapeCommand,
-  UpdateShapeCommand,
-  UpdateTextCommand,
-  BatchCommand,
-  AICommand,
-};
-
