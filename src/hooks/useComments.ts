@@ -53,11 +53,20 @@ export const useComments = (): UseCommentsState & UseCommentsActions => {
 
     try {
       setError(null);
+      // Generate a color from user's display name if color not available
+      const generateColor = (name: string): string => {
+        const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+        const hash = name.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+        return colors[hash % colors.length];
+      };
+      
+      const authorColor = (userProfile as any).color || generateColor(userProfile.displayName || 'User');
+      
       await commentsService.addComment(
         input,
         user.uid,
         userProfile.displayName || 'Anonymous',
-        userProfile.color
+        authorColor
       );
       setIsAddingComment(false);
     } catch (err: any) {

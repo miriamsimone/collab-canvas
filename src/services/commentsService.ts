@@ -10,7 +10,7 @@ import {
   orderBy,
   serverTimestamp,
   Timestamp,
-  Unsubscribe
+  type Unsubscribe
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Comment, CommentReply, CommentInput } from '../types/comments';

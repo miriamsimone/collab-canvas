@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useState } from 'react';
-import type { Shape } from '../types/shapes';
 
 export interface KeyboardShortcutsConfig {
   // Selection

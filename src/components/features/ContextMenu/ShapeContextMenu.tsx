@@ -91,7 +91,7 @@ export const ShapeContextMenu: React.FC<ShapeContextMenuProps> = ({
       className="shape-context-menu"
       style={{ left: x, top: y }}
     >
-      {items.map((item, index) => (
+      {items.map((item) => (
         <React.Fragment key={item.id}>
           {item.separator && <div className="context-menu-separator" />}
           <button

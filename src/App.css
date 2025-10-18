@@ -1427,3 +1427,15 @@ body {
 .draggable-panel.dragging .panel-header {
   cursor: grabbing !important;
 }
+
+/* Comment Panel Styles */
+.comment-thread-panel {
+  width: 380px;
+  max-height: 600px;
+}
+
+.comment-thread-panel .panel-content {
+  padding: 0;
+  max-height: 550px;
+  overflow-y: auto;
+}

@@ -12,6 +12,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useGrid } from '../hooks/useGrid';
 import { useZIndex } from '../hooks/useZIndex';
 import { useAlignment } from '../hooks/useAlignment';
+import { useComments } from '../hooks/useComments';
 import { canvasService } from '../services/canvasService';
 import { CreateShapeCommand, BatchCommand } from '../services/commandService';
 import { copyShapesToClipboard, getShapesFromClipboard, duplicateShapes } from '../utils/clipboardHelpers';
@@ -33,7 +34,11 @@ import { ShortcutsPanel } from './features/KeyboardShortcuts/ShortcutsPanel';
 import { SmartGuides } from './features/Grid/SmartGuides';
 import { GridOverlay } from './features/Grid/GridOverlay';
 import { ShapeContextMenu, type ContextMenuItem } from './features/ContextMenu/ShapeContextMenu';
+import { CommentPin } from './features/Comments/CommentPin';
+import { CommentThread } from './features/Comments/CommentThread';
+import { CommentInput } from './features/Comments/CommentInput';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
+import { countUnresolvedComments } from '../services/commentsService';
 
 export const Canvas: React.FC = () => {
   const { user, userProfile, signOut } = useAuth();
@@ -103,6 +108,17 @@ export const Canvas: React.FC = () => {
     clearError: clearPresenceError,
   } = usePresence();
 
+  // Collaborative comments
+  const {
+    comments,
+    activeCommentId,
+    addComment,
+    addReply,
+    toggleResolved,
+    deleteComment,
+    setActiveComment,
+  } = useComments();
+
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight - 60, // Account for header
@@ -118,6 +134,7 @@ export const Canvas: React.FC = () => {
   // Local UI state  
   const [isDraggingRectangle, setIsDraggingRectangle] = useState<boolean>(false);
   const [canvasError, setCanvasError] = useState<string | null>(null);
+  const [newCommentPos, setNewCommentPos] = useState<{ x: number; y: number; screenX: number; screenY: number } | null>(null);
 
   // Bulk operations for selected objects
   const handleBulkDelete = async () => {
@@ -306,6 +323,35 @@ export const Canvas: React.FC = () => {
     
     await handleBulkMove(deltaX, deltaY);
   }, [shapes, getSelectedObjects, handleBulkMove]);
+
+  // Comment handlers
+  const handleAddComment = async (text: string) => {
+    if (!newCommentPos) return;
+    
+    try {
+      await addComment({
+        text,
+        x: newCommentPos.x,
+        y: newCommentPos.y,
+      });
+      setNewCommentPos(null);
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      setCanvasError('Failed to add comment. Please try again.');
+    }
+  };
+
+  const handleCancelComment = () => {
+    setNewCommentPos(null);
+  };
+
+  const handleCommentPinClick = (commentId: string) => {
+    setActiveComment(activeCommentId === commentId ? null : commentId);
+  };
+
+  const handleCloseCommentThread = () => {
+    setActiveComment(null);
+  };
 
   // AI shape creation handlers
   const handleAICreateRectangle = async (x: number, y: number, width: number, height: number, color: string): Promise<void> => {
@@ -1373,6 +1419,15 @@ export const Canvas: React.FC = () => {
       } catch (error) {
         console.error('Failed to create text:', error);
       }
+    } else if (activeTool === 'comment') {
+      // Store the position and show the comment input
+      const containerRect = stage.container().getBoundingClientRect();
+      setNewCommentPos({
+        x: clickX,
+        y: clickY,
+        screenX: pos.x * scale + x + containerRect.left,
+        screenY: pos.y * scale + y + containerRect.top,
+      });
     } else if (activeTool === 'select') {
       // Deselect if clicking on empty space (not on a shape)
       if (e.target === stage) {
@@ -1516,6 +1571,7 @@ export const Canvas: React.FC = () => {
           onToolChange={setActiveTool}
           snapToGridEnabled={gridConfig.enabled}
           onToggleSnapToGrid={toggleSnapToGrid}
+          unresolvedCommentsCount={countUnresolvedComments(comments)}
         />
       </DraggablePanel>
 
@@ -1661,6 +1717,19 @@ export const Canvas: React.FC = () => {
             {/* Smart Guides for alignment */}
             <SmartGuides guides={smartGuides} />
           </Layer>
+
+          {/* Comments Layer */}
+          <Layer>
+            {comments.map((comment) => (
+              <CommentPin
+                key={comment.id}
+                comment={comment}
+                isActive={activeCommentId === comment.id}
+                onClick={() => handleCommentPinClick(comment.id)}
+                scale={scale}
+              />
+            ))}
+          </Layer>
         </Stage>
         
         {/* Multiplayer Cursors Overlay */}
@@ -1761,6 +1830,41 @@ export const Canvas: React.FC = () => {
         isVisible={isHelpVisible}
         onClose={() => setIsHelpVisible(false)}
       />
+
+      {/* Comment Thread Panel */}
+      {activeCommentId && (
+        <DraggablePanel
+          title=""
+          defaultPosition={{ x: windowSize.width - 420, y: 200 }}
+          className="comment-thread-panel"
+        >
+          {(() => {
+            const activeComment = comments.find(c => c.id === activeCommentId);
+            if (!activeComment || !user) return null;
+            
+            return (
+              <CommentThread
+                comment={activeComment}
+                currentUserId={user.uid}
+                onAddReply={(text) => addReply(activeCommentId, text)}
+                onToggleResolved={() => toggleResolved(activeCommentId)}
+                onDelete={() => deleteComment(activeCommentId)}
+                onClose={handleCloseCommentThread}
+              />
+            );
+          })()}
+        </DraggablePanel>
+      )}
+
+      {/* Comment Input Overlay */}
+      {newCommentPos && (
+        <CommentInput
+          x={newCommentPos.screenX}
+          y={newCommentPos.screenY}
+          onSubmit={handleAddComment}
+          onCancel={handleCancelComment}
+        />
+      )}
 
       {/* Context Menu */}
       {contextMenu && (

@@ -102,8 +102,8 @@ export const useGrid = () => {
     (
       x: number,
       y: number,
-      width: number,
-      height: number
+      _width: number,
+      _height: number
     ): { x: number; y: number; snapped: boolean } => {
       if (!gridConfig.enabled) {
         return { x, y, snapped: false };
