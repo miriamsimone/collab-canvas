@@ -253,7 +253,13 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         stroke={object.stroke}
         strokeWidth={object.strokeWidth}
         draggable
-        onClick={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onClick={(e) => {
+          // Ignore right-clicks (context menu clicks)
+          if ((e.evt as MouseEvent)?.button === 2) {
+            return;
+          }
+          onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey });
+        }}
         onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
         onContextMenu={onContextMenu}
         onDragStart={handleDragStart}

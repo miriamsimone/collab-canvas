@@ -372,33 +372,6 @@ export const Canvas: React.FC = () => {
     onBulkChangeColor: handleBulkChangeColor,
   });
 
-  // Set up keyboard shortcuts (after AI hook to access aiLoading)
-  const { isHelpVisible, setIsHelpVisible } = useKeyboardShortcuts({
-    onSelectAll: () => selectAll(shapes),
-    onClearSelection: clearSelection,
-    onCopy: handleCopy,
-    onPaste: handlePaste,
-    onCut: handleCut,
-    onDuplicate: handleDuplicate,
-    onDelete: handleBulkDelete,
-    onNudge: handleNudge,
-    // Layer (Z-Index) operations
-    onBringToFront: handleBringToFront,
-    onBringForward: handleBringForward,
-    onSendBackward: handleSendBackward,
-    onSendToBack: handleSendToBack,
-    // Alignment operations
-    onAlignLeft: handleAlignLeft,
-    onAlignCenter: handleAlignCenter,
-    onAlignRight: handleAlignRight,
-    onAlignTop: handleAlignTop,
-    onAlignMiddle: handleAlignMiddle,
-    onAlignBottom: handleAlignBottom,
-    onDistributeHorizontally: handleDistributeHorizontally,
-    onDistributeVertically: handleDistributeVertically,
-    enabled: true, // Always enabled
-  });
-
   // Grid and snap-to-grid functionality
   const {
     gridConfig,
@@ -641,15 +614,47 @@ export const Canvas: React.FC = () => {
     }
   }, [user, getSelectedObjects, shapes, distributeVertically, executeCommand]);
 
+  // Set up keyboard shortcuts (after all handler functions are defined)
+  const { isHelpVisible, setIsHelpVisible } = useKeyboardShortcuts({
+    onSelectAll: () => selectAll(shapes),
+    onClearSelection: clearSelection,
+    onCopy: handleCopy,
+    onPaste: handlePaste,
+    onCut: handleCut,
+    onDuplicate: handleDuplicate,
+    onDelete: handleBulkDelete,
+    onNudge: handleNudge,
+    // Layer (Z-Index) operations
+    onBringToFront: handleBringToFront,
+    onBringForward: handleBringForward,
+    onSendBackward: handleSendBackward,
+    onSendToBack: handleSendToBack,
+    // Alignment operations
+    onAlignLeft: handleAlignLeft,
+    onAlignCenter: handleAlignCenter,
+    onAlignRight: handleAlignRight,
+    onAlignTop: handleAlignTop,
+    onAlignMiddle: handleAlignMiddle,
+    onAlignBottom: handleAlignBottom,
+    onDistributeHorizontally: handleDistributeHorizontally,
+    onDistributeVertically: handleDistributeVertically,
+    enabled: true, // Always enabled
+  });
+
   // Context menu handlers
   const handleContextMenu = useCallback((e: Konva.KonvaEventObject<PointerEvent>) => {
     e.evt.preventDefault();
+    e.evt.stopPropagation();
+    
+    // Cancel the event bubble to prevent onClick from firing
+    e.cancelBubble = true;
     
     // Get the clicked shape
     const clickedShape = e.target;
     const shapeId = clickedShape.id();
     
     // If the clicked shape is not selected, select only it
+    // Otherwise, keep the current selection (preserve multi-select)
     if (shapeId && !isSelected(shapeId)) {
       selectObject(shapeId);
     }
@@ -670,25 +675,29 @@ export const Canvas: React.FC = () => {
   const getContextMenuItems = (): ContextMenuItem[] => {
     const selectedObjects = getSelectedObjects(shapes);
     const hasSelection = selectedObjects.length > 0;
+    const selectionCount = selectedObjects.length;
+    
+    // Add count to labels when multiple objects are selected
+    const countSuffix = selectionCount > 1 ? ` (${selectionCount})` : '';
 
     return [
       {
         id: 'copy',
-        label: 'Copy',
+        label: `Copy${countSuffix}`,
         shortcut: '⌘C',
         onClick: handleCopy,
         disabled: !hasSelection,
       },
       {
         id: 'duplicate',
-        label: 'Duplicate',
+        label: `Duplicate${countSuffix}`,
         shortcut: '⌘D',
         onClick: handleDuplicate,
         disabled: !hasSelection,
       },
       {
         id: 'delete',
-        label: 'Delete',
+        label: `Delete${countSuffix}`,
         shortcut: '⌫',
         onClick: handleBulkDelete,
         disabled: !hasSelection,
@@ -696,7 +705,7 @@ export const Canvas: React.FC = () => {
       },
       {
         id: 'bring-to-front',
-        label: 'Bring to Front',
+        label: `Bring to Front${countSuffix}`,
         shortcut: '⌘⇧]',
         onClick: handleBringToFront,
         disabled: !hasSelection,
@@ -704,21 +713,21 @@ export const Canvas: React.FC = () => {
       },
       {
         id: 'bring-forward',
-        label: 'Bring Forward',
+        label: `Bring Forward${countSuffix}`,
         shortcut: '⌘]',
         onClick: handleBringForward,
         disabled: !hasSelection,
       },
       {
         id: 'send-backward',
-        label: 'Send Backward',
+        label: `Send Backward${countSuffix}`,
         shortcut: '⌘[',
         onClick: handleSendBackward,
         disabled: !hasSelection,
       },
       {
         id: 'send-to-back',
-        label: 'Send to Back',
+        label: `Send to Back${countSuffix}`,
         shortcut: '⌘⇧[',
         onClick: handleSendToBack,
         disabled: !hasSelection,

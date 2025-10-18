@@ -34,7 +34,7 @@ export const useCanvas = (): CanvasState & CanvasActions => {
   const [x, setX] = useState(0);
   const [y, setY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [activeTool, setActiveTool] = useState<ToolType>('rectangle');
+  const [activeTool, setActiveTool] = useState<ToolType>('select');
 
   // Set canvas position
   const setPosition = useCallback((newX: number, newY: number) => {
