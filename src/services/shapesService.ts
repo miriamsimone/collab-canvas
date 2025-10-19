@@ -220,7 +220,7 @@ export class ShapesService {
       for (const shapeData of batchShapes) {
         const shapeRef = doc(collection(db, this.collectionPath), shapeData.id);
         const firestoreData: FirestoreShape = {
-          ...prepareShapeForFirestore(shapeData),
+          ...prepareShapeForFirestore(shapeData, userId),
           createdAt: now,
           updatedAt: now,
           lastModifiedBy: userId,

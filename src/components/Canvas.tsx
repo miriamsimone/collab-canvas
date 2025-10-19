@@ -274,7 +274,6 @@ export const Canvas: React.FC = () => {
             fill: transparentFill,
             stroke: `#${cleanColor}`,
             strokeWidth: 2,
-            createdBy: user.uid,
           });
         } else if (shapeType === 'circle') {
           const radius = baseParams?.radius ?? 30;
@@ -291,7 +290,6 @@ export const Canvas: React.FC = () => {
             fill: transparentFill,
             stroke: `#${cleanColor}`,
             strokeWidth: 2,
-            createdBy: user.uid,
           });
         } else if (shapeType === 'line') {
           const length = baseParams?.length ?? 100;
@@ -310,7 +308,6 @@ export const Canvas: React.FC = () => {
             y2,
             stroke: `#${cleanColor}`,
             strokeWidth: 2,
-            createdBy: user.uid,
           });
         } else if (shapeType === 'text') {
           const text = baseParams?.text ?? `Text ${i + 1}`;
@@ -325,7 +322,6 @@ export const Canvas: React.FC = () => {
             text,
             fontSize,
             fill: color,
-            createdBy: user.uid,
           });
         }
       }
