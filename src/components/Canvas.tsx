@@ -1905,7 +1905,7 @@ export const Canvas: React.FC = () => {
       {/* AI Command Panel */}
       <DraggablePanel 
         title="AI Assistant"
-        defaultPosition={{ x: 20, y: windowSize.height - 320 }}
+        defaultPosition={{ x: windowSize.width - 340, y: windowSize.height - 320 }}
         className="ai-assistant-panel"
       >
         <div className="ai-panel">
