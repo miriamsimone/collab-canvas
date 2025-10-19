@@ -21,6 +21,11 @@ export interface BaseShape {
   isLockedByOther?: boolean;
   lockedBy?: string;
   lockedByName?: string;
+  // Audio recording information
+  audioUrl?: string;           // Firebase Storage download URL
+  audioRecordedBy?: string;    // User ID who recorded
+  audioRecordedAt?: number;    // Timestamp of recording
+  audioDuration?: number;      // Duration in seconds
 }
 
 // Rectangle-specific properties

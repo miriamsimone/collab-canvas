@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
+import { getStorage } from 'firebase/storage';
 
 // Firebase configuration with hardcoded values
 const firebaseConfig = {
@@ -21,6 +22,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const rtdb = getDatabase(app);
+export const storage = getStorage(app);
 
 // Configure for development environment
 if (import.meta.env.DEV) {
@@ -28,6 +30,8 @@ if (import.meta.env.DEV) {
   console.log('Firebase project:', firebaseConfig.projectId);
   console.log('Auth domain:', firebaseConfig.authDomain);
   console.log('Realtime Database URL:', firebaseConfig.databaseURL);
+  console.log('Storage bucket:', firebaseConfig.storageBucket);
+  console.log('Storage instance:', storage);
   
   // Add localhost to auth domain for development
   console.log('Note: If you see CORS errors, add localhost to Firebase authorized domains');

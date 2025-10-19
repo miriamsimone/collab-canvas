@@ -15,6 +15,7 @@ import { useAlignment } from '../hooks/useAlignment';
 import { useComments } from '../hooks/useComments';
 import { canvasService } from '../services/canvasService';
 import { shapesService } from '../services/shapesService';
+import { audioService } from '../services/audioService';
 import { CreateShapeCommand, BatchCommand } from '../services/commandService';
 import { copyShapesToClipboard, getShapesFromClipboard, duplicateShapes } from '../utils/clipboardHelpers';
 import { CanvasBackground } from './CanvasBackground';
@@ -360,6 +361,30 @@ export const Canvas: React.FC = () => {
     } catch (error) {
       console.error(`Failed to bulk create ${shapeType}s:`, error);
       setCanvasError(`Failed to bulk create shapes. Please try again.`);
+    }
+  };
+
+  // Audio Recording Handlers
+  const handleAudioUpdate = async (shapeId: string, audioUrl: string, duration: number) => {
+    if (!user) return;
+    
+    try {
+      await shapesService.updateShapeAudio(shapeId, audioUrl, duration, user.uid);
+      console.log(`✅ Audio saved for shape ${shapeId} (${duration}s)`);
+    } catch (error) {
+      console.error('Failed to update audio:', error);
+      setCanvasError('Failed to save recording. Please try again.');
+    }
+  };
+
+  const handleAudioDelete = async (shapeId: string, audioUrl: string) => {
+    try {
+      // Delete from Firebase Storage
+      await audioService.deleteAudio(audioUrl);
+      console.log(`✅ Audio deleted for shape ${shapeId}`);
+    } catch (error) {
+      console.error('Failed to delete audio:', error);
+      // Don't show error to user, deletion failure shouldn't block re-recording
     }
   };
 
@@ -1809,6 +1834,9 @@ export const Canvas: React.FC = () => {
                     currentUserId={user?.uid}
                     currentUserName={userProfile?.displayName}
                     onCursorUpdate={updateCursorPosition}
+                    canvasId="shared"
+                    onAudioUpdate={handleAudioUpdate}
+                    onAudioDelete={handleAudioDelete}
                   />
                 );
               } else if (shape.type === 'circle') {
@@ -1826,6 +1854,9 @@ export const Canvas: React.FC = () => {
                     currentUserId={user?.uid}
                     currentUserName={userProfile?.displayName}
                     onCursorUpdate={updateCursorPosition}
+                    canvasId="shared"
+                    onAudioUpdate={handleAudioUpdate}
+                    onAudioDelete={handleAudioDelete}
                   />
                 );
               } else if (shape.type === 'line') {

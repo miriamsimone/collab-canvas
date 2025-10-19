@@ -1,8 +1,9 @@
 import React from 'react';
-import { Circle, Transformer } from 'react-konva';
+import { Circle, Transformer, Group, Circle as KonvaCircle } from 'react-konva';
 import Konva from 'konva';
 import type { CircleShape } from '../../types/shapes';
 import { realtimeObjectService } from '../../services/realtimeObjectService';
+import { AudioControls } from '../features/Audio/AudioControls';
 
 interface CircleComponentProps {
   shape: CircleShape;
@@ -16,6 +17,9 @@ interface CircleComponentProps {
   currentUserId?: string;
   currentUserName?: string;
   onCursorUpdate?: (x: number, y: number) => void;
+  canvasId?: string;
+  onAudioUpdate?: (id: string, audioUrl: string, duration: number) => Promise<void>;
+  onAudioDelete?: (id: string, audioUrl: string) => Promise<void>;
 }
 
 export const CircleComponent: React.FC<CircleComponentProps> = ({
@@ -30,6 +34,9 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
   currentUserId,
   currentUserName,
   onCursorUpdate,
+  canvasId,
+  onAudioUpdate,
+  onAudioDelete,
 }) => {
   const shapeRef = React.useRef<Konva.Circle>(null);
   const transformerRef = React.useRef<Konva.Transformer>(null);
@@ -355,6 +362,48 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
             'bottom-left'
           ]}
         />
+      )}
+
+      {/* Audio Controls - Show when selected and not locked */}
+      {isSelected && !isLocked && canvasId && (
+        <AudioControls
+          shapeId={shape.id}
+          canvasId={canvasId}
+          x={shape.x + shape.radius}
+          y={shape.y - shape.radius}
+          hasAudio={!!shape.audioUrl}
+          audioUrl={shape.audioUrl}
+          onRecordingComplete={async (audioUrl, duration) => {
+            if (onAudioUpdate) {
+              await onAudioUpdate(shape.id, audioUrl, duration);
+            }
+          }}
+          onDeleteOldAudio={async () => {
+            if (shape.audioUrl && onAudioDelete) {
+              await onAudioDelete(shape.id, shape.audioUrl);
+            }
+          }}
+        />
+      )}
+
+      {/* Audio Indicator - Show small icon if shape has audio */}
+      {shape.audioUrl && !isSelected && (
+        <Group x={shape.x + shape.radius * 0.7} y={shape.y - shape.radius * 0.7}>
+          <KonvaCircle
+            radius={6}
+            fill="#3b82f6"
+            stroke="#fff"
+            strokeWidth={1}
+            shadowColor="rgba(0, 0, 0, 0.3)"
+            shadowBlur={2}
+          />
+          <KonvaCircle
+            radius={3}
+            fill="#fff"
+            x={0}
+            y={0}
+          />
+        </Group>
       )}
     </>
   );

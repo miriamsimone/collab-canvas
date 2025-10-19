@@ -93,6 +93,29 @@ export class ShapesService {
   }
 
   /**
+   * Update audio recording data for a shape
+   */
+  async updateShapeAudio(
+    shapeId: string,
+    audioUrl: string,
+    duration: number,
+    userId: string
+  ): Promise<void> {
+    const shapeRef = doc(db, this.collectionPath, shapeId);
+    
+    const audioData = {
+      audioUrl,
+      audioDuration: duration,
+      audioRecordedBy: userId,
+      audioRecordedAt: Date.now(),
+      updatedAt: Timestamp.now(),
+      lastModifiedBy: userId,
+    };
+    
+    await setDoc(shapeRef, audioData, { merge: true });
+  }
+
+  /**
    * Delete a shape from Firestore
    */
   async deleteShape(shapeId: string): Promise<void> {
@@ -144,6 +167,11 @@ export class ShapesService {
               createdBy: data.createdBy,
               createdAt: data.createdAt ? data.createdAt.toMillis() : Date.now(),
               updatedAt: data.updatedAt ? data.updatedAt.toMillis() : Date.now(),
+              // Audio fields
+              audioUrl: data.audioUrl,
+              audioRecordedBy: data.audioRecordedBy,
+              audioRecordedAt: data.audioRecordedAt,
+              audioDuration: data.audioDuration,
               
               // Type-specific properties
               ...(data.type === 'rectangle' && {

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Rect, Transformer } from 'react-konva';
+import { Rect, Transformer, Group, Circle as KonvaCircle } from 'react-konva';
 import Konva from 'konva';
 import { realtimeObjectService } from '../services/realtimeObjectService';
+import { AudioControls } from './features/Audio/AudioControls';
 
 export interface CanvasObjectData {
   id: string;
@@ -14,6 +15,10 @@ export interface CanvasObjectData {
   strokeWidth: number;
   isLockedByOther?: boolean;
   lockedByName?: string;
+  audioUrl?: string;
+  audioRecordedBy?: string;
+  audioRecordedAt?: number;
+  audioDuration?: number;
 }
 
 interface CanvasObjectProps {
@@ -28,6 +33,9 @@ interface CanvasObjectProps {
   currentUserId?: string; // For RTDB real-time dragging
   currentUserName?: string; // Display name for lock indicator
   onCursorUpdate?: (x: number, y: number) => void; // For cursor updates during drag/resize
+  canvasId?: string; // For audio storage path
+  onAudioUpdate?: (id: string, audioUrl: string, duration: number) => Promise<void>; // Audio recording complete
+  onAudioDelete?: (id: string, audioUrl: string) => Promise<void>; // Delete old audio
 }
 
 export const CanvasObject: React.FC<CanvasObjectProps> = ({
@@ -42,6 +50,9 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
   currentUserId,
   currentUserName,
   onCursorUpdate,
+  canvasId,
+  onAudioUpdate,
+  onAudioDelete,
 }) => {
   const shapeRef = React.useRef<Konva.Rect>(null);
   const transformerRef = React.useRef<Konva.Transformer>(null);
@@ -349,6 +360,48 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
             'middle-left'
           ]}
         />
+      )}
+
+      {/* Audio Controls - Show when selected and not locked */}
+      {isSelected && !isLocked && canvasId && (
+        <AudioControls
+          shapeId={object.id}
+          canvasId={canvasId}
+          x={object.x + object.width}
+          y={object.y}
+          hasAudio={!!object.audioUrl}
+          audioUrl={object.audioUrl}
+          onRecordingComplete={async (audioUrl, duration) => {
+            if (onAudioUpdate) {
+              await onAudioUpdate(object.id, audioUrl, duration);
+            }
+          }}
+          onDeleteOldAudio={async () => {
+            if (object.audioUrl && onAudioDelete) {
+              await onAudioDelete(object.id, object.audioUrl);
+            }
+          }}
+        />
+      )}
+
+      {/* Audio Indicator - Show small icon if shape has audio */}
+      {object.audioUrl && !isSelected && (
+        <Group x={object.x + object.width - 8} y={object.y + 8}>
+          <KonvaCircle
+            radius={6}
+            fill="#3b82f6"
+            stroke="#fff"
+            strokeWidth={1}
+            shadowColor="rgba(0, 0, 0, 0.3)"
+            shadowBlur={2}
+          />
+          <KonvaCircle
+            radius={3}
+            fill="#fff"
+            x={0}
+            y={0}
+          />
+        </Group>
       )}
     </>
   );
