@@ -6,6 +6,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  writeBatch,
   Timestamp,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -199,6 +200,41 @@ export class ShapesService {
         }
       }
     );
+  }
+
+  /**
+   * Batch create multiple shapes efficiently using Firestore batch writes
+   * Firestore supports up to 500 operations per batch
+   */
+  async batchCreateShapes(shapes: CreateShapeData[], userId: string): Promise<void> {
+    const BATCH_SIZE = 500; // Firestore batch write limit
+    const now = Timestamp.now();
+    
+    console.log(`🔥 Batch creating ${shapes.length} shapes (${Math.ceil(shapes.length / BATCH_SIZE)} batches)`);
+    
+    // Process in batches of 500 (Firestore limit)
+    for (let i = 0; i < shapes.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      const batchShapes = shapes.slice(i, Math.min(i + BATCH_SIZE, shapes.length));
+      
+      for (const shapeData of batchShapes) {
+        const shapeRef = doc(collection(db, this.collectionPath), shapeData.id);
+        const firestoreData: FirestoreShape = {
+          ...prepareShapeForFirestore(shapeData),
+          createdAt: now,
+          updatedAt: now,
+          lastModifiedBy: userId,
+        };
+        
+        batch.set(shapeRef, firestoreData);
+      }
+      
+      // Commit this batch
+      await batch.commit();
+      console.log(`✅ Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(shapes.length / BATCH_SIZE)} committed (${batchShapes.length} shapes)`);
+    }
+    
+    console.log(`🎉 Successfully created ${shapes.length} shapes in batched writes`);
   }
 
   /**

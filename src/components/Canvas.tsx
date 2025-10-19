@@ -14,6 +14,7 @@ import { useZIndex } from '../hooks/useZIndex';
 import { useAlignment } from '../hooks/useAlignment';
 import { useComments } from '../hooks/useComments';
 import { canvasService } from '../services/canvasService';
+import { shapesService } from '../services/shapesService';
 import { CreateShapeCommand, BatchCommand } from '../services/commandService';
 import { copyShapesToClipboard, getShapesFromClipboard, duplicateShapes } from '../utils/clipboardHelpers';
 import { CanvasBackground } from './CanvasBackground';
@@ -230,8 +231,8 @@ export const Canvas: React.FC = () => {
       const cellWidth = createArea.width / gridCols;
       const cellHeight = createArea.height / gridRows;
       
-      // Generate shapes based on pattern
-      const createPromises: Promise<void>[] = [];
+      // Generate all shape data first
+      const shapesData: any[] = [];
       
       for (let i = 0; i < count; i++) {
         let x: number, y: number;
@@ -255,37 +256,84 @@ export const Canvas: React.FC = () => {
           y = createArea.startY + Math.random() * createArea.height;
         }
         
-        // Create shape based on type
+        // Create shape data based on type
         if (shapeType === 'rectangle') {
           const width = baseParams?.width ?? 80;
           const height = baseParams?.height ?? 60;
-          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-          createPromises.push(handleAICreateRectangle(x, y, width, height, color));
+          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+          const cleanColor = color.replace('#', '').substring(0, 6);
+          const transparentFill = `#${cleanColor}40`;
+          
+          shapesData.push({
+            id: `rect-${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${i}`,
+            type: 'rectangle' as const,
+            x,
+            y,
+            width,
+            height,
+            fill: transparentFill,
+            stroke: `#${cleanColor}`,
+            strokeWidth: 2,
+            createdBy: user.uid,
+          });
         } else if (shapeType === 'circle') {
           const radius = baseParams?.radius ?? 30;
-          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-          createPromises.push(handleAICreateCircle(x, y, radius, color));
+          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+          const cleanColor = color.replace('#', '').substring(0, 6);
+          const transparentFill = `#${cleanColor}40`;
+          
+          shapesData.push({
+            id: `circle-${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${i}`,
+            type: 'circle' as const,
+            x,
+            y,
+            radius,
+            fill: transparentFill,
+            stroke: `#${cleanColor}`,
+            strokeWidth: 2,
+            createdBy: user.uid,
+          });
         } else if (shapeType === 'line') {
           const length = baseParams?.length ?? 100;
           const angle = Math.random() * Math.PI * 2;
           const x2 = x + Math.cos(angle) * length;
           const y2 = y + Math.sin(angle) * length;
-          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-          createPromises.push(handleAICreateLine(x, y, x2, y2, color));
+          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+          const cleanColor = color.replace('#', '').substring(0, 6);
+          
+          shapesData.push({
+            id: `line-${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${i}`,
+            type: 'line' as const,
+            x,
+            y,
+            x2,
+            y2,
+            stroke: `#${cleanColor}`,
+            strokeWidth: 2,
+            createdBy: user.uid,
+          });
         } else if (shapeType === 'text') {
           const text = baseParams?.text ?? `Text ${i + 1}`;
           const fontSize = baseParams?.fontSize ?? 16;
-          createPromises.push(handleAICreateText(x, y, text, fontSize));
-        }
-        
-        // Process in batches of 50 to avoid overwhelming Firestore
-        if (createPromises.length >= 50 || i === count - 1) {
-          await Promise.all(createPromises);
-          createPromises.length = 0; // Clear array
+          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+          
+          shapesData.push({
+            id: `text-${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${i}`,
+            type: 'text' as const,
+            x,
+            y,
+            text,
+            fontSize,
+            fill: color,
+            createdBy: user.uid,
+          });
         }
       }
       
-      console.log(`✅ Successfully created ${count} ${shapeType}s`);
+      // Use batch create for maximum performance (creates all shapes in 1-2 Firestore transactions)
+      await shapesService.batchCreateShapes(shapesData, user.uid);
+      
+      console.log(`✅ Successfully created ${count} ${shapeType}s using batch writes`);
     } catch (error) {
       console.error(`Failed to bulk create ${shapeType}s:`, error);
       setCanvasError(`Failed to bulk create shapes. Please try again.`);
