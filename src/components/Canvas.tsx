@@ -124,34 +124,8 @@ export const Canvas: React.FC = () => {
     height: window.innerHeight - 60, // Account for header
   });
 
-  // Tiled panel management - right side panels move together
+  // Panel width for right-side panels
   const PANEL_WIDTH = 320;
-  const [tiledPanelPositions, setTiledPanelPositions] = useState<{[key: string]: {x: number, y: number}}>({});
-  const tiledOffsetsRef = useRef<{[key: string]: {x: number, y: number}}>({
-    'presence-panel': { x: 0, y: 0 },
-    'ai-assistant-panel': { x: 0, y: 230 },
-    'style-panel': { x: 0, y: 560 },
-  });
-
-  // Panel position handler - all right panels move together
-  const handlePanelPositionChange = useCallback((panelId: string, newPosition: {x: number, y: number}) => {
-    setTiledPanelPositions(() => {
-      const updated: {[key: string]: {x: number, y: number}} = {};
-      
-      // Update all tiled panels based on their offset from the dragged panel
-      Object.keys(tiledOffsetsRef.current).forEach(id => {
-        const offset = tiledOffsetsRef.current[id];
-        const draggedOffset = tiledOffsetsRef.current[panelId];
-        
-        updated[id] = {
-          x: newPosition.x + (offset.x - draggedOffset.x),
-          y: newPosition.y + (offset.y - draggedOffset.y),
-        };
-      });
-      
-      return updated;
-    });
-  }, []);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -1916,7 +1890,7 @@ export const Canvas: React.FC = () => {
         </div>
       </div>
       
-      {/* Right Side Tiled Panels - All move together */}
+      {/* Right Side Panels - Independent movement */}
       
       {/* Presence List */}
       <DraggablePanel 
@@ -1924,8 +1898,6 @@ export const Canvas: React.FC = () => {
         panelId="presence-panel"
         defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 160 }}
         className="presence-panel"
-        externalPosition={tiledPanelPositions['presence-panel'] || undefined}
-        onPositionChange={handlePanelPositionChange}
       >
         <PresenceList
           presenceData={cursors as any}
@@ -1942,8 +1914,6 @@ export const Canvas: React.FC = () => {
         panelId="ai-assistant-panel"
         defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 390 }}
         className="ai-assistant-panel"
-        externalPosition={tiledPanelPositions['ai-assistant-panel'] || undefined}
-        onPositionChange={handlePanelPositionChange}
       >
         <div className="ai-panel">
           <div className="ai-panel-content">
@@ -1980,8 +1950,6 @@ export const Canvas: React.FC = () => {
         panelId="style-panel"
         defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 720 }}
         className="style-panel"
-        externalPosition={tiledPanelPositions['style-panel'] || undefined}
-        onPositionChange={handlePanelPositionChange}
         defaultCollapsed={true}
       >
         <div className="style-controls">
