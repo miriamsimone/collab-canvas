@@ -129,8 +129,8 @@ export const Canvas: React.FC = () => {
   const [tiledPanelPositions, setTiledPanelPositions] = useState<{[key: string]: {x: number, y: number}}>({});
   const tiledOffsetsRef = useRef<{[key: string]: {x: number, y: number}}>({
     'presence-panel': { x: 0, y: 0 },
-    'ai-assistant-panel': { x: 0, y: 210 },
-    'style-panel': { x: 0, y: 530 },
+    'ai-assistant-panel': { x: 0, y: 230 },
+    'style-panel': { x: 0, y: 560 },
   });
 
   // Panel position handler - all right panels move together
@@ -1940,7 +1940,7 @@ export const Canvas: React.FC = () => {
       <DraggablePanel 
         title="AI Assistant"
         panelId="ai-assistant-panel"
-        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 370 }}
+        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 390 }}
         className="ai-assistant-panel"
         externalPosition={tiledPanelPositions['ai-assistant-panel'] || undefined}
         onPositionChange={handlePanelPositionChange}
@@ -1978,7 +1978,7 @@ export const Canvas: React.FC = () => {
       <DraggablePanel 
         title="Style Controls"
         panelId="style-panel"
-        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 690 }}
+        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 720 }}
         className="style-panel"
         externalPosition={tiledPanelPositions['style-panel'] || undefined}
         onPositionChange={handlePanelPositionChange}
