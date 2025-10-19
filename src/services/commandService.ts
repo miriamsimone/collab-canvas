@@ -15,7 +15,9 @@ import type {
   AlignShapesCommandData,
 } from '../types/commands';
 import type { Shape } from '../types/shapes';
+import type { AudioConnection } from '../types/connections';
 import { shapesService } from './shapesService';
+import { connectionsService } from './connectionsService';
 
 /**
  * Generate a unique command ID
@@ -520,6 +522,78 @@ class CommandService {
    */
   private notifyListeners(): void {
     this.listeners.forEach(listener => listener());
+  }
+}
+
+/**
+ * CreateConnectionCommand - Handles creating a new audio connection
+ */
+export class CreateConnectionCommand implements Command {
+  readonly id: string;
+  readonly type = 'createConnection';
+  readonly timestamp: number;
+  readonly description: string;
+  
+  private sourceShapeId: string;
+  private targetShapeId: string;
+  private userId: string;
+  private createdConnection: AudioConnection | null = null;
+  
+  constructor(sourceShapeId: string, targetShapeId: string, userId: string) {
+    this.id = generateCommandId();
+    this.timestamp = Date.now();
+    this.sourceShapeId = sourceShapeId;
+    this.targetShapeId = targetShapeId;
+    this.userId = userId;
+    this.description = `Connect shapes`;
+  }
+  
+  async execute(): Promise<void> {
+    this.createdConnection = await connectionsService.createConnection(
+      this.sourceShapeId,
+      this.targetShapeId,
+      this.userId
+    );
+  }
+  
+  async undo(): Promise<void> {
+    if (this.createdConnection) {
+      await connectionsService.deleteConnection(this.createdConnection.id);
+    }
+  }
+}
+
+/**
+ * DeleteConnectionCommand - Handles deleting an audio connection
+ */
+export class DeleteConnectionCommand implements Command {
+  readonly id: string;
+  readonly type = 'deleteConnection';
+  readonly timestamp: number;
+  readonly description: string;
+  
+  private connection: AudioConnection;
+  private userId: string;
+  
+  constructor(connection: AudioConnection, userId: string) {
+    this.id = generateCommandId();
+    this.timestamp = Date.now();
+    this.connection = connection;
+    this.userId = userId;
+    this.description = `Delete connection`;
+  }
+  
+  async execute(): Promise<void> {
+    await connectionsService.deleteConnection(this.connection.id);
+  }
+  
+  async undo(): Promise<void> {
+    // Recreate the deleted connection
+    await connectionsService.createConnection(
+      this.connection.sourceShapeId,
+      this.connection.targetShapeId,
+      this.userId
+    );
   }
 }
 

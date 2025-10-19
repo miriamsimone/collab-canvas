@@ -8,6 +8,7 @@ import { AudioControls } from '../features/Audio/AudioControls';
 interface CircleComponentProps {
   shape: CircleShape;
   isSelected: boolean;
+  isPlaying?: boolean;
   onSelect: (event?: { shiftKey?: boolean }) => void;
   onDragStart: (id: string, x: number, y: number) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
@@ -20,11 +21,13 @@ interface CircleComponentProps {
   canvasId?: string;
   onAudioUpdate?: (id: string, audioUrl: string, duration: number) => Promise<void>;
   onAudioDelete?: (id: string, audioUrl: string) => Promise<void>;
+  onRambleStartToggle?: (id: string) => Promise<void>;
 }
 
 export const CircleComponent: React.FC<CircleComponentProps> = ({
   shape,
   isSelected,
+  isPlaying,
   onSelect,
   onDragStart,
   onDragEnd,
@@ -37,6 +40,7 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
   canvasId,
   onAudioUpdate,
   onAudioDelete,
+  onRambleStartToggle,
 }) => {
   const shapeRef = React.useRef<Konva.Circle>(null);
   const transformerRef = React.useRef<Konva.Transformer>(null);
@@ -255,9 +259,10 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
 
   // Visual lock indicator
   const isLocked = shape.isLockedByOther || shape.locked;
-  const lockStroke = shape.isLockedByOther ? '#ff4444' : shape.stroke;
-  const lockStrokeWidth = shape.isLockedByOther ? 4 : shape.strokeWidth;
-  const lockDash = shape.isLockedByOther ? [10, 5] : undefined;
+  // Priority: Playing (purple) > Locked (red) > Normal
+  const displayStroke = isPlaying ? '#a855f7' : (shape.isLockedByOther ? '#ff4444' : shape.stroke);
+  const displayStrokeWidth = isPlaying || shape.isLockedByOther ? 4 : shape.strokeWidth;
+  const displayDash = isPlaying ? undefined : (shape.isLockedByOther ? [10, 5] : undefined);
 
   return (
     <>
@@ -268,9 +273,9 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         y={shape.y}
         radius={visualRadius}
         fill={shape.fill}
-        stroke={lockStroke}
-        strokeWidth={lockStrokeWidth}
-        dash={lockDash}
+        stroke={displayStroke}
+        strokeWidth={displayStrokeWidth}
+        dash={displayDash}
         opacity={shape.isLockedByOther ? 0.7 : (shape.opacity || 1)}
         visible={shape.visible !== false}
         rotation={shape.rotation || 0}
@@ -373,6 +378,7 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
           y={shape.y - shape.radius}
           hasAudio={!!shape.audioUrl}
           audioUrl={shape.audioUrl}
+          isRambleStart={shape.isRambleStart}
           onRecordingComplete={async (audioUrl, duration) => {
             if (onAudioUpdate) {
               await onAudioUpdate(shape.id, audioUrl, duration);
@@ -383,6 +389,9 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
               await onAudioDelete(shape.id, shape.audioUrl);
             }
           }}
+          onToggleRambleStart={onRambleStartToggle ? async () => {
+            await onRambleStartToggle(shape.id);
+          } : undefined}
         />
       )}
 

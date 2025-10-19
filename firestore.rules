@@ -32,6 +32,14 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
     }
     
+    // Allow authenticated users to read and write audio connections
+    match /canvas/shared/connections/{connectionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

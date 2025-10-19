@@ -172,6 +172,7 @@ export class ShapesService {
               audioRecordedBy: data.audioRecordedBy,
               audioRecordedAt: data.audioRecordedAt,
               audioDuration: data.audioDuration,
+              isRambleStart: data.isRambleStart,
               
               // Type-specific properties
               ...(data.type === 'rectangle' && {

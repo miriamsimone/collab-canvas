@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type ToolType = 'select' | 'pan' | 'rectangle' | 'circle' | 'line' | 'text' | 'comment';
+export type ToolType = 'select' | 'pan' | 'rectangle' | 'circle' | 'line' | 'text' | 'comment' | 'audioConnector';
 
 interface ToolbarProps {
   activeTool: ToolType;
@@ -63,6 +63,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       description: 'Click to add text',
     },
     {
+      id: 'audioConnector' as const,
+      name: 'Audio Connector',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M2 8 L6 8 M10 8 L14 8 M8 2 L8 14 M6 8 L8 4 L10 8 M6 8 L8 12 L10 8" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      description: 'Connect two shapes with an arrow',
+    },
+    {
       id: 'comment' as const,
       name: 'Comment',
       icon: '💬',
@@ -87,6 +97,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         return 'Click on canvas to add text, double-click to edit';
       case 'comment':
         return 'Click on canvas to add comments, click comment pins to view threads';
+      case 'audioConnector':
+        return 'Click first shape, then click second shape to create a connection';
       default:
         return 'Select a tool to get started';
     }

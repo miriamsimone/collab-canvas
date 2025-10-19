@@ -8,6 +8,7 @@ export class AudioRecordingService {
   private stream: MediaStream | null = null;
   private recordingTimer: NodeJS.Timeout | null = null;
   private startTime: number = 0;
+  private activeAudioElements: HTMLAudioElement[] = []; // Track multiple playing audios
 
   /**
    * Request microphone permission from the user
@@ -169,20 +170,49 @@ export class AudioRecordingService {
    * Play audio from a URL
    * @param url The audio URL to play
    * @param onEnded Callback when playback finishes
-   * @returns Audio element for control
+   * @returns Promise that resolves when audio finishes playing
    */
-  playAudio(url: string, onEnded?: () => void): HTMLAudioElement {
-    const audio = new Audio(url);
-    
-    if (onEnded) {
-      audio.onended = onEnded;
-    }
-    
-    audio.play().catch(error => {
-      console.error('Failed to play audio:', error);
+  playAudio(url: string, onEnded?: () => void): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const audio = new Audio(url);
+      
+      audio.onended = () => {
+        if (onEnded) {
+          onEnded();
+        }
+        // Remove from active list
+        this.activeAudioElements = this.activeAudioElements.filter(a => a !== audio);
+        resolve();
+      };
+      
+      audio.onerror = (error) => {
+        console.error('Failed to play audio:', error);
+        // Remove from active list
+        this.activeAudioElements = this.activeAudioElements.filter(a => a !== audio);
+        reject(error);
+      };
+      
+      audio.play().catch(error => {
+        console.error('Failed to play audio:', error);
+        // Remove from active list
+        this.activeAudioElements = this.activeAudioElements.filter(a => a !== audio);
+        reject(error);
+      });
+      
+      // Add to active list for stopPlayback
+      this.activeAudioElements.push(audio);
     });
-    
-    return audio;
+  }
+  
+  /**
+   * Stop all active playback
+   */
+  stopPlayback(): void {
+    this.activeAudioElements.forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+    this.activeAudioElements = [];
   }
 
   /**

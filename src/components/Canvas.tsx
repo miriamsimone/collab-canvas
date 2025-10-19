@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Stage, Layer } from 'react-konva';
+import { Stage, Layer, Line as KonvaLine, Circle as KonvaCircle } from 'react-konva';
 import Konva from 'konva';
 import { useAuth } from '../hooks/useAuth';
 import { useCanvas, CANVAS_CONFIG } from '../hooks/useCanvas';
@@ -13,10 +13,11 @@ import { useGrid } from '../hooks/useGrid';
 import { useZIndex } from '../hooks/useZIndex';
 import { useAlignment } from '../hooks/useAlignment';
 import { useComments } from '../hooks/useComments';
+import { useConnections } from '../hooks/useConnections';
 import { canvasService } from '../services/canvasService';
 import { shapesService } from '../services/shapesService';
 import { audioService } from '../services/audioService';
-import { CreateShapeCommand, BatchCommand } from '../services/commandService';
+import { CreateShapeCommand, BatchCommand, CreateConnectionCommand, DeleteConnectionCommand } from '../services/commandService';
 import { copyShapesToClipboard, getShapesFromClipboard, duplicateShapes } from '../utils/clipboardHelpers';
 import { CanvasBackground } from './CanvasBackground';
 import { Toolbar } from './Toolbar';
@@ -39,6 +40,8 @@ import { ShapeContextMenu, type ContextMenuItem } from './features/ContextMenu/S
 import { CommentPin } from './features/Comments/CommentPin';
 import { CommentThread } from './features/Comments/CommentThread';
 import { CommentInput } from './features/Comments/CommentInput';
+import { ConnectionArrow } from './ConnectionArrow';
+import { RamblePlayer } from './features/Audio/RamblePlayer';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 import { countUnresolvedComments } from '../services/commentsService';
 
@@ -60,9 +63,7 @@ export const Canvas: React.FC = () => {
   // Real-time shapes management
   const {
     shapes,
-    loading: shapesLoading,
     error: shapesError,
-    isConnected,
     createRectangle,
     createCircle,
     createLine,
@@ -120,9 +121,21 @@ export const Canvas: React.FC = () => {
     setActiveComment,
   } = useComments();
 
+  // Audio connections
+  const {
+    connections,
+    pendingConnection,
+    startConnection,
+    cancelConnection,
+  } = useConnections();
+
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [playingShapeIds, setPlayingShapeIds] = useState<string[]>([]); // Track multiple playing shapes
+
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
-    height: window.innerHeight - 60, // Account for header
+    height: window.innerHeight, // Full height, no header
   });
 
   // Panel width for right-side panels
@@ -374,6 +387,23 @@ export const Canvas: React.FC = () => {
     } catch (error) {
       console.error('Failed to update audio:', error);
       setCanvasError('Failed to save recording. Please try again.');
+    }
+  };
+
+  const handleRambleStartToggle = async (shapeId: string) => {
+    if (!user) return;
+    
+    try {
+      // Get current state
+      const shape = shapes.find(s => s.id === shapeId);
+      const newValue = !shape?.isRambleStart;
+      
+      // Update in Firestore
+      await shapesService.updateShape(shapeId, { isRambleStart: newValue }, user.uid);
+      console.log(`✅ Ramble start ${newValue ? 'enabled' : 'disabled'} for shape ${shapeId}`);
+    } catch (error) {
+      console.error('Failed to toggle ramble start:', error);
+      setCanvasError('Failed to update ramble start. Please try again.');
     }
   };
 
@@ -1039,6 +1069,39 @@ export const Canvas: React.FC = () => {
     enabled: true, // Always enabled
   });
 
+  // Tool switching and connection keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape key: cancel pending connection or clear selection
+      if (e.key === 'Escape') {
+        if (pendingConnection) {
+          console.log('⌨️ Escape pressed: canceling pending connection');
+          cancelConnection();
+          setMousePosition(null);
+        }
+      }
+      
+      // L key: activate audio connector tool
+      if (e.key === 'l' || e.key === 'L') {
+        if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+          console.log('⌨️ L pressed: activating audio connector tool');
+          setActiveTool('audioConnector');
+        }
+      }
+
+      // V key: activate select tool
+      if (e.key === 'v' || e.key === 'V') {
+        if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+          console.log('⌨️ V pressed: activating select tool');
+          setActiveTool('select');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pendingConnection, cancelConnection, setActiveTool]);
+
   // Context menu handlers
   const handleContextMenu = useCallback((e: Konva.KonvaEventObject<PointerEvent>) => {
     e.evt.preventDefault();
@@ -1157,7 +1220,7 @@ export const Canvas: React.FC = () => {
     const handleResize = () => {
       setWindowSize({
         width: window.innerWidth,
-        height: window.innerHeight - 60,
+        height: window.innerHeight,
       });
     };
 
@@ -1507,7 +1570,42 @@ export const Canvas: React.FC = () => {
   };
 
   // Handle shape selection with support for multi-select
-  const handleShapeSelect = (id: string, event?: { shiftKey?: boolean }) => {
+  const handleShapeSelect = async (id: string, event?: { shiftKey?: boolean }) => {
+    // If audio connector tool is active, handle connection logic
+    if (activeTool === 'audioConnector') {
+      if (!user) return;
+      
+      // If no pending connection, start one with this shape as source
+      if (!pendingConnection) {
+        // Check if shape already has an outgoing connection
+        const hasOutgoingConnection = connections.some(conn => conn.sourceShapeId === id);
+        if (hasOutgoingConnection) {
+          alert('This shape already has an outgoing connection. Each shape can only have one outgoing arrow.');
+          return;
+        }
+        startConnection(id);
+        console.log('🎯 Connection started from shape:', id);
+      } else {
+        // Complete the connection with this shape as target using undo/redo command
+        try {
+          const createConnectionCommand = new CreateConnectionCommand(
+            pendingConnection.sourceShapeId,
+            id,
+            user.uid
+          );
+          await executeCommand(createConnectionCommand);
+          cancelConnection(); // Clear the pending state
+          console.log('✅ Connection completed to shape:', id);
+          // Auto-switch back to select tool
+          setActiveTool('select');
+        } catch (error) {
+          console.error('Failed to create connection:', error);
+        }
+      }
+      return;
+    }
+    
+    // Normal selection logic
     if (event?.shiftKey) {
       // Shift-click: toggle object in selection
       toggleSelection(id);
@@ -1620,6 +1718,12 @@ export const Canvas: React.FC = () => {
         screenX: pos.x * scale + x + containerRect.left,
         screenY: pos.y * scale + y + containerRect.top,
       });
+    } else if (activeTool === 'audioConnector') {
+      // Cancel pending connection if clicking on empty space
+      if (e.target === stage && pendingConnection) {
+        console.log('❌ Canceling pending connection (clicked on empty space)');
+        cancelConnection();
+      }
     } else if (activeTool === 'select') {
       // Deselect if clicking on empty space (not on a shape)
       if (e.target === stage) {
@@ -1668,6 +1772,11 @@ export const Canvas: React.FC = () => {
     if (isDragSelecting) {
       updateDragSelection(pos.x, pos.y);
     }
+
+    // Update mouse position for audio connector temp line
+    if (pendingConnection && activeTool === 'audioConnector') {
+      setMousePosition({ x: pos.x, y: pos.y });
+    }
   };
 
   // Handle stage mouse up for drag selection end
@@ -1679,23 +1788,6 @@ export const Canvas: React.FC = () => {
 
   return (
     <div className="canvas-app">
-      {/* Header */}
-      <header className="app-header">
-        <div className="header-content">
-          <h1>CollabCanvas</h1>
-          
-          {/* Real-time status indicator */}
-          <div className="realtime-status">
-            <div className={`connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
-              <div className="status-dot"></div>
-              <span className="status-text">
-                {shapesLoading ? 'Connecting...' : isConnected ? 'Live' : 'Offline'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
-      
       {/* Error Toasts */}
       {shapesError && (
         <div className="error-toast">
@@ -1713,7 +1805,7 @@ export const Canvas: React.FC = () => {
       )}
       
       {presenceError && (
-        <div className="error-toast" style={{ top: '120px' }}>
+        <div className="error-toast" style={{ top: '60px' }}>
           <div className="error-content">
             <span className="error-message">Cursor sync: {presenceError}</span>
             <button 
@@ -1728,7 +1820,7 @@ export const Canvas: React.FC = () => {
       )}
       
       {canvasError && (
-        <div className="error-toast" style={{ top: '160px' }}>
+        <div className="error-toast" style={{ top: '100px' }}>
           <div className="error-content">
             <span className="error-message">{canvasError}</span>
             <button 
@@ -1745,7 +1837,7 @@ export const Canvas: React.FC = () => {
       {/* Toolbar */}
       <DraggablePanel 
         title="Tools"
-        defaultPosition={{ x: 20, y: 80 }}
+        defaultPosition={{ x: 20, y: 20 }}
         className="toolbar-panel"
       >
         <Toolbar 
@@ -1756,6 +1848,13 @@ export const Canvas: React.FC = () => {
           unresolvedCommentsCount={countUnresolvedComments(comments)}
         />
       </DraggablePanel>
+
+      {/* Ramble Player - Top UI button */}
+      <RamblePlayer 
+        shapes={shapes} 
+        connections={connections}
+        onPlayingShapesChange={setPlayingShapeIds}
+      />
 
       {/* Canvas Container */}
       <div className="canvas-container">
@@ -1825,6 +1924,7 @@ export const Canvas: React.FC = () => {
                     key={shape.id}
                     object={shape}
                     isSelected={isSelected(shape.id)}
+                    isPlaying={playingShapeIds.includes(shape.id)}
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
                     onDragStart={handleShapeDragStart}
                     onDragEnd={handleShapeDragEnd}
@@ -1837,6 +1937,7 @@ export const Canvas: React.FC = () => {
                     canvasId="shared"
                     onAudioUpdate={handleAudioUpdate}
                     onAudioDelete={handleAudioDelete}
+                    onRambleStartToggle={handleRambleStartToggle}
                   />
                 );
               } else if (shape.type === 'circle') {
@@ -1845,6 +1946,7 @@ export const Canvas: React.FC = () => {
                     key={shape.id}
                     shape={shape}
                     isSelected={isSelected(shape.id)}
+                    isPlaying={playingShapeIds.includes(shape.id)}
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
                     onDragStart={handleShapeDragStart}
                     onDragEnd={handleShapeDragEnd}
@@ -1857,6 +1959,7 @@ export const Canvas: React.FC = () => {
                     canvasId="shared"
                     onAudioUpdate={handleAudioUpdate}
                     onAudioDelete={handleAudioDelete}
+                    onRambleStartToggle={handleRambleStartToggle}
                   />
                 );
               } else if (shape.type === 'line') {
@@ -1898,6 +2001,73 @@ export const Canvas: React.FC = () => {
               }
               return null; // Unknown shape type
             })}
+
+            {/* Audio Connection Arrows */}
+            {connections.map((connection) => (
+              <ConnectionArrow
+                key={connection.id}
+                connection={connection}
+                shapes={shapes}
+                isSelected={selectedConnectionId === connection.id}
+                onSelect={() => setSelectedConnectionId(connection.id)}
+                onDelete={async () => {
+                  if (!user) return;
+                  try {
+                    const deleteCommand = new DeleteConnectionCommand(connection, user.uid);
+                    await executeCommand(deleteCommand);
+                    setSelectedConnectionId(null);
+                  } catch (error) {
+                    console.error('Failed to delete connection:', error);
+                  }
+                }}
+              />
+            ))}
+
+            {/* Visual Feedback for Pending Connection */}
+            {pendingConnection && mousePosition && (() => {
+              const sourceShape = shapes.find(s => s.id === pendingConnection.sourceShapeId);
+              if (!sourceShape) return null;
+
+              // Calculate source shape center
+              let sourceX = 0, sourceY = 0;
+              if (sourceShape.type === 'rectangle') {
+                sourceX = sourceShape.x + sourceShape.width / 2;
+                sourceY = sourceShape.y + sourceShape.height / 2;
+              } else if (sourceShape.type === 'circle') {
+                sourceX = sourceShape.x;
+                sourceY = sourceShape.y;
+              } else if (sourceShape.type === 'line') {
+                sourceX = (sourceShape.x + sourceShape.x2) / 2;
+                sourceY = (sourceShape.y + sourceShape.y2) / 2;
+              } else if (sourceShape.type === 'text') {
+                sourceX = sourceShape.x + (sourceShape.width || 100) / 2;
+                sourceY = sourceShape.y + (sourceShape.height || 30) / 2;
+              }
+
+              return (
+                <>
+                  {/* Temporary line from source to cursor */}
+                  <KonvaLine
+                    points={[sourceX, sourceY, mousePosition.x, mousePosition.y]}
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dash={[5, 5]}
+                    opacity={0.6}
+                    listening={false}
+                  />
+                  {/* Highlight circle at source */}
+                  <KonvaCircle
+                    x={sourceX}
+                    y={sourceY}
+                    radius={20}
+                    stroke="#8b5cf6"
+                    strokeWidth={3}
+                    fill="rgba(139, 92, 246, 0.1)"
+                    listening={false}
+                  />
+                </>
+              );
+            })()}
 
             {/* Selection Box for drag selection */}
             <SelectionBox
@@ -1948,7 +2118,7 @@ export const Canvas: React.FC = () => {
       <DraggablePanel 
         title="Online Users"
         panelId="presence-panel"
-        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 160 }}
+        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 20 }}
         className="presence-panel"
       >
         <PresenceList

@@ -32,7 +32,6 @@ export const useAudioRecording = ({
   const [recordingTime, setRecordingTime] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
@@ -104,22 +103,19 @@ export const useAudioRecording = ({
     }
   }, [isRecording, shapeId, canvasId, onRecordingComplete, onRecordingError]);
 
-  const playAudio = useCallback((url: string) => {
+  const playAudio = useCallback(async (url: string) => {
     try {
       // Stop any existing playback
-      if (audioElementRef.current) {
-        audioElementRef.current.pause();
-        audioElementRef.current = null;
-      }
+      audioService.stopPlayback();
 
       setIsPlaying(true);
       setError(null);
 
-      // Play audio
-      audioElementRef.current = audioService.playAudio(url, () => {
+      // Play audio (now returns a promise)
+      await audioService.playAudio(url, () => {
         setIsPlaying(false);
-        audioElementRef.current = null;
       });
+      setIsPlaying(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to play audio';
       setError(errorMessage);
@@ -131,11 +127,8 @@ export const useAudioRecording = ({
   }, [onRecordingError]);
 
   const stopPlayback = useCallback(() => {
-    if (audioElementRef.current) {
-      audioElementRef.current.pause();
-      audioElementRef.current = null;
-      setIsPlaying(false);
-    }
+    audioService.stopPlayback();
+    setIsPlaying(false);
   }, []);
 
   const clearError = useCallback(() => {

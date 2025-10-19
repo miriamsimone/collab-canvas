@@ -19,11 +19,13 @@ export interface CanvasObjectData {
   audioRecordedBy?: string;
   audioRecordedAt?: number;
   audioDuration?: number;
+  isRambleStart?: boolean;
 }
 
 interface CanvasObjectProps {
   object: CanvasObjectData;
   isSelected: boolean;
+  isPlaying?: boolean; // Visual indicator when audio is playing
   onSelect: (event?: { shiftKey?: boolean }) => void;
   onDragStart: (id: string, x: number, y: number) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
@@ -36,11 +38,13 @@ interface CanvasObjectProps {
   canvasId?: string; // For audio storage path
   onAudioUpdate?: (id: string, audioUrl: string, duration: number) => Promise<void>; // Audio recording complete
   onAudioDelete?: (id: string, audioUrl: string) => Promise<void>; // Delete old audio
+  onRambleStartToggle?: (id: string) => Promise<void>; // Toggle ramble start marker
 }
 
 export const CanvasObject: React.FC<CanvasObjectProps> = ({
   object,
   isSelected,
+  isPlaying,
   onSelect,
   onDragStart,  
   onDragEnd,
@@ -53,6 +57,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
   canvasId,
   onAudioUpdate,
   onAudioDelete,
+  onRambleStartToggle,
 }) => {
   const shapeRef = React.useRef<Konva.Rect>(null);
   const transformerRef = React.useRef<Konva.Transformer>(null);
@@ -260,9 +265,10 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
 
   // Visual lock indicator
   const isLocked = object.isLockedByOther;
-  const lockStroke = isLocked ? '#ff4444' : object.stroke;
-  const lockStrokeWidth = isLocked ? 4 : object.strokeWidth;
-  const lockDash = isLocked ? [10, 5] : undefined;
+  // Priority: Playing (purple) > Locked (red) > Normal
+  const displayStroke = isPlaying ? '#a855f7' : (isLocked ? '#ff4444' : object.stroke);
+  const displayStrokeWidth = isPlaying || isLocked ? 4 : object.strokeWidth;
+  const displayDash = isPlaying ? undefined : (isLocked ? [10, 5] : undefined);
 
   return (
     <>
@@ -274,9 +280,9 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         width={object.width}
         height={object.height}
         fill={object.fill}
-        stroke={lockStroke}
-        strokeWidth={lockStrokeWidth}
-        dash={lockDash}
+        stroke={displayStroke}
+        strokeWidth={displayStrokeWidth}
+        dash={displayDash}
         draggable={!isLocked}
         onClick={(e) => {
           // Ignore right-clicks (context menu clicks)
@@ -371,6 +377,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
           y={object.y}
           hasAudio={!!object.audioUrl}
           audioUrl={object.audioUrl}
+          isRambleStart={object.isRambleStart}
           onRecordingComplete={async (audioUrl, duration) => {
             if (onAudioUpdate) {
               await onAudioUpdate(object.id, audioUrl, duration);
@@ -381,6 +388,9 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
               await onAudioDelete(object.id, object.audioUrl);
             }
           }}
+          onToggleRambleStart={onRambleStartToggle ? async () => {
+            await onRambleStartToggle(object.id);
+          } : undefined}
         />
       )}
 

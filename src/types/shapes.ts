@@ -26,6 +26,10 @@ export interface BaseShape {
   audioRecordedBy?: string;    // User ID who recorded
   audioRecordedAt?: number;    // Timestamp of recording
   audioDuration?: number;      // Duration in seconds
+  // Audio connection information
+  audioConnectionId?: string;  // ID of connection this shape is part of
+  // Ramble start marker
+  isRambleStart?: boolean;     // Marks this shape as the starting point of a ramble
 }
 
 // Rectangle-specific properties

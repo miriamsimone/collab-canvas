@@ -1,5 +1,5 @@
 import React from 'react';
-import { Group, Circle, Line, Rect, Text as KonvaText } from 'react-konva';
+import { Group, Circle, Line, Rect, Text as KonvaText, Path } from 'react-konva';
 import { useAudioRecording } from '../../../hooks/useAudioRecording';
 
 interface AudioControlsProps {
@@ -9,8 +9,10 @@ interface AudioControlsProps {
   y: number;
   hasAudio: boolean;
   audioUrl?: string;
+  isRambleStart?: boolean;
   onRecordingComplete: (audioUrl: string, duration: number) => Promise<void>;
   onDeleteOldAudio?: () => Promise<void>;
+  onToggleRambleStart?: () => void;
 }
 
 export const AudioControls: React.FC<AudioControlsProps> = ({
@@ -20,8 +22,10 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
   y,
   hasAudio,
   audioUrl,
+  isRambleStart = false,
   onRecordingComplete,
   onDeleteOldAudio,
+  onToggleRambleStart,
 }) => {
   const {
     isRecording,
@@ -67,6 +71,13 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
       stopPlayback();
     } else if (audioUrl) {
       playAudio(audioUrl);
+    }
+  };
+
+  const handleRamToggleClick = (e: any) => {
+    e.cancelBubble = true;
+    if (onToggleRambleStart) {
+      onToggleRambleStart();
     }
   };
 
@@ -220,6 +231,86 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
               points={[-3, -5, -3, 5, 5, 0, -3, -5]}
               fill="#fff"
               closed
+              listening={false}
+            />
+          )}
+        </Group>
+      )}
+
+      {/* Ram Toggle Button - Show when audio exists (marks ramble start) */}
+      {hasAudio && !isRecording && !isUploading && onToggleRambleStart && (
+        <Group x={-buttonSpacing} y={0}>
+          {/* Button Background */}
+          <Circle
+            radius={buttonSize / 2}
+            fill={isRambleStart ? '#8b5cf6' : '#6b7280'}
+            stroke="#fff"
+            strokeWidth={2}
+            shadowColor="rgba(0, 0, 0, 0.3)"
+            shadowBlur={4}
+            shadowOffset={{ x: 0, y: 2 }}
+            onClick={handleRamToggleClick}
+            onTap={handleRamToggleClick}
+            onMouseEnter={(e) => {
+              const container = e.target.getStage()?.container();
+              if (container) {
+                container.style.cursor = 'pointer';
+              }
+            }}
+            onMouseLeave={(e) => {
+              const container = e.target.getStage()?.container();
+              if (container) {
+                container.style.cursor = 'default';
+              }
+            }}
+          />
+          
+          {/* Ram Icon - Stylized ram head with horns */}
+          <Group listening={false}>
+            {/* Head circle */}
+            <Circle
+              x={0}
+              y={1}
+              radius={4}
+              fill="#fff"
+            />
+            
+            {/* Left horn (curved) */}
+            <Path
+              data="M -3 -2 Q -6 -4 -7 -1"
+              stroke="#fff"
+              strokeWidth={1.5}
+              lineCap="round"
+              fill="none"
+            />
+            
+            {/* Right horn (curved) */}
+            <Path
+              data="M 3 -2 Q 6 -4 7 -1"
+              stroke="#fff"
+              strokeWidth={1.5}
+              lineCap="round"
+              fill="none"
+            />
+            
+            {/* Ears */}
+            <Circle x={-2.5} y={0} radius={1.5} fill="#fff" />
+            <Circle x={2.5} y={0} radius={1.5} fill="#fff" />
+            
+            {/* Eyes */}
+            <Circle x={-1.5} y={1} radius={0.5} fill={isRambleStart ? '#8b5cf6' : '#6b7280'} />
+            <Circle x={1.5} y={1} radius={0.5} fill={isRambleStart ? '#8b5cf6' : '#6b7280'} />
+          </Group>
+          
+          {/* Start indicator dot when active */}
+          {isRambleStart && (
+            <Circle
+              x={buttonSize / 2 - 2}
+              y={-buttonSize / 2 + 2}
+              radius={3}
+              fill="#10b981"
+              stroke="#fff"
+              strokeWidth={1}
               listening={false}
             />
           )}
