@@ -21,6 +21,7 @@ export interface BaseShape {
   isLockedByOther?: boolean;
   lockedBy?: string;
   lockedByName?: string;
+  lockedByColor?: string;
   // Audio recording information
   audioUrl?: string;           // Firebase Storage download URL
   audioRecordedBy?: string;    // User ID who recorded

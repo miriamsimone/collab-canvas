@@ -407,21 +407,11 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
     };
   }, [user]);
 
-  // Merge Firestore shapes with RTDB real-time movements and lock status
+  // Merge Firestore shapes with RTDB real-time movements
+  // NOTE: Lock status is now handled by lockService in useLocks hook
   const mergedShapes = shapes.map(shape => {
     const realtimeMovement = realtimeMovements[shape.id];
     const updates: any = {};
-    
-    // Check for lock status
-    if (realtimeMovement?.lockedBy && realtimeMovement.lockedBy !== user?.uid) {
-      const lockAge = Date.now() - (realtimeMovement.lockedAt || 0);
-      // Lock is valid for 10 seconds
-      if (lockAge < 10000) {
-        updates.isLockedByOther = true;
-        updates.lockedBy = realtimeMovement.lockedBy;
-        updates.lockedByName = realtimeMovement.lockUserName;
-      }
-    }
     
     // If this shape is being dragged in real-time by someone else, use RTDB position
     if (realtimeMovement && realtimeMovement.isDragging && realtimeMovement.draggedBy !== user?.uid) {

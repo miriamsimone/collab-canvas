@@ -1,5 +1,5 @@
 import React from 'react';
-import { Circle, Transformer, Group, Circle as KonvaCircle } from 'react-konva';
+import { Circle, Transformer, Group, Circle as KonvaCircle, Text as KonvaText } from 'react-konva';
 import Konva from 'konva';
 import type { CircleShape } from '../../types/shapes';
 import { realtimeObjectService } from '../../services/realtimeObjectService';
@@ -259,8 +259,10 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
 
   // Visual lock indicator
   const isLocked = shape.isLockedByOther || shape.locked;
-  // Priority: Playing (purple) > Locked (red) > Normal
-  const displayStroke = isPlaying ? '#a855f7' : (shape.isLockedByOther ? '#ff4444' : shape.stroke);
+  const lockColor = shape.lockedByColor || '#ff4444'; // Use user's color or fallback to red
+  
+  // Priority: Playing (purple) > Locked (user color) > Normal
+  const displayStroke = isPlaying ? '#a855f7' : (shape.isLockedByOther ? lockColor : shape.stroke);
   const displayStrokeWidth = isPlaying || shape.isLockedByOther ? 4 : shape.strokeWidth;
   const displayDash = isPlaying ? undefined : (shape.isLockedByOther ? [10, 5] : undefined);
 
@@ -318,7 +320,7 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
           }
         }}
         // Selection or lock styling
-        shadowColor={shape.isLockedByOther ? '#ff4444' : (isSelected ? shape.stroke : 'transparent')}
+        shadowColor={shape.isLockedByOther ? lockColor : (isSelected ? shape.stroke : 'transparent')}
         shadowBlur={shape.isLockedByOther ? 15 : (isSelected ? 10 : 0)}
         shadowOpacity={shape.isLockedByOther ? 0.8 : (isSelected ? 0.6 : 0)}
         shadowOffsetX={0}
@@ -413,6 +415,16 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
             y={0}
           />
         </Group>
+      )}
+
+      {/* Lock Icon - Simple indicator */}
+      {shape.isLockedByOther && (
+        <KonvaText
+          text="🔒"
+          fontSize={16}
+          x={shape.x + shape.radius - 8}
+          y={shape.y - shape.radius + 5}
+        />
       )}
     </>
   );

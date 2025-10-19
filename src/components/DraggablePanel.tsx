@@ -42,6 +42,66 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
     }
   }, [externalPosition, isDragging]);
 
+  // Handle window resize - keep panels visible in viewport
+  useEffect(() => {
+    const handleResize = () => {
+      const panel = panelRef.current;
+      if (!panel) return;
+
+      const rect = panel.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Calculate new position if panel is outside viewport
+      let newX = position.x;
+      let newY = position.y;
+      let needsUpdate = false;
+
+      // Check if panel is too far right
+      if (position.x + rect.width > viewportWidth) {
+        newX = Math.max(0, viewportWidth - rect.width);
+        needsUpdate = true;
+      }
+
+      // Check if panel is too far down
+      if (position.y + rect.height > viewportHeight) {
+        newY = Math.max(0, viewportHeight - rect.height);
+        needsUpdate = true;
+      }
+
+      // Check if panel is off-screen to the left or top
+      if (position.x < 0) {
+        newX = 0;
+        needsUpdate = true;
+      }
+      if (position.y < 0) {
+        newY = 0;
+        needsUpdate = true;
+      }
+
+      // Update position if needed
+      if (needsUpdate) {
+        const newPosition = { x: newX, y: newY };
+        setPosition(newPosition);
+        
+        // Notify parent of position change
+        if (onPositionChange && panelId) {
+          onPositionChange(panelId, newPosition);
+        }
+      }
+    };
+
+    // Add resize listener
+    window.addEventListener('resize', handleResize);
+    
+    // Run once on mount to ensure panel starts in valid position
+    handleResize();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [position.x, position.y, onPositionChange, panelId]);
+
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Only start dragging if clicking on the panel header (but not the collapse button)
     const target = e.target as HTMLElement;

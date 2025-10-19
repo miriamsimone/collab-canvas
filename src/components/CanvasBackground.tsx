@@ -6,12 +6,14 @@ interface CanvasBackgroundProps {
   scale: number;
   snapToGridEnabled?: boolean;
   gridSize?: number;
+  onClick?: () => void;
 }
 
 export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({ 
   scale,
   snapToGridEnabled = false,
   gridSize = 20,
+  onClick,
 }) => {
   // Show grid when zoomed in enough OR when snap-to-grid is enabled
   const showGrid = scale > 0.3 || snapToGridEnabled;
@@ -30,6 +32,7 @@ export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({
     <>
       {/* Canvas Background */}
       <Rect
+        name="canvas-background"
         x={0}
         y={0}
         width={CANVAS_DIMENSIONS.WIDTH}
@@ -37,7 +40,21 @@ export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({
         fill="#ffffff"
         stroke="#e0e0e0"
         strokeWidth={2}
-        listening={false} // Don't interfere with mouse events for drag selection
+        listening={true}
+        onClick={onClick}
+        onTap={onClick}
+        onMouseDown={(e) => {
+          // Don't stop propagation - let stage handle mouse down for drag selection
+          e.cancelBubble = false;
+        }}
+        onMouseMove={(e) => {
+          // Don't stop propagation - let stage handle mouse move for drag selection
+          e.cancelBubble = false;
+        }}
+        onMouseUp={(e) => {
+          // Don't stop propagation - let stage handle mouse up for drag selection
+          e.cancelBubble = false;
+        }}
       />
       
       {/* Grid Lines */}

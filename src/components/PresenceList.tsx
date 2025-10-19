@@ -25,7 +25,8 @@ export const PresenceList: React.FC<PresenceListProps> = ({
     user => user.userId !== currentUserId
   );
 
-  const totalUsers = otherUsers.length + (currentUserId ? 1 : 0);
+  // Only count current user if they're connected
+  const totalUsers = otherUsers.length + (currentUserId && isConnected ? 1 : 0);
 
   return (
     <div className="presence-list">
@@ -61,7 +62,9 @@ export const PresenceList: React.FC<PresenceListProps> = ({
                 style={{ backgroundColor: generateUserColor(currentUserId) }}
               ></div>
               <span className="user-name">{currentUserDisplayName || 'You'} (You)</span>
-              <div className="user-status online">●</div>
+              <div className={`user-status ${isConnected ? 'online' : 'offline'}`}>
+                {isConnected ? '●' : '○'}
+              </div>
             </div>
           )}
 
@@ -78,10 +81,18 @@ export const PresenceList: React.FC<PresenceListProps> = ({
           ))}
 
           {/* Empty State */}
-          {otherUsers.length === 0 && currentUserId && (
+          {otherUsers.length === 0 && currentUserId && isConnected && (
             <div className="presence-empty">
               <p>You're the only one here</p>
               <p className="empty-hint">Share the link to collaborate!</p>
+            </div>
+          )}
+
+          {/* Offline State */}
+          {otherUsers.length === 0 && currentUserId && !isConnected && (
+            <div className="presence-empty">
+              <p>You're offline</p>
+              <p className="empty-hint">Check your internet connection</p>
             </div>
           )}
 

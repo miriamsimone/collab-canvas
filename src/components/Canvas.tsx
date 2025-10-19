@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCanvas, CANVAS_CONFIG } from '../hooks/useCanvas';
 import { useShapes } from '../hooks/useShapes';
 import { usePresence } from '../hooks/usePresence';
+import { useLocks } from '../hooks/useLocks';
 import { useAI } from '../hooks/useAI';
 import { useSelection } from '../hooks/useSelection';
 import { useUndoRedo } from '../hooks/useUndoRedo';
@@ -82,7 +83,7 @@ export const Canvas: React.FC = () => {
     dragCurrentPos,
     selectObject,
     toggleSelection,
-    clearSelection,
+    clearSelection: clearSelectionBase,
     selectAll,
     selectMultiple,
     isSelected,
@@ -109,6 +110,25 @@ export const Canvas: React.FC = () => {
     updateCursorPosition,
     clearError: clearPresenceError,
   } = usePresence();
+
+  // Real-time object locking management
+  const {
+    acquireLock,
+    releaseLock,
+    isShapeLockedByOther,
+    getShapeLockInfo,
+    mergeLocksWithShapes,
+  } = useLocks();
+
+  // Wrap clearSelection to also release locks
+  const clearSelection = useCallback(async () => {
+    const selected = getSelectedObjects(shapes);
+    clearSelectionBase();
+    // Release locks on all previously selected objects
+    for (const shape of selected) {
+      await releaseLock(shape.id);
+    }
+  }, [clearSelectionBase, getSelectedObjects, shapes, releaseLock]);
 
   // Collaborative comments
   const {
@@ -455,14 +475,24 @@ export const Canvas: React.FC = () => {
       
       await executeCommand(batchCommand);
       
-      // Select the pasted objects
+      // Select the pasted objects and acquire locks
       selectMultiple(duplicatedShapes.map(s => s.id));
+      
+      // Acquire locks for the pasted objects
+      setTimeout(async () => {
+        for (const shape of duplicatedShapes) {
+          if (!isShapeLockedByOther(shape.id)) {
+            await acquireLock(shape.id);
+          }
+        }
+      }, 0);
+      
       console.log(`Pasted ${duplicatedShapes.length} object(s)`);
     } catch (error) {
       console.error('Failed to paste objects:', error);
       setCanvasError('Failed to paste objects. Please try again.');
     }
-  }, [user, userProfile, executeCommand, selectMultiple]);
+  }, [user, userProfile, executeCommand, selectMultiple, isShapeLockedByOther, acquireLock]);
 
   const handleCut = useCallback(async () => {
     const selectedObjects = getSelectedObjects(shapes);
@@ -504,14 +534,24 @@ export const Canvas: React.FC = () => {
       
       await executeCommand(batchCommand);
       
-      // Select the duplicated objects
+      // Select the duplicated objects and acquire locks
       selectMultiple(duplicatedShapes.map(s => s.id));
+      
+      // Acquire locks for the duplicated objects
+      setTimeout(async () => {
+        for (const shape of duplicatedShapes) {
+          if (!isShapeLockedByOther(shape.id)) {
+            await acquireLock(shape.id);
+          }
+        }
+      }, 0);
+      
       console.log(`Duplicated ${duplicatedShapes.length} object(s)`);
     } catch (error) {
       console.error('Failed to duplicate objects:', error);
       setCanvasError('Failed to duplicate objects. Please try again.');
     }
-  }, [user, userProfile, shapes, getSelectedObjects, executeCommand, selectMultiple]);
+  }, [user, userProfile, shapes, getSelectedObjects, executeCommand, selectMultiple, isShapeLockedByOther, acquireLock]);
 
   const handleNudge = useCallback(async (direction: 'up' | 'down' | 'left' | 'right', distance: number) => {
     const selectedObjects = getSelectedObjects(shapes);
@@ -763,6 +803,95 @@ export const Canvas: React.FC = () => {
     }
   };
 
+  // Wrapper functions for selection that also acquire locks
+  const selectAllWithLocks = useCallback(async (objects: typeof shapes) => {
+    // Release all current locks
+    const previouslySelected = getSelectedObjects(shapes);
+    for (const shape of previouslySelected) {
+      await releaseLock(shape.id);
+    }
+    
+    // Select all objects
+    selectAll(objects);
+    
+    // Acquire locks for all objects (use the objects array directly, not getSelectedObjects)
+    for (const shape of objects) {
+      if (!isShapeLockedByOther(shape.id)) {
+        await acquireLock(shape.id);
+      }
+    }
+  }, [selectAll, getSelectedObjects, shapes, releaseLock, isShapeLockedByOther, acquireLock]);
+
+  const selectByColorWithLocks = useCallback(async (objects: typeof shapes, color: string) => {
+    // Import the helper function
+    const { findObjectsByColor } = await import('../utils/selectionHelpers');
+    
+    // Release all current locks
+    const previouslySelected = getSelectedObjects(shapes);
+    for (const shape of previouslySelected) {
+      await releaseLock(shape.id);
+    }
+    
+    // Calculate which objects will be selected
+    const matchingObjects = findObjectsByColor(objects, color);
+    
+    // Select by color
+    selectByColor(objects, color);
+    
+    // Acquire locks for newly selected objects
+    for (const shape of matchingObjects) {
+      if (!isShapeLockedByOther(shape.id)) {
+        await acquireLock(shape.id);
+      }
+    }
+  }, [selectByColor, getSelectedObjects, shapes, releaseLock, isShapeLockedByOther, acquireLock]);
+
+  const selectByPositionWithLocks = useCallback(async (
+    objects: typeof shapes,
+    criteria: 'top-half' | 'bottom-half' | 'left-half' | 'right-half',
+    canvasSize: { width: number; height: number }
+  ) => {
+    // Import the helper function
+    const { findObjectsByPosition } = await import('../utils/selectionHelpers');
+    
+    // Release all current locks
+    const previouslySelected = getSelectedObjects(shapes);
+    for (const shape of previouslySelected) {
+      await releaseLock(shape.id);
+    }
+    
+    // Calculate which objects will be selected
+    const matchingObjects = findObjectsByPosition(objects, criteria, canvasSize);
+    
+    // Select by position
+    selectByPosition(objects, criteria, canvasSize);
+    
+    // Acquire locks for newly selected objects
+    for (const shape of matchingObjects) {
+      if (!isShapeLockedByOther(shape.id)) {
+        await acquireLock(shape.id);
+      }
+    }
+  }, [selectByPosition, getSelectedObjects, shapes, releaseLock, isShapeLockedByOther, acquireLock]);
+
+  const selectMultipleWithLocks = useCallback(async (ids: string[]) => {
+    // Release all current locks
+    const previouslySelected = getSelectedObjects(shapes);
+    for (const shape of previouslySelected) {
+      await releaseLock(shape.id);
+    }
+    
+    // Select multiple
+    selectMultiple(ids);
+    
+    // Acquire locks for newly selected objects (use the IDs directly)
+    for (const id of ids) {
+      if (!isShapeLockedByOther(id)) {
+        await acquireLock(id);
+      }
+    }
+  }, [selectMultiple, getSelectedObjects, shapes, releaseLock, isShapeLockedByOther, acquireLock]);
+
   // AI command processing
   const {
     isLoading: aiLoading,
@@ -779,11 +908,11 @@ export const Canvas: React.FC = () => {
     onCreateCircle: handleAICreateCircle,
     onCreateLine: handleAICreateLine,
     onCreateText: handleAICreateText,
-    // Selection functions
-    onSelectAll: selectAll,
-    onSelectByColor: selectByColor,
-    onSelectByPosition: selectByPosition,
-    onSelectByIds: selectMultiple,
+    // Selection functions (with lock management)
+    onSelectAll: selectAllWithLocks,
+    onSelectByColor: selectByColorWithLocks,
+    onSelectByPosition: selectByPositionWithLocks,
+    onSelectByIds: selectMultipleWithLocks,
     onClearSelection: clearSelection,
     getSelectedObjects,
     // Bulk operation functions
@@ -1571,6 +1700,13 @@ export const Canvas: React.FC = () => {
 
   // Handle shape selection with support for multi-select
   const handleShapeSelect = async (id: string, event?: { shiftKey?: boolean }) => {
+    // Check if shape is locked by another user
+    if (isShapeLockedByOther(id)) {
+      const lockInfo = getShapeLockInfo(id);
+      alert(`This object is currently being edited by ${lockInfo?.userName || 'another user'}`);
+      return;
+    }
+
     // If audio connector tool is active, handle connection logic
     if (activeTool === 'audioConnector') {
       if (!user) return;
@@ -1608,10 +1744,29 @@ export const Canvas: React.FC = () => {
     // Normal selection logic
     if (event?.shiftKey) {
       // Shift-click: toggle object in selection
+      const wasSelected = isSelected(id);
       toggleSelection(id);
+      
+      if (wasSelected) {
+        // Object was deselected - release lock
+        await releaseLock(id);
+      } else {
+        // Object was selected - acquire lock
+        await acquireLock(id);
+      }
     } else {
       // Regular click: select only this object
+      // Release locks on previously selected objects
+      const previouslySelected = getSelectedObjects(shapes);
+      for (const shape of previouslySelected) {
+        if (shape.id !== id) {
+          await releaseLock(shape.id);
+        }
+      }
+      
       selectObject(id);
+      // Acquire lock for this shape
+      await acquireLock(id);
     }
   };
 
@@ -1625,6 +1780,15 @@ export const Canvas: React.FC = () => {
 
     const pos = getCanvasPointerPosition(stage);
     if (!pos) return;
+
+    // If clicking on empty space (not a shape), clear selection
+    const target = e.target;
+    const targetType = target.getType?.();
+    const clickedOnEmpty = target === stage || targetType === 'Layer' || targetType === 'Stage';
+    if (clickedOnEmpty && activeTool === 'select') {
+      await clearSelection();
+      return;
+    }
 
     // Apply snap-to-grid if enabled
     const snapped = snapPointToGrid(pos.x, pos.y);
@@ -1780,9 +1944,42 @@ export const Canvas: React.FC = () => {
   };
 
   // Handle stage mouse up for drag selection end
-  const handleStageMouseUp = () => {
-    if (isDragSelecting) {
+  const handleStageMouseUp = async () => {
+    if (isDragSelecting && dragStartPos && dragCurrentPos) {
+      // Import the helper function
+      const { findObjectsInSelection } = await import('../utils/selectionHelpers');
+      
+      // Get currently selected objects before drag selection
+      const previouslySelected = getSelectedObjects(shapes);
+      
+      // Calculate selection rectangle
+      const selectionRect = {
+        x: Math.min(dragStartPos.x, dragCurrentPos.x),
+        y: Math.min(dragStartPos.y, dragCurrentPos.y),
+        width: Math.abs(dragCurrentPos.x - dragStartPos.x),
+        height: Math.abs(dragCurrentPos.y - dragStartPos.y),
+      };
+      
+      // Calculate which objects will be selected
+      const newlySelected = findObjectsInSelection(shapes, selectionRect);
+      
+      // End drag selection (this updates selectedIds)
       endDragSelection(shapes);
+      
+      // Release locks on previously selected objects that are no longer selected
+      for (const shape of previouslySelected) {
+        if (!newlySelected.find(s => s.id === shape.id)) {
+          await releaseLock(shape.id);
+        }
+      }
+      
+      // Acquire locks on all newly selected objects
+      for (const shape of newlySelected) {
+        // Skip if locked by another user
+        if (!isShapeLockedByOther(shape.id)) {
+          await acquireLock(shape.id);
+        }
+      }
     }
   };
 
@@ -1913,10 +2110,11 @@ export const Canvas: React.FC = () => {
               scale={scale} 
               snapToGridEnabled={gridConfig.enabled}
               gridSize={gridConfig.size}
+              onClick={clearSelection}
             />
             
-            {/* Render All Shapes (sorted by z-index) */}
-            {sortShapesByZIndex(shapes).map((shape) => {
+            {/* Render All Shapes (sorted by z-index, merged with lock data) */}
+            {sortShapesByZIndex(mergeLocksWithShapes(shapes)).map((shape) => {
               // Render different components based on shape type
               if (shape.type === 'rectangle') {
                 return (

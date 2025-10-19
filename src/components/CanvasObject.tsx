@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rect, Transformer, Group, Circle as KonvaCircle } from 'react-konva';
+import { Rect, Transformer, Group, Circle as KonvaCircle, Text as KonvaText } from 'react-konva';
 import Konva from 'konva';
 import { realtimeObjectService } from '../services/realtimeObjectService';
 import { AudioControls } from './features/Audio/AudioControls';
@@ -15,6 +15,7 @@ export interface CanvasObjectData {
   strokeWidth: number;
   isLockedByOther?: boolean;
   lockedByName?: string;
+  lockedByColor?: string;
   audioUrl?: string;
   audioRecordedBy?: string;
   audioRecordedAt?: number;
@@ -265,8 +266,9 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
 
   // Visual lock indicator
   const isLocked = object.isLockedByOther;
-  // Priority: Playing (purple) > Locked (red) > Normal
-  const displayStroke = isPlaying ? '#a855f7' : (isLocked ? '#ff4444' : object.stroke);
+  const lockColor = object.lockedByColor || '#ff4444'; // Use user's color or fallback to red
+  // Priority: Playing (purple) > Locked (user color) > Normal
+  const displayStroke = isPlaying ? '#a855f7' : (isLocked ? lockColor : object.stroke);
   const displayStrokeWidth = isPlaying || isLocked ? 4 : object.strokeWidth;
   const displayDash = isPlaying ? undefined : (isLocked ? [10, 5] : undefined);
 
@@ -322,7 +324,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
           }
         }}
         // Selection or lock styling
-        shadowColor={isLocked ? '#ff4444' : (isSelected ? object.stroke : 'transparent')}
+        shadowColor={isLocked ? lockColor : (isSelected ? object.stroke : 'transparent')}
         shadowBlur={isLocked ? 15 : (isSelected ? 10 : 0)}
         shadowOpacity={isLocked ? 0.8 : (isSelected ? 0.6 : 0)}
         shadowOffsetX={0}
@@ -412,6 +414,16 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
             y={0}
           />
         </Group>
+      )}
+
+      {/* Lock Icon - Simple indicator */}
+      {isLocked && (
+        <KonvaText
+          text="🔒"
+          fontSize={16}
+          x={object.x + object.width - 20}
+          y={object.y + 5}
+        />
       )}
     </>
   );

@@ -41,8 +41,40 @@ export const Login: React.FC<LoginProps> = ({ onToggleMode }) => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>Welcome to CollabCanvas</h1>
-          <p>Sign in to start collaborating</p>
+          {/* Ram Icon - Large version */}
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ margin: '0 auto 16px' }}>
+            {/* Head circle */}
+            <circle cx="12" cy="13" r="5" fill="currentColor" />
+            
+            {/* Left horn (curved) */}
+            <path
+              d="M 8 10 Q 4 7 3 11"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              fill="none"
+            />
+            
+            {/* Right horn (curved) */}
+            <path
+              d="M 16 10 Q 20 7 21 11"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              fill="none"
+            />
+            
+            {/* Ears */}
+            <circle cx="9" cy="12" r="2" fill="currentColor" />
+            <circle cx="15" cy="12" r="2" fill="currentColor" />
+            
+            {/* Eyes */}
+            <circle cx="10" cy="13" r="0.8" fill="#fff" />
+            <circle cx="14" cy="13" r="0.8" fill="#fff" />
+          </svg>
+          
+          <h1>Welcome to Ramble</h1>
+          <p>Sign in to start rambling!</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
