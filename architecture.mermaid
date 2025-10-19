@@ -64,7 +64,7 @@ graph TB
             end
             
             subgraph "Services Layer"
-                FIRESERVICE[firebase.ts<br/>Firebase Init (Firestore + RTDB)]
+                FIRESERVICE[firebase.ts<br/>Firebase Init Firestore and RTDB]
                 CANVASSERV[canvasService.ts<br/>Canvas Initialization]
                 SHAPESERV[shapesService.ts<br/>Shape CRUD Operations]
                 PRESENCESERV[presenceService.ts<br/>Presence Management]
@@ -91,7 +91,7 @@ graph TB
         end
         
         subgraph "Rendering Layer 🎨"
-            KONVA[Konva.js + React-Konva<br/>High-Performance Canvas]
+            KONVA[Konva.js and React-Konva<br/>High-Performance Canvas]
         end
     end
     
@@ -105,7 +105,7 @@ graph TB
     
     subgraph "Firebase Cloud Services"
         subgraph "Firebase Authentication"
-            FBAUTH[Firebase Auth<br/>Email/Password + Sessions]
+            FBAUTH[Firebase Auth<br/>Email/Password and Sessions]
         end
         
         subgraph "Cloud Firestore (Persistent Storage) 📊"
@@ -126,13 +126,13 @@ graph TB
     end
     
     subgraph "Development & Testing"
-        VITEST[Vitest + React Testing Library]
+        VITEST[Vitest and React Testing Library]
         UNITTESTS[Unit Tests<br/>Services, Hooks, Utils]
     end
     
     subgraph "Build & Deploy Tools"
         VITE[Vite<br/>Build & Dev Server]
-        VERCEL[Vercel<br/>Primary Hosting + Serverless]
+        VERCEL[Vercel<br/>Primary Hosting and Serverless]
         FIREBASE[Firebase CLI<br/>Rules & Indexes Deploy]
     end
     
