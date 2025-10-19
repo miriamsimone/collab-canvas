@@ -932,6 +932,37 @@ body {
   color: #9ca3af;
 }
 
+/* Presence Actions (Sign Out Button) */
+.presence-actions {
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 8px;
+}
+
+.presence-sign-out-button {
+  width: 100%;
+  padding: 8px 16px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.presence-sign-out-button:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.presence-sign-out-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
 /* Responsive Presence List */
 @media (max-width: 768px) {
   .presence-list {

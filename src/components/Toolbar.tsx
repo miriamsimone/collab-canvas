@@ -33,7 +33,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       name: 'Pan',
       icon: (
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 2 C7 2 7 3 7 3 L7 6 C6 6 5 6 5 7 L5 9 C4 9 3 9 3 10 L3 12 C3 13 4 14 5 14 L11 14 C12 14 13 13 13 12 L13 10 C13 9 12 9 11 9 L11 7 C11 6 10 6 9 6 L9 3 C9 3 9 2 8 2 Z M8 3 L8 7 L10 7 L10 10 L12 10 L12 12 C12 12.5 11.5 13 11 13 L5 13 C4.5 13 4 12.5 4 12 L4 10 L6 10 L6 7 L8 7 L8 3 Z"/>
+          <path d="M8 1 C7.5 1 7 1.5 7 2 L7 6 L6 6 C5.5 6 5 6.5 5 7 L5 8 L4 8 C3.5 8 3 8.5 3 9 L3 11 C3 12.5 4 14 6 14 L10 14 C11.5 14 13 12.5 13 11 L13 7 C13 6.5 12.5 6 12 6 L11 6 L11 7 L12 7 L12 11 C12 12 11 13 10 13 L6 13 C5 13 4 12 4 11 L4 9 L5 9 L5 11 L6 11 L6 7 L7 7 L7 10 L8 10 L8 2 L9 2 L9 10 L10 10 L10 7 C10 6.5 9.5 6 9 6 L8 6 L8 2 C8 1.5 8.5 1 8 1 Z" />
         </svg>
       ),
       description: 'Pan and navigate around the canvas',

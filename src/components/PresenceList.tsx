@@ -7,6 +7,7 @@ interface PresenceListProps {
   currentUserDisplayName?: string;
   isConnected: boolean;
   loading: boolean;
+  onSignOut?: () => void;
 }
 
 export const PresenceList: React.FC<PresenceListProps> = ({
@@ -14,7 +15,8 @@ export const PresenceList: React.FC<PresenceListProps> = ({
   currentUserId,
   currentUserDisplayName,
   isConnected,
-  loading
+  loading,
+  onSignOut
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -87,6 +89,19 @@ export const PresenceList: React.FC<PresenceListProps> = ({
           {!currentUserId && (
             <div className="presence-empty">
               <p>No one online</p>
+            </div>
+          )}
+
+          {/* Sign Out Button */}
+          {onSignOut && currentUserId && (
+            <div className="presence-actions">
+              <button 
+                onClick={onSignOut} 
+                className="presence-sign-out-button"
+                type="button"
+              >
+                Sign Out
+              </button>
             </div>
           )}
         </div>

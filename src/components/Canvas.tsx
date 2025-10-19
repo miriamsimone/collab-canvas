@@ -1668,16 +1668,6 @@ export const Canvas: React.FC = () => {
               </span>
             </div>
           </div>
-          
-          <div className="user-info">
-            <button 
-              onClick={signOut} 
-              className="sign-out-button"
-              type="button"
-            >
-              Sign Out
-            </button>
-          </div>
         </div>
       </header>
       
@@ -1936,6 +1926,7 @@ export const Canvas: React.FC = () => {
           currentUserDisplayName={userProfile?.displayName}
           isConnected={presenceConnected}
           loading={presenceLoading}
+          onSignOut={signOut}
         />
       </DraggablePanel>
 
