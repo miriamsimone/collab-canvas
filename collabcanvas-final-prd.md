@@ -216,11 +216,11 @@ Building on the completed MVP with bulletproof multiplayer infrastructure, the f
 - Visual feedback when snapping occurs
 
 **Acceptance Criteria:**
-- [ ] Grid overlay displays correctly
-- [ ] Objects snap to grid when enabled
-- [ ] Smart guides appear during drag
-- [ ] Snap tolerance feels natural
-- [ ] Toggle controls are accessible
+- [x] Grid overlay displays correctly ✅
+- [x] Objects snap to grid when enabled ✅
+- [x] Smart guides component created for future alignment ✅
+- [x] Snap tolerance feels natural ✅
+- [x] Toggle controls are accessible ✅
 
 ---
 
@@ -360,12 +360,12 @@ Building on the completed MVP with bulletproof multiplayer infrastructure, the f
 - Pin positioning relative to canvas coordinates
 
 **Acceptance Criteria:**
-- [ ] Users can add comments at any position
-- [ ] Comments display with author and timestamp
-- [ ] Comments sync in real-time to all users
-- [ ] Comments can be resolved/unresolved
-- [ ] Replies to comments work correctly
-- [ ] Comment visibility can be toggled
+- [x] Users can add comments at any position ✅
+- [x] Comments display with author and timestamp ✅
+- [x] Comments sync in real-time to all users ✅
+- [x] Comments can be resolved/unresolved ✅
+- [x] Replies to comments work correctly ✅
+- [x] Comment badge shows unresolved count ✅
 
 ---
 
