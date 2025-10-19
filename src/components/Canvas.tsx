@@ -124,6 +124,35 @@ export const Canvas: React.FC = () => {
     height: window.innerHeight - 60, // Account for header
   });
 
+  // Tiled panel management - right side panels move together
+  const PANEL_WIDTH = 320;
+  const [tiledPanelPositions, setTiledPanelPositions] = useState<{[key: string]: {x: number, y: number}}>({});
+  const tiledOffsetsRef = useRef<{[key: string]: {x: number, y: number}}>({
+    'presence-panel': { x: 0, y: 0 },
+    'ai-assistant-panel': { x: 0, y: 210 },
+    'style-panel': { x: 0, y: 530 },
+  });
+
+  // Panel position handler - all right panels move together
+  const handlePanelPositionChange = useCallback((panelId: string, newPosition: {x: number, y: number}) => {
+    setTiledPanelPositions(() => {
+      const updated: {[key: string]: {x: number, y: number}} = {};
+      
+      // Update all tiled panels based on their offset from the dragged panel
+      Object.keys(tiledOffsetsRef.current).forEach(id => {
+        const offset = tiledOffsetsRef.current[id];
+        const draggedOffset = tiledOffsetsRef.current[panelId];
+        
+        updated[id] = {
+          x: newPosition.x + (offset.x - draggedOffset.x),
+          y: newPosition.y + (offset.y - draggedOffset.y),
+        };
+      });
+      
+      return updated;
+    });
+  }, []);
+
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -1887,11 +1916,16 @@ export const Canvas: React.FC = () => {
         </div>
       </div>
       
+      {/* Right Side Tiled Panels - All move together */}
+      
       {/* Presence List */}
       <DraggablePanel 
         title="Online Users"
-        defaultPosition={{ x: windowSize.width - 280, y: 160 }}
+        panelId="presence-panel"
+        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 160 }}
         className="presence-panel"
+        externalPosition={tiledPanelPositions['presence-panel'] || undefined}
+        onPositionChange={handlePanelPositionChange}
       >
         <PresenceList
           presenceData={cursors as any}
@@ -1902,11 +1936,14 @@ export const Canvas: React.FC = () => {
         />
       </DraggablePanel>
 
-      {/* AI Command Panel */}
+      {/* AI Command Panel - Below Presence Panel */}
       <DraggablePanel 
         title="AI Assistant"
-        defaultPosition={{ x: windowSize.width - 340, y: windowSize.height - 320 }}
+        panelId="ai-assistant-panel"
+        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 370 }}
         className="ai-assistant-panel"
+        externalPosition={tiledPanelPositions['ai-assistant-panel'] || undefined}
+        onPositionChange={handlePanelPositionChange}
       >
         <div className="ai-panel">
           <div className="ai-panel-content">
@@ -1933,6 +1970,47 @@ export const Canvas: React.FC = () => {
               maxVisible={3}
               onClearHistory={clearAIHistory}
             />
+          </div>
+        </div>
+      </DraggablePanel>
+
+      {/* Style Panel - Below AI Assistant */}
+      <DraggablePanel 
+        title="Style Controls"
+        panelId="style-panel"
+        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 690 }}
+        className="style-panel"
+        externalPosition={tiledPanelPositions['style-panel'] || undefined}
+        onPositionChange={handlePanelPositionChange}
+        defaultCollapsed={true}
+      >
+        <div className="style-controls">
+          <div className="control-group">
+            <label htmlFor="color-picker">Color</label>
+            <div className="color-picker-wrapper">
+              <input 
+                type="color" 
+                id="color-picker"
+                className="color-picker-input"
+                defaultValue="#3b82f6"
+              />
+              <span className="color-value">#3b82f6</span>
+            </div>
+          </div>
+          
+          <div className="control-group">
+            <label htmlFor="text-size">Text Size</label>
+            <div className="text-size-control">
+              <input 
+                type="range" 
+                id="text-size"
+                min="8" 
+                max="72" 
+                defaultValue="16"
+                className="text-size-slider"
+              />
+              <span className="text-size-value">16px</span>
+            </div>
           </div>
         </div>
       </DraggablePanel>

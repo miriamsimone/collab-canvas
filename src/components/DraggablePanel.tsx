@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface DraggablePanelProps {
   title: string;
@@ -6,6 +6,9 @@ interface DraggablePanelProps {
   defaultPosition?: { x: number; y: number };
   className?: string;
   defaultCollapsed?: boolean;
+  panelId?: string;
+  externalPosition?: { x: number; y: number } | null; // Position set externally (for tiled panels)
+  onPositionChange?: (id: string, position: { x: number; y: number }) => void;
 }
 
 export const DraggablePanel: React.FC<DraggablePanelProps> = ({
@@ -14,6 +17,9 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   defaultPosition = { x: 0, y: 0 },
   className = '',
   defaultCollapsed = false,
+  panelId = '',
+  externalPosition = null,
+  onPositionChange,
 }) => {
   const [position, setPosition] = useState(defaultPosition);
   const [isDragging, setIsDragging] = useState(false);
@@ -25,6 +31,17 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
     initialX: number;
     initialY: number;
   } | null>(null);
+  const externalPositionRef = useRef<{x: number, y: number} | null>(null);
+
+  // Update position when externally controlled (for locked panels)
+  useEffect(() => {
+    if (externalPosition && !isDragging) {
+      // Only update if the position actually changed
+      if (externalPosition.x !== position.x || externalPosition.y !== position.y) {
+        setPosition(externalPosition);
+      }
+    }
+  }, [externalPosition, isDragging]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Only start dragging if clicking on the panel header (but not the collapse button)
@@ -66,7 +83,13 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
         newY = Math.max(0, Math.min(newY, viewportHeight - rect.height));
       }
 
-      setPosition({ x: newX, y: newY });
+      const newPosition = { x: newX, y: newY };
+      setPosition(newPosition);
+      
+      // Notify parent of position change for locked panel synchronization
+      if (onPositionChange && panelId) {
+        onPositionChange(panelId, newPosition);
+      }
     };
 
     const handleMouseUp = () => {
