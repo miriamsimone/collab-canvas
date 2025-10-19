@@ -132,6 +132,26 @@ app.post('/api/ai/command', async (req, res) => {
       shapeId: z.string().optional(),
     });
 
+    const bulkCreateSchema = z.object({
+      shapeType: z.enum(['rectangle', 'circle', 'line', 'text']),
+      count: z.number().min(1).max(1000),
+      pattern: z.enum(['grid', 'random', 'horizontal', 'vertical']).optional(),
+      baseParams: z.object({
+        color: z.string().optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+        radius: z.number().optional(),
+        text: z.string().optional(),
+        fontSize: z.number().optional(),
+      }).optional(),
+      area: z.object({
+        startX: z.number().min(0).max(5000).optional(),
+        startY: z.number().min(0).max(5000).optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+      }).optional(),
+    });
+
     // System prompt
     const systemPrompt = `You are an AI assistant that helps users manage shapes on a canvas. You can create rectangles, circles, lines, and text, select objects, and perform bulk operations, resize, rotate, align, distribute, and manage layers.
 
@@ -165,28 +185,36 @@ You can perform these types of operations:
 3. BULK OPERATIONS:
    - Move, delete, or change color of selected objects
 
-4. RESIZE SHAPES:
+4. BULK CREATE (PERFORMANCE TESTING):
+   - Create many shapes at once efficiently (up to 1000)
+   - Use for commands like "create 500 rectangles" or "fill the canvas with circles"
+   - Supports patterns: grid, random, horizontal, vertical
+   - Example: "create 500 rectangles" -> bulkCreate with shapeType: 'rectangle', count: 500, pattern: 'random'
+   - Example: "create 100 blue circles in a grid" -> bulkCreate with shapeType: 'circle', count: 100, pattern: 'grid', baseParams: {color: '#0000ff'}
+   - IMPORTANT: Use bulkCreate instead of multiple individual create actions when count > 10
+
+5. RESIZE SHAPES:
    - Resize by width/height or scale factor
    - "make the circle twice as big" -> resizeShape with scale: 2
    - "resize the rectangle to 300x200" -> resizeShape with width: 300, height: 200
 
-5. ROTATE SHAPES:
+6. ROTATE SHAPES:
    - Rotate shapes by degrees
    - "rotate the text 45 degrees" -> rotateShape with degrees: 45
 
-6. ALIGN OBJECTS:
+7. ALIGN OBJECTS:
    - Align selected objects (left, center, right, top, middle, bottom)
    - "align all objects to the left" -> alignObjects with alignment: 'left'
 
-7. DISTRIBUTE OBJECTS:
+8. DISTRIBUTE OBJECTS:
    - Distribute selected objects evenly (horizontal or vertical)
    - "distribute horizontally" -> distributeObjects with direction: 'horizontal'
 
-8. Z-INDEX (LAYER MANAGEMENT):
+9. Z-INDEX (LAYER MANAGEMENT):
    - Bring to front, send to back, bring forward, send backward
    - "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
 
-9. COMPLEX MULTI-STEP COMMANDS:
+10. COMPLEX MULTI-STEP COMMANDS:
    - For complex requests like "create a login form", break it into multiple actions
    - Example: "create a login form" ->
      * createText for "Username" label
@@ -199,13 +227,17 @@ You can perform these types of operations:
 
 Examples:
 - "create a red rectangle at 100, 100" -> createRectangle
+- "create 500 rectangles" -> bulkCreate with shapeType: 'rectangle', count: 500, pattern: 'random'
+- "fill the canvas with 200 blue circles" -> bulkCreate with shapeType: 'circle', count: 200, pattern: 'random', baseParams: {color: '#0000ff'}
+- "create 100 rectangles in a grid" -> bulkCreate with shapeType: 'rectangle', count: 100, pattern: 'grid'
 - "make the circle twice as big" -> resizeShape with scale: 2
 - "rotate the text 45 degrees" -> rotateShape with degrees: 45
 - "align all selected objects to the left" -> alignObjects
 - "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
 - "create a login form" -> multiple createText + createRectangle actions arranged vertically
 
-For complex commands, return multiple actions that will be executed in sequence.`;
+For complex commands, return multiple actions that will be executed in sequence.
+Remember: Use bulkCreate for any request to create more than 10 shapes.`;
 
     // Generate AI response
     const result = await generateObject({
@@ -223,6 +255,7 @@ For complex commands, return multiple actions that will be executed in sequence.
             'createText', 
             'selectObjects', 
             'bulkOperation',
+            'bulkCreate',
             'resizeShape',
             'rotateShape',
             'alignObjects',
@@ -236,6 +269,7 @@ For complex commands, return multiple actions that will be executed in sequence.
             createTextSchema,
             selectObjectsSchema,
             bulkOperationSchema,
+            bulkCreateSchema,
             resizeShapeSchema,
             rotateShapeSchema,
             alignObjectsSchema,

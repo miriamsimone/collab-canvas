@@ -204,6 +204,94 @@ export const Canvas: React.FC = () => {
     }
   };
 
+  const handleBulkCreate = async (
+    shapeType: 'rectangle' | 'circle' | 'line' | 'text',
+    count: number,
+    pattern: 'grid' | 'random' | 'horizontal' | 'vertical' = 'random',
+    baseParams?: Record<string, any>,
+    area?: { startX?: number; startY?: number; width?: number; height?: number }
+  ) => {
+    if (!user || !userProfile) return;
+    
+    try {
+      console.log(`🚀 Bulk creating ${count} ${shapeType}s with pattern: ${pattern}`);
+      
+      // Define default area if not provided
+      const createArea = {
+        startX: area?.startX ?? 50,
+        startY: area?.startY ?? 50,
+        width: area?.width ?? windowSize.width - 100,
+        height: area?.height ?? windowSize.height - 100,
+      };
+      
+      // Calculate grid dimensions if using grid pattern
+      const gridCols = pattern === 'grid' ? Math.ceil(Math.sqrt(count)) : 1;
+      const gridRows = pattern === 'grid' ? Math.ceil(count / gridCols) : 1;
+      const cellWidth = createArea.width / gridCols;
+      const cellHeight = createArea.height / gridRows;
+      
+      // Generate shapes based on pattern
+      const createPromises: Promise<void>[] = [];
+      
+      for (let i = 0; i < count; i++) {
+        let x: number, y: number;
+        
+        // Calculate position based on pattern
+        if (pattern === 'grid') {
+          const col = i % gridCols;
+          const row = Math.floor(i / gridCols);
+          x = createArea.startX + col * cellWidth + cellWidth / 2;
+          y = createArea.startY + row * cellHeight + cellHeight / 2;
+        } else if (pattern === 'horizontal') {
+          const spacing = createArea.width / (count + 1);
+          x = createArea.startX + (i + 1) * spacing;
+          y = createArea.startY + createArea.height / 2;
+        } else if (pattern === 'vertical') {
+          const spacing = createArea.height / (count + 1);
+          x = createArea.startX + createArea.width / 2;
+          y = createArea.startY + (i + 1) * spacing;
+        } else { // random
+          x = createArea.startX + Math.random() * createArea.width;
+          y = createArea.startY + Math.random() * createArea.height;
+        }
+        
+        // Create shape based on type
+        if (shapeType === 'rectangle') {
+          const width = baseParams?.width ?? 80;
+          const height = baseParams?.height ?? 60;
+          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+          createPromises.push(handleAICreateRectangle(x, y, width, height, color));
+        } else if (shapeType === 'circle') {
+          const radius = baseParams?.radius ?? 30;
+          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+          createPromises.push(handleAICreateCircle(x, y, radius, color));
+        } else if (shapeType === 'line') {
+          const length = baseParams?.length ?? 100;
+          const angle = Math.random() * Math.PI * 2;
+          const x2 = x + Math.cos(angle) * length;
+          const y2 = y + Math.sin(angle) * length;
+          const color = baseParams?.color ?? `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+          createPromises.push(handleAICreateLine(x, y, x2, y2, color));
+        } else if (shapeType === 'text') {
+          const text = baseParams?.text ?? `Text ${i + 1}`;
+          const fontSize = baseParams?.fontSize ?? 16;
+          createPromises.push(handleAICreateText(x, y, text, fontSize));
+        }
+        
+        // Process in batches of 50 to avoid overwhelming Firestore
+        if (createPromises.length >= 50 || i === count - 1) {
+          await Promise.all(createPromises);
+          createPromises.length = 0; // Clear array
+        }
+      }
+      
+      console.log(`✅ Successfully created ${count} ${shapeType}s`);
+    } catch (error) {
+      console.error(`Failed to bulk create ${shapeType}s:`, error);
+      setCanvasError(`Failed to bulk create shapes. Please try again.`);
+    }
+  };
+
   // Keyboard Shortcuts Handlers
   const handleCopy = useCallback(() => {
     const selectedObjects = getSelectedObjects(shapes);
@@ -576,6 +664,8 @@ export const Canvas: React.FC = () => {
     onBulkMove: handleBulkMove,
     onBulkDelete: handleBulkDelete,
     onBulkChangeColor: handleBulkChangeColor,
+    // Bulk create function
+    onBulkCreate: handleBulkCreate,
     // Transform operations
     onResize: handleAIResize,
     onRotate: handleAIRotate,

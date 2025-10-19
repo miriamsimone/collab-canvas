@@ -77,6 +77,26 @@ const zIndexSchema = z.object({
   shapeId: z.string().optional().describe('ID of shape (if not provided, applies to selected objects)'),
 });
 
+const bulkCreateSchema = z.object({
+  shapeType: z.enum(['rectangle', 'circle', 'line', 'text']).describe('Type of shape to create in bulk'),
+  count: z.number().min(1).max(1000).describe('Number of shapes to create (1-1000)'),
+  pattern: z.enum(['grid', 'random', 'horizontal', 'vertical']).optional().describe('Layout pattern for shapes'),
+  baseParams: z.object({
+    color: z.string().optional().describe('Base color for all shapes'),
+    width: z.number().optional().describe('Width for rectangles'),
+    height: z.number().optional().describe('Height for rectangles'),
+    radius: z.number().optional().describe('Radius for circles'),
+    text: z.string().optional().describe('Text content for text shapes'),
+    fontSize: z.number().optional().describe('Font size for text shapes'),
+  }).optional().describe('Base parameters applied to all shapes'),
+  area: z.object({
+    startX: z.number().min(0).max(5000).optional().describe('Starting X position'),
+    startY: z.number().min(0).max(5000).optional().describe('Starting Y position'),
+    width: z.number().optional().describe('Width of area to fill'),
+    height: z.number().optional().describe('Height of area to fill'),
+  }).optional().describe('Area constraints for shape placement'),
+});
+
 // Input validation schema
 const requestSchema = z.object({
   prompt: z.string().min(1).max(500),
@@ -251,28 +271,36 @@ You can perform these types of operations:
 3. BULK OPERATIONS:
    - Move, delete, or change color of selected objects
 
-4. RESIZE SHAPES:
+4. BULK CREATE (PERFORMANCE TESTING):
+   - Create many shapes at once efficiently (up to 1000)
+   - Use for commands like "create 500 rectangles" or "fill the canvas with circles"
+   - Supports patterns: grid, random, horizontal, vertical
+   - Example: "create 500 rectangles" -> bulkCreate with shapeType: 'rectangle', count: 500, pattern: 'random'
+   - Example: "create 100 blue circles in a grid" -> bulkCreate with shapeType: 'circle', count: 100, pattern: 'grid', baseParams: {color: '#0000ff'}
+   - IMPORTANT: Use bulkCreate instead of multiple individual create actions when count > 10
+
+5. RESIZE SHAPES:
    - Resize by width/height or scale factor
    - "make the circle twice as big" -> resizeShape with scale: 2
    - "resize the rectangle to 300x200" -> resizeShape with width: 300, height: 200
 
-5. ROTATE SHAPES:
+6. ROTATE SHAPES:
    - Rotate shapes by degrees
    - "rotate the text 45 degrees" -> rotateShape with degrees: 45
 
-6. ALIGN OBJECTS:
+7. ALIGN OBJECTS:
    - Align selected objects (left, center, right, top, middle, bottom)
    - "align all objects to the left" -> alignObjects with alignment: 'left'
 
-7. DISTRIBUTE OBJECTS:
+8. DISTRIBUTE OBJECTS:
    - Distribute selected objects evenly (horizontal or vertical)
    - "distribute horizontally" -> distributeObjects with direction: 'horizontal'
 
-8. Z-INDEX (LAYER MANAGEMENT):
+9. Z-INDEX (LAYER MANAGEMENT):
    - Bring to front, send to back, bring forward, send backward
    - "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
 
-9. COMPLEX MULTI-STEP COMMANDS:
+10. COMPLEX MULTI-STEP COMMANDS:
    - For complex requests like "create a login form", break it into multiple actions
    - Example: "create a login form" ->
      * createText for "Username" label
@@ -285,13 +313,17 @@ You can perform these types of operations:
 
 Examples:
 - "create a red rectangle at 100, 100" -> createRectangle
+- "create 500 rectangles" -> bulkCreate with shapeType: 'rectangle', count: 500, pattern: 'random'
+- "fill the canvas with 200 blue circles" -> bulkCreate with shapeType: 'circle', count: 200, pattern: 'random', baseParams: {color: '#0000ff'}
+- "create 100 rectangles in a grid" -> bulkCreate with shapeType: 'rectangle', count: 100, pattern: 'grid'
 - "make the circle twice as big" -> resizeShape with scale: 2
 - "rotate the text 45 degrees" -> rotateShape with degrees: 45
 - "align all selected objects to the left" -> alignObjects
 - "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
 - "create a login form" -> multiple createText + createRectangle actions arranged vertically
 
-For complex commands, return multiple actions that will be executed in sequence.`;
+For complex commands, return multiple actions that will be executed in sequence.
+Remember: Use bulkCreate for any request to create more than 10 shapes.`;
 
     // Call OpenAI API
     const result = await generateObject({
@@ -309,6 +341,7 @@ For complex commands, return multiple actions that will be executed in sequence.
             'createText', 
             'selectObjects', 
             'bulkOperation',
+            'bulkCreate',
             'resizeShape',
             'rotateShape',
             'alignObjects',
@@ -322,6 +355,7 @@ For complex commands, return multiple actions that will be executed in sequence.
             createTextSchema,
             selectObjectsSchema,
             bulkOperationSchema,
+            bulkCreateSchema,
             resizeShapeSchema,
             rotateShapeSchema,
             alignObjectsSchema,
@@ -459,6 +493,40 @@ For complex commands, return multiple actions that will be executed in sequence.
         validatedActions.push({
           type: 'bulkOperation',
           parameters: bulkParams,
+        });
+      } else if (action.type === 'bulkCreate') {
+        // Validate bulk create parameters
+        const bulkCreateParams = action.parameters as any;
+        if (!bulkCreateParams.shapeType || !bulkCreateParams.count) {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: 'Bulk create requires shapeType and count parameters',
+          });
+        }
+        
+        // Validate count is within limits
+        if (bulkCreateParams.count < 1 || bulkCreateParams.count > 1000) {
+          return res.status(200).json({
+            success: false,
+            message: explanation,
+            error: 'Bulk create count must be between 1 and 1000',
+          });
+        }
+        
+        // Convert color names to hex if provided
+        if (bulkCreateParams.baseParams?.color) {
+          bulkCreateParams.baseParams.color = parseColorName(bulkCreateParams.baseParams.color);
+        }
+        
+        // Set defaults
+        if (!bulkCreateParams.pattern) {
+          bulkCreateParams.pattern = 'random';
+        }
+        
+        validatedActions.push({
+          type: 'bulkCreate',
+          parameters: bulkCreateParams,
         });
       } else if (action.type === 'resizeShape') {
         const resizeParams = action.parameters as any;

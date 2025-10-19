@@ -27,6 +27,14 @@ interface UseAIProps {
   onBulkMove: (deltaX: number, deltaY: number) => Promise<void>;
   onBulkDelete: () => Promise<void>;
   onBulkChangeColor: (newColor: string) => Promise<void>;
+  // Bulk create function
+  onBulkCreate?: (
+    shapeType: 'rectangle' | 'circle' | 'line' | 'text',
+    count: number,
+    pattern?: 'grid' | 'random' | 'horizontal' | 'vertical',
+    baseParams?: Record<string, any>,
+    area?: { startX?: number; startY?: number; width?: number; height?: number }
+  ) => Promise<void>;
   // Transform operations
   onResize?: (shapeId: string | undefined, width?: number, height?: number, scale?: number) => Promise<void>;
   onRotate?: (shapeId: string | undefined, degrees: number) => Promise<void>;
@@ -51,6 +59,7 @@ export const useAI = ({
   onBulkMove,
   onBulkDelete,
   onBulkChangeColor,
+  onBulkCreate,
   onResize,
   onRotate,
   onAlign,
@@ -181,6 +190,12 @@ export const useAI = ({
                   await onBulkChangeColor(params.operationData.newColor);
                 }
                 break;
+            }
+          } else if (action.type === 'bulkCreate') {
+            if (onBulkCreate) {
+              const params = action.parameters as any;
+              const { shapeType, count, pattern, baseParams, area } = params;
+              await onBulkCreate(shapeType, count, pattern, baseParams, area);
             }
           } else if (action.type === 'resizeShape') {
             if (onResize) {
