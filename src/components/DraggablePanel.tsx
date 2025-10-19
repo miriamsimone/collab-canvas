@@ -31,7 +31,6 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
     initialX: number;
     initialY: number;
   } | null>(null);
-  const externalPositionRef = useRef<{x: number, y: number} | null>(null);
 
   // Update position when externally controlled (for locked panels)
   useEffect(() => {

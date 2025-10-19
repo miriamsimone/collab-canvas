@@ -29,7 +29,7 @@ import {
 } from '../types/shapes';
 
 // Extended shape data for Firestore
-export type FirestoreShape = Shape & {
+export type FirestoreShape = Omit<Shape, 'createdAt' | 'updatedAt'> & {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastModifiedBy: string; // User ID who last modified the shape

@@ -69,7 +69,6 @@ export const LineComponent: React.FC<LineComponentProps> = ({
           isDragging: true,
           draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB line dragging:', error);
@@ -135,7 +134,6 @@ export const LineComponent: React.FC<LineComponentProps> = ({
         isDragging: true,
         draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
       });
 
       // Update cursor position during drag
@@ -175,7 +173,6 @@ export const LineComponent: React.FC<LineComponentProps> = ({
           isDragging: true,
           draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB line transform tracking:', error);
@@ -208,7 +205,6 @@ export const LineComponent: React.FC<LineComponentProps> = ({
         isDragging: true,
         draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
       });
 
       // Update cursor position

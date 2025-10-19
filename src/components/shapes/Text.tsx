@@ -82,7 +82,6 @@ export const TextComponent: React.FC<TextComponentProps> = ({
           isDragging: true,
           draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB text dragging:', error);
@@ -127,7 +126,6 @@ export const TextComponent: React.FC<TextComponentProps> = ({
         isDragging: true,
         draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
       });
 
       if (onCursorUpdate && stage) {
@@ -229,7 +227,6 @@ export const TextComponent: React.FC<TextComponentProps> = ({
           isDragging: true,
           draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB text transform:', error);
@@ -257,7 +254,6 @@ export const TextComponent: React.FC<TextComponentProps> = ({
         isDragging: true,
         draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
       });
 
       if (onCursorUpdate && stage) {

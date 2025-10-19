@@ -68,7 +68,6 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
           isDragging: true,
           draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB circle dragging:', error);
@@ -118,7 +117,6 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         isDragging: true,
         draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
       });
 
       // Also update cursor position during drag
@@ -163,7 +161,6 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         isDragging: true,
         draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
       });
 
       // Update cursor position during transform
@@ -200,7 +197,6 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
           isDragging: true,
           draggedBy: currentUserId,
           draggedByName: currentUserName || 'Unknown User',
-  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB circle transform tracking:', error);
