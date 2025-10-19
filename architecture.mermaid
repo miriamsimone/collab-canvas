@@ -3,91 +3,137 @@ graph TB
         subgraph "React Application"
             APP[App.tsx<br/>Main App Component]
             
-            subgraph "Components"
-                CANVAS[Canvas.tsx<br/>Main Canvas Container]
-                CANVASOBJ[CanvasObject.tsx<br/>Multi-Shape Rendering]
-                TOOLBAR[Toolbar.tsx<br/>Shape Creation Tools]
-                PRESENCE[PresenceList.tsx<br/>Online Users Display]
-                CURSOR[MultiplayerCursor.tsx<br/>Multiplayer Cursors]
+            subgraph "Core Components"
+                CANVAS[Canvas.tsx<br/>Main Canvas Orchestrator]
+                CANVASOBJ[CanvasObject.tsx<br/>Rectangle Rendering]
+                CANVASBG[CanvasBackground.tsx<br/>Grid & Background]
+                TOOLBAR[Toolbar.tsx<br/>Tool Selection]
+                PRESENCE[PresenceList.tsx<br/>Online Users]
+                CURSOR[MultiplayerCursor.tsx<br/>Real-time Cursors]
+                PANEL[DraggablePanel.tsx<br/>Floating Panels]
+            end
+            
+            subgraph "Shape Components"
+                CIRCLE[Circle.tsx<br/>Circle Shapes]
+                LINE[Line.tsx<br/>Line Shapes]
+                TEXT[Text.tsx<br/>Text Shapes]
+            end
+            
+            subgraph "Auth Components"
                 LOGIN[Login.tsx<br/>Auth Form]
-                REGISTER[Register.tsx<br/>Registration Form]
+                REGISTER[Register.tsx<br/>Registration]
                 AUTHPROV[AuthProvider.tsx<br/>Auth Context]
-                AIUI[AICommandInput.tsx<br/>AI Interface]
             end
             
-            subgraph "Performance Layer 🚀"
-                VIEWPORT[ViewportCulling<br/>Only Render Visible Objects]
-                OBJPOOL[ObjectPool<br/>Reuse Konva Objects]
-                SPATIAL[SpatialIndex<br/>QuadTree for Fast Queries]
-                BATCHER[UpdateBatcher<br/>Batch Firestore Writes]
-                THROTTLER[EventThrottler<br/>Reduce Update Frequency]
+            subgraph "AI Features 🤖"
+                AIINPUT[AICommandInput.tsx<br/>Command Interface]
+                AIHISTORY[AICommandHistory.tsx<br/>Command History]
+                AILOADING[AILoadingIndicator.tsx<br/>Loading State]
+                AIERROR[AIErrorDisplay.tsx<br/>Error Display]
             end
             
-            subgraph "Hooks"
-                USECANVAS[useCanvas.ts<br/>Canvas State & Logic]
-                USESHAPES[useShapes.ts<br/>Multi-Shape CRUD & Sync]
+            subgraph "Comments Features 💬"
+                COMMENTPIN[CommentPin.tsx<br/>Canvas Markers]
+                COMMENTTHREAD[CommentThread.tsx<br/>Thread Viewer]
+                COMMENTINPUT[CommentInput.tsx<br/>Comment Input]
+            end
+            
+            subgraph "Tool Features"
+                SELECTIONBOX[SelectionBox.tsx<br/>Multi-Select Box]
+                SMARTGUIDES[SmartGuides.tsx<br/>Alignment Guides]
+                GRIDOVERLAY[GridOverlay.tsx<br/>Visual Grid]
+                SHORTCUTS[ShortcutsPanel.tsx<br/>Keyboard Help]
+                ALIGNCTRL[AlignmentControls.tsx<br/>Align Tools]
+                ZINDEXCTRL[ZIndexControls.tsx<br/>Layer Controls]
+                CONTEXTMENU[ShapeContextMenu.tsx<br/>Right-Click Menu]
+            end
+            
+            subgraph "Custom Hooks"
+                USECANVAS[useCanvas.ts<br/>Canvas State & Pan/Zoom]
+                USESHAPES[useShapes.ts<br/>Shape CRUD & Sync]
                 USEPRESENCE[usePresence.ts<br/>Cursor & Presence]
-                USEAUTH[useAuth.ts<br/>Authentication State]
+                USEAUTH[useAuth.ts<br/>Authentication]
                 USEAI[useAI.ts<br/>AI Command Processing]
-                USEPERF[usePerformance.ts<br/>Performance Monitoring]
+                USESELECTION[useSelection.ts<br/>Multi-Select Logic]
+                USEUNDOREDO[useUndoRedo.ts<br/>Command Pattern]
+                USEGRID[useGrid.ts<br/>Grid & Snapping]
+                USEKEYBOARD[useKeyboardShortcuts.ts<br/>Keyboard Shortcuts]
+                USEZINDEX[useZIndex.ts<br/>Z-Index Management]
+                USEALIGNMENT[useAlignment.ts<br/>Alignment Logic]
+                USECOMMENTS[useComments.ts<br/>Comments State]
             end
             
-            subgraph "Services"
-                FIRESERVICE[firebase.ts<br/>Firebase SDK Init]
-                CANVASSERV[canvasService.ts<br/>Shared Canvas Init]
-                SHAPESERV[shapesService.ts<br/>Multi-Shape CRUD]
-                PRESENCESERV[presenceService.ts<br/>Presence & Heartbeat]
-                AISERVICE[aiService.ts<br/>AI Command Processing]
-                PERFSERVICE[performanceService.ts<br/>Metrics & Optimization]
+            subgraph "Services Layer"
+                FIRESERVICE[firebase.ts<br/>Firebase Init (Firestore + RTDB)]
+                CANVASSERV[canvasService.ts<br/>Canvas Initialization]
+                SHAPESERV[shapesService.ts<br/>Shape CRUD Operations]
+                PRESENCESERV[presenceService.ts<br/>Presence Management]
+                REALTIMECURSOR[realtimeCursorService.ts<br/>RTDB Cursor Updates]
+                REALTIMEOBJ[realtimeObjectService.ts<br/>RTDB Object Dragging]
+                COMMANDSERV[commandService.ts<br/>Undo/Redo Commands]
+                AISERVICE[aiService.ts<br/>AI API Client]
+                COMMENTSERV[commentsService.ts<br/>Comments CRUD]
             end
             
             subgraph "Utils"
-                HELPERS[canvasHelpers.ts<br/>Coordinate Conversion]
-                PERFHELPERS[performanceHelpers.ts<br/>Optimization Utils]
-                AIHELPERS[aiHelpers.ts<br/>AI Command Parsing]
+                HELPERS[canvasHelpers.ts<br/>Coordinate Utils]
+                SELHELPERS[selectionHelpers.ts<br/>Selection Utils]
+                CLIPHELPERS[clipboardHelpers.ts<br/>Copy/Paste Utils]
+                AIHELPERS[aiHelpers.ts<br/>AI Command Utils]
+            end
+            
+            subgraph "Type Definitions"
+                SHAPETYPES[shapes.ts<br/>Shape Types]
+                COMMANDTYPES[commands.ts<br/>Command Types]
+                AITYPES[ai.ts<br/>AI Types]
+                COMMENTTYPES[comments.ts<br/>Comment Types]
             end
         end
         
-        subgraph "Optimized Rendering Layer 🎨"
-            KONVA[Konva.js<br/>Canvas Rendering Engine]
-            WEBGL[WebGL Layer<br/>Hardware Acceleration]
-            OFFSCREEN[OffscreenCanvas<br/>Background Rendering]
+        subgraph "Rendering Layer 🎨"
+            KONVA[Konva.js + React-Konva<br/>High-Performance Canvas]
         end
+    end
+    
+    subgraph "Vercel Serverless"
+        VERCELAPI[/api/ai/command.ts<br/>AI Endpoint Handler]
+    end
+    
+    subgraph "External AI Services"
+        OPENAI[OpenAI GPT-4o-mini<br/>Natural Language Processing]
     end
     
     subgraph "Firebase Cloud Services"
         subgraph "Firebase Authentication"
-            FBAUTH[Firebase Auth<br/>Email/Password]
+            FBAUTH[Firebase Auth<br/>Email/Password + Sessions]
         end
         
-        subgraph "Cloud Firestore - Optimized Structure 📊"
+        subgraph "Cloud Firestore (Persistent Storage) 📊"
             USERS[("users/<br/>User Profiles")]
-            CANVAS[("canvas/<br/>Shared Canvas Document")]
-            SHAPES[("canvas/shared/shapes/<br/>Batched Shape Documents")]
-            PRESENCECOL[("presence/<br/>Live Presence Data")]
-            AICOMMANDS[("aiCommands/<br/>AI Command Queue")]
-            PERFORMANCE[("performance/<br/>Metrics & Analytics")]
+            CANVASDB[("canvas/shared/<br/>Canvas Metadata")]
+            SHAPES[("canvas/shared/shapes/<br/>Shape Documents")]
+            COMMENTS[("canvasComments/<br/>Comments & Replies")]
         end
         
-        subgraph "External AI Services 🤖"
-            OPENAI[OpenAI GPT-4<br/>Function Calling API]
-            CLAUDE[Claude Anthropic<br/>Alternative AI API]
+        subgraph "Realtime Database (Ultra-Low Latency) ⚡"
+            RTDBPRESENCE[("presence/<br/>Live Cursors")]
+            RTDBMOVEMENT[("objectMovements/<br/>Dragging Positions")]
         end
         
-        subgraph "Firebase Hosting"
-            HOSTING[Static File Hosting<br/>Production Deployment]
+        subgraph "Firebase Hosting (Alternative)"
+            HOSTING[Static File Hosting<br/>CDN Distribution]
         end
     end
     
     subgraph "Development & Testing"
-        VITEST[Vitest<br/>Test Runner]
+        VITEST[Vitest + React Testing Library]
         UNITTESTS[Unit Tests<br/>Services, Hooks, Utils]
-        INTTESTS[Integration Tests<br/>Sync, Auth, Persistence]
     end
     
-    subgraph "Build Tools"
+    subgraph "Build & Deploy Tools"
         VITE[Vite<br/>Build & Dev Server]
-        NPM[npm<br/>Package Manager]
+        VERCEL[Vercel<br/>Primary Hosting + Serverless]
+        FIREBASE[Firebase CLI<br/>Rules & Indexes Deploy]
     end
     
     %% Component Relationships
@@ -95,27 +141,39 @@ graph TB
     APP --> AUTHPROV
     APP --> TOOLBAR
     APP --> PRESENCE
-    APP --> AIUI
     
     CANVAS --> CANVASOBJ
+    CANVAS --> CANVASBG
+    CANVAS --> CIRCLE
+    CANVAS --> LINE
+    CANVAS --> TEXT
     CANVAS --> CURSOR
+    CANVAS --> COMMENTPIN
+    CANVAS --> SELECTIONBOX
+    CANVAS --> SMARTGUIDES
+    CANVAS --> GRIDOVERLAY
+    CANVAS --> CONTEXTMENU
+    
     CANVAS --> USECANVAS
     CANVAS --> USESHAPES
-    CANVAS --> VIEWPORT
-    CANVAS --> KONVA
+    CANVAS --> USESELECTION
+    CANVAS --> USEUNDOREDO
+    CANVAS --> USEGRID
+    CANVAS --> USEKEYBOARD
+    CANVAS --> USEZINDEX
+    CANVAS --> USEALIGNMENT
+    CANVAS --> USECOMMENTS
     
-    %% Performance Layer Integration
-    CANVAS --> VIEWPORT
-    CANVAS --> OBJPOOL
-    CANVAS --> SPATIAL
-    CANVASOBJ --> OBJPOOL
-    USESHAPES --> BATCHER
-    USEPRESENCE --> THROTTLER
-    
-    %% Optimized Rendering
     CANVASOBJ --> KONVA
-    KONVA --> WEBGL
-    VIEWPORT --> OFFSCREEN
+    CIRCLE --> KONVA
+    LINE --> KONVA
+    TEXT --> KONVA
+    CURSOR --> KONVA
+    COMMENTPIN --> KONVA
+    CANVASBG --> KONVA
+    GRIDOVERLAY --> KONVA
+    SMARTGUIDES --> KONVA
+    SELECTIONBOX --> KONVA
     
     CURSOR --> USEPRESENCE
     PRESENCE --> USEPRESENCE
@@ -124,70 +182,83 @@ graph TB
     AUTHPROV --> REGISTER
     AUTHPROV --> USEAUTH
     
-    %% AI Integration
-    AIUI --> USEAI
+    %% AI Component Flow
+    CANVAS --> PANEL
+    PANEL --> AIINPUT
+    PANEL --> AIHISTORY
+    PANEL --> AILOADING
+    PANEL --> AIERROR
+    AIINPUT --> USEAI
     USEAI --> AISERVICE
+    AISERVICE --> VERCELAPI
+    VERCELAPI --> OPENAI
+    
+    %% Comments Flow
+    PANEL --> COMMENTTHREAD
+    COMMENTPIN --> USECOMMENTS
+    COMMENTTHREAD --> USECOMMENTS
+    COMMENTINPUT --> USECOMMENTS
+    USECOMMENTS --> COMMENTSERV
+    
+    %% Undo/Redo Flow
+    USEUNDOREDO --> COMMANDSERV
+    COMMANDSERV --> SHAPESERV
     
     %% Hook to Service Relationships
     USECANVAS --> HELPERS
     USECANVAS --> CANVASSERV
-    USECANVAS --> PERFHELPERS
     
     USESHAPES --> SHAPESERV
     USESHAPES -.Real-time Listener.-> SHAPES
-    USESHAPES --> SPATIAL
     
     USEPRESENCE --> PRESENCESERV
-    USEPRESENCE --> THROTTLER
-    USEPRESENCE -.Real-time Listener.-> PRESENCECOL
+    USEPRESENCE --> REALTIMECURSOR
+    USEPRESENCE -.Real-time Listener.-> RTDBPRESENCE
     
     USEAUTH --> FIRESERVICE
+    USEAUTH --> FBAUTH
     
-    %% AI Hook Relationships
-    USEAI --> AISERVICE
-    USEAI --> AIHELPERS
-    USEAI -.Command Queue.-> AICOMMANDS
+    USESELECTION --> SELHELPERS
     
-    %% Performance Monitoring
-    USEPERF --> PERFSERVICE
-    USEPERF -.Metrics.-> PERFORMANCE
+    USEGRID --> HELPERS
+    
+    USECOMMENTS --> COMMENTSERV
+    USECOMMENTS -.Real-time Listener.-> COMMENTS
     
     %% Service to Firebase Relationships
     FIRESERVICE --> FBAUTH
     FIRESERVICE --> USERS
     
     CANVASSERV --> FIRESERVICE
-    CANVASSERV --> CANVAS
+    CANVASSERV --> CANVASDB
     
     SHAPESERV --> FIRESERVICE
     SHAPESERV --> SHAPES
-    SHAPESERV --> BATCHER
+    SHAPESERV --> REALTIMEOBJ
     
     PRESENCESERV --> FIRESERVICE
-    PRESENCESERV --> PRESENCECOL
+    PRESENCESERV --> REALTIMECURSOR
+    PRESENCESERV --> RTDBPRESENCE
     
-    %% AI Service Relationships
-    AISERVICE --> FIRESERVICE
-    AISERVICE --> AICOMMANDS
-    AISERVICE --> OPENAI
-    AISERVICE --> CLAUDE
-    AISERVICE --> SHAPESERV
+    REALTIMECURSOR --> RTDBPRESENCE
+    REALTIMEOBJ --> RTDBMOVEMENT
     
-    %% Performance Service Relationships
-    PERFSERVICE --> FIRESERVICE
-    PERFSERVICE --> PERFORMANCE
+    COMMENTSERV --> FIRESERVICE
+    COMMENTSERV --> COMMENTS
     
-    %% Real-time Sync
-    SHAPES -.Broadcast Changes.-> USESHAPES
-    PRESENCECOL -.Broadcast Changes.-> USEPRESENCE
+    AISERVICE --> AIHELPERS
+    
+    %% Real-time Sync Flows
+    SHAPES -.onSnapshot.-> USESHAPES
+    RTDBPRESENCE -.onValue.-> USEPRESENCE
+    RTDBMOVEMENT -.onValue.-> USESHAPES
+    COMMENTS -.onSnapshot.-> USECOMMENTS
     
     %% Authentication Flow
-    USEAUTH --> FBAUTH
     FBAUTH -.Auth State.-> USEAUTH
     
     %% Testing Relationships
     VITEST --> UNITTESTS
-    VITEST --> INTTESTS
     UNITTESTS -.Tests.-> FIRESERVICE
     UNITTESTS -.Tests.-> CANVASSERV
     UNITTESTS -.Tests.-> SHAPESERV
@@ -195,15 +266,16 @@ graph TB
     UNITTESTS -.Tests.-> USEAUTH
     UNITTESTS -.Tests.-> USESHAPES
     UNITTESTS -.Tests.-> USEPRESENCE
-    UNITTESTS -.Tests.-> COLORS
     UNITTESTS -.Tests.-> HELPERS
+    UNITTESTS -.Tests.-> SELHELPERS
+    UNITTESTS -.Tests.-> AIHELPERS
     
-    INTTESTS -.Tests.-> APP
-    
-    %% Build Pipeline
-    NPM --> VITE
-    VITE --> APP
-    VITE --> HOSTING
+    %% Build & Deploy Pipeline
+    VITE --> VERCEL
+    FIREBASE --> FBAUTH
+    FIREBASE --> SHAPES
+    FIREBASE --> COMMENTS
+    FIREBASE --> RTDBPRESENCE
     
     %% Styling
     classDef component fill:#e1f5ff,stroke:#01579b,stroke-width:2px
@@ -211,19 +283,24 @@ graph TB
     classDef service fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     classDef firebase fill:#fff3e0,stroke:#e65100,stroke-width:3px
     classDef database fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+    classDef rtdb fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
     classDef tool fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
     classDef test fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef performance fill:#e8f5e8,stroke:#2e7d2e,stroke-width:3px
     classDef ai fill:#fff4e6,stroke:#ff8f00,stroke-width:3px
     classDef external fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef comments fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px
+    classDef types fill:#fafafa,stroke:#424242,stroke-width:1px,stroke-dasharray: 5 5
     
-    class CANVAS,CANVASOBJ,TOOLBAR,PRESENCE,CURSOR,LOGIN,REGISTER,AUTHPROV,APP,AIUI component
-    class USECANVAS,USESHAPES,USEPRESENCE,USEAUTH,USEAI,USEPERF hook
-    class FIRESERVICE,CANVASSERV,SHAPESERV,PRESENCESERV,HELPERS,AISERVICE,PERFSERVICE service
+    class CANVAS,CANVASOBJ,CANVASBG,TOOLBAR,PRESENCE,CURSOR,LOGIN,REGISTER,AUTHPROV,APP,PANEL,CIRCLE,LINE,TEXT component
+    class AIINPUT,AIHISTORY,AILOADING,AIERROR ai
+    class COMMENTPIN,COMMENTTHREAD,COMMENTINPUT comments
+    class SELECTIONBOX,SMARTGUIDES,GRIDOVERLAY,SHORTCUTS,ALIGNCTRL,ZINDEXCTRL,CONTEXTMENU tool
+    class USECANVAS,USESHAPES,USEPRESENCE,USEAUTH,USEAI,USESELECTION,USEUNDOREDO,USEGRID,USEKEYBOARD,USEZINDEX,USEALIGNMENT,USECOMMENTS hook
+    class FIRESERVICE,CANVASSERV,SHAPESERV,PRESENCESERV,REALTIMECURSOR,REALTIMEOBJ,COMMANDSERV,AISERVICE,COMMENTSERV,HELPERS,SELHELPERS,CLIPHELPERS,AIHELPERS service
     class FBAUTH,HOSTING firebase
-    class USERS,CANVAS,SHAPES,PRESENCECOL,AICOMMANDS,PERFORMANCE database
-    class VITE,NPM,KONVA,WEBGL,OFFSCREEN tool
-    class VITEST,UNITTESTS,INTTESTS test
-    class VIEWPORT,OBJPOOL,SPATIAL,BATCHER,THROTTLER performance
-    class PERFHELPERS,AIHELPERS service
-    class OPENAI,CLAUDE external
+    class USERS,CANVASDB,SHAPES,COMMENTS database
+    class RTDBPRESENCE,RTDBMOVEMENT rtdb
+    class VITE,VERCEL,FIREBASE,KONVA tool
+    class VITEST,UNITTESTS test
+    class OPENAI,VERCELAPI external
+    class SHAPETYPES,COMMANDTYPES,AITYPES,COMMENTTYPES types
