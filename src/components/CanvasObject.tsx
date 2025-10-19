@@ -26,6 +26,7 @@ interface CanvasObjectProps {
   onTransformEnd?: (id: string, x: number, y: number, width: number, height: number) => void; // For resize handling
   onContextMenu?: (e: Konva.KonvaEventObject<PointerEvent>) => void; // For right-click menu
   currentUserId?: string; // For RTDB real-time dragging
+  currentUserName?: string; // Display name for lock indicator
   onCursorUpdate?: (x: number, y: number) => void; // For cursor updates during drag/resize
 }
 
@@ -39,6 +40,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
   onTransformEnd,
   onContextMenu,
   currentUserId,
+  currentUserName,
   onCursorUpdate,
 }) => {
   const shapeRef = React.useRef<Konva.Rect>(null);
@@ -59,7 +61,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
       e.evt.stopPropagation?.();
     }
     
-    // Start real-time dragging in RTDB
+    // Start real-time dragging in RTDB (sets lock)
     if (currentUserId) {
       try {
         await realtimeObjectService.updateObjectPosition(object.id, {
@@ -69,6 +71,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
           height: object.height,
           isDragging: true,
           draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
         });
       } catch (error) {
         console.error('Failed to start RTDB dragging:', error);
@@ -110,7 +113,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
     const stage = node.getStage();
     
     try {
-      // Update object position in RTDB
+      // Update object position in RTDB (maintains lock)
       await realtimeObjectService.updateObjectPosition(object.id, {
         x: node.x(),
         y: node.y(),
@@ -118,6 +121,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         height: object.height,
         isDragging: true,
         draggedBy: currentUserId,
+        draggedByName: currentUserName || 'Unknown User',
       });
 
       // Also update cursor position during drag to maintain smooth cursor movement
@@ -152,7 +156,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
       const currentWidth = Math.max(20, node.width() * scaleX);
       const currentHeight = Math.max(20, node.height() * scaleY);
 
-      // Update object position and size in RTDB during transform
+      // Update object position and size in RTDB during transform (maintains lock)
       await realtimeObjectService.updateObjectPosition(object.id, {
         x: node.x(),
         y: node.y(),
@@ -160,6 +164,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         height: currentHeight,
         isDragging: true, // Use dragging flag for transforms too
         draggedBy: currentUserId,
+        draggedByName: currentUserName || 'Unknown User',
       });
 
       // Update cursor position during transform

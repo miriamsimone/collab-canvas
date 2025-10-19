@@ -1784,6 +1784,7 @@ export const Canvas: React.FC = () => {
                     onTransformEnd={handleRectangleTransformEnd}
                     onContextMenu={handleContextMenu}
                     currentUserId={user?.uid}
+                    currentUserName={userProfile?.displayName}
                     onCursorUpdate={updateCursorPosition}
                   />
                 );
@@ -1800,6 +1801,7 @@ export const Canvas: React.FC = () => {
                     onTransformEnd={handleCircleTransformEnd}
                     onContextMenu={handleContextMenu}
                     currentUserId={user?.uid}
+                    currentUserName={userProfile?.displayName}
                     onCursorUpdate={updateCursorPosition}
                   />
                 );
@@ -1816,6 +1818,7 @@ export const Canvas: React.FC = () => {
                     onTransformEnd={handleLineTransformEnd}
                     onContextMenu={handleContextMenu}
                     currentUserId={user?.uid}
+                    currentUserName={userProfile?.displayName}
                     onCursorUpdate={updateCursorPosition}
                   />
                 );
@@ -1833,6 +1836,7 @@ export const Canvas: React.FC = () => {
                     onTextChange={handleTextChange}
                     onContextMenu={handleContextMenu}
                     currentUserId={user?.uid}
+                    currentUserName={userProfile?.displayName}
                     onCursorUpdate={updateCursorPosition}
                     stageRef={stageRef}
                   />

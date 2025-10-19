@@ -14,6 +14,7 @@ interface CircleComponentProps {
   onTransformEnd?: (id: string, x: number, y: number, radius: number) => void;
   onContextMenu?: (e: Konva.KonvaEventObject<PointerEvent>) => void;
   currentUserId?: string;
+  currentUserName?: string;
   onCursorUpdate?: (x: number, y: number) => void;
 }
 
@@ -27,6 +28,7 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
   onTransformEnd,
   onContextMenu,
   currentUserId,
+  currentUserName,
   onCursorUpdate,
 }) => {
   const shapeRef = React.useRef<Konva.Circle>(null);
@@ -65,6 +67,8 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
           height: shape.radius * 2,
           isDragging: true,
           draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB circle dragging:', error);
@@ -113,6 +117,8 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         height: shape.radius * 2,
         isDragging: true,
         draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
       });
 
       // Also update cursor position during drag
@@ -156,6 +162,8 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         height: currentRadius * 2,
         isDragging: true,
         draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
       });
 
       // Update cursor position during transform
@@ -191,6 +199,8 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
           height: shape.radius * 2,
           isDragging: true,
           draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB circle transform tracking:', error);

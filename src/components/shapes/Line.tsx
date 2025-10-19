@@ -14,6 +14,7 @@ interface LineComponentProps {
   onTransformEnd?: (id: string, x: number, y: number, x2: number, y2: number) => void;
   onContextMenu?: (e: Konva.KonvaEventObject<PointerEvent>) => void;
   currentUserId?: string;
+  currentUserName?: string;
   onCursorUpdate?: (x: number, y: number) => void;
 }
 
@@ -27,6 +28,7 @@ export const LineComponent: React.FC<LineComponentProps> = ({
   onTransformEnd,
   onContextMenu,
   currentUserId,
+  currentUserName,
   onCursorUpdate,
 }) => {
   const groupRef = React.useRef<Konva.Group>(null);
@@ -66,6 +68,8 @@ export const LineComponent: React.FC<LineComponentProps> = ({
           height: lineHeight,
           isDragging: true,
           draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB line dragging:', error);
@@ -130,6 +134,8 @@ export const LineComponent: React.FC<LineComponentProps> = ({
         height: lineHeight,
         isDragging: true,
         draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
       });
 
       // Update cursor position during drag
@@ -168,6 +174,8 @@ export const LineComponent: React.FC<LineComponentProps> = ({
           height: lineHeight,
           isDragging: true,
           draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB line transform tracking:', error);
@@ -199,6 +207,8 @@ export const LineComponent: React.FC<LineComponentProps> = ({
         height: newHeight,
         isDragging: true,
         draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
       });
 
       // Update cursor position

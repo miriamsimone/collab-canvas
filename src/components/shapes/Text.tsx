@@ -15,6 +15,7 @@ interface TextComponentProps {
   onTextChange?: (id: string, newText: string) => void;
   onContextMenu?: (e: Konva.KonvaEventObject<PointerEvent>) => void;
   currentUserId?: string;
+  currentUserName?: string;
   onCursorUpdate?: (x: number, y: number) => void;
   stageRef?: React.RefObject<Konva.Stage | null>; // Needed for positioning the text input
 }
@@ -30,6 +31,7 @@ export const TextComponent: React.FC<TextComponentProps> = ({
   onTextChange,
   onContextMenu,
   currentUserId,
+  currentUserName,
   onCursorUpdate,
   stageRef,
 }) => {
@@ -79,6 +81,8 @@ export const TextComponent: React.FC<TextComponentProps> = ({
           height: getTextHeight(),
           isDragging: true,
           draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB text dragging:', error);
@@ -122,6 +126,8 @@ export const TextComponent: React.FC<TextComponentProps> = ({
         height: getTextHeight(),
         isDragging: true,
         draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
       });
 
       if (onCursorUpdate && stage) {
@@ -222,6 +228,8 @@ export const TextComponent: React.FC<TextComponentProps> = ({
           height: getTextHeight(),
           isDragging: true,
           draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
         });
       } catch (error) {
         console.error('Failed to start RTDB text transform:', error);
@@ -248,6 +256,8 @@ export const TextComponent: React.FC<TextComponentProps> = ({
         height: getTextHeight() * scaleY,
         isDragging: true,
         draggedBy: currentUserId,
+          draggedByName: currentUserName || 'Unknown User',
+  currentUserName,
       });
 
       if (onCursorUpdate && stage) {

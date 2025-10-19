@@ -29,6 +29,7 @@ export interface ObjectPositionUpdate {
   height?: number;
   isDragging: boolean;
   draggedBy: string;
+  draggedByName?: string; // Display name for lock indicator
 }
 
 // Real-time object service for smooth dragging operations
@@ -38,6 +39,7 @@ export class RealtimeObjectService {
 
   /**
    * Update object position in real-time during dragging
+   * Automatically sets lock info when dragging starts
    */
   async updateObjectPosition(
     objectId: string,
@@ -51,6 +53,10 @@ export class RealtimeObjectService {
       isDragging: update.isDragging,
       draggedBy: update.draggedBy,
       timestamp: Date.now(),
+      // Set lock info when dragging
+      lockedBy: update.isDragging ? update.draggedBy : undefined,
+      lockedAt: update.isDragging ? Date.now() : undefined,
+      lockUserName: update.isDragging ? update.draggedByName : undefined,
     };
 
     const objectRef = ref(rtdb, `${this.objectMovementsPath}/${objectId}`);
