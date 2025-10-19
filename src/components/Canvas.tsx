@@ -54,7 +54,6 @@ export const Canvas: React.FC = () => {
     setIsDragging,
     setActiveTool,
     handleZoom,
-    centerView 
   } = useCanvas();
 
   // Real-time shapes management
@@ -1888,35 +1887,10 @@ export const Canvas: React.FC = () => {
         </div>
       </div>
       
-      {/* Canvas Controls */}
-      <div className="canvas-controls">
-        <button
-          className="canvas-button"
-          onClick={() => centerView(windowSize.width, windowSize.height)}
-          type="button"
-        >
-          Center View
-        </button>
-        <button
-          className="canvas-button"
-          onClick={() => {
-            if (stageRef.current) {
-              const stage = stageRef.current;
-              stage.scale({ x: 1, y: 1 });
-              stage.position({ x: 0, y: 0 });
-              setPosition(0, 0);
-            }
-          }}
-          type="button"
-        >
-          Reset Zoom
-        </button>
-      </div>
-      
       {/* Presence List */}
       <DraggablePanel 
         title="Online Users"
-        defaultPosition={{ x: windowSize.width - 280, y: 80 }}
+        defaultPosition={{ x: windowSize.width - 280, y: 160 }}
         className="presence-panel"
       >
         <PresenceList

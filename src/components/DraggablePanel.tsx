@@ -5,6 +5,7 @@ interface DraggablePanelProps {
   children: React.ReactNode;
   defaultPosition?: { x: number; y: number };
   className?: string;
+  defaultCollapsed?: boolean;
 }
 
 export const DraggablePanel: React.FC<DraggablePanelProps> = ({
@@ -12,9 +13,11 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   children,
   defaultPosition = { x: 0, y: 0 },
   className = '',
+  defaultCollapsed = false,
 }) => {
   const [position, setPosition] = useState(defaultPosition);
   const [isDragging, setIsDragging] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const panelRef = useRef<HTMLDivElement>(null);
   const dragDataRef = useRef<{
     startX: number;
@@ -24,9 +27,9 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   } | null>(null);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only start dragging if clicking on the panel header
+    // Only start dragging if clicking on the panel header (but not the collapse button)
     const target = e.target as HTMLElement;
-    if (!target.closest('.panel-header')) {
+    if (!target.closest('.panel-header') || target.closest('.collapse-button')) {
       return;
     }
 
@@ -80,7 +83,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
   return (
     <div
       ref={panelRef}
-      className={`draggable-panel ${className} ${isDragging ? 'dragging' : ''}`}
+      className={`draggable-panel ${className} ${isDragging ? 'dragging' : ''} ${isCollapsed ? 'collapsed' : ''}`}
       style={{
         position: 'fixed',
         left: position.x,
@@ -95,23 +98,46 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({
         style={{ cursor: 'grab' }}
       >
         <h4>{title}</h4>
-        <div className="drag-grip">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-            <circle cx="2" cy="2" r="1"/>
-            <circle cx="6" cy="2" r="1"/>
-            <circle cx="10" cy="2" r="1"/>
-            <circle cx="2" cy="6" r="1"/>
-            <circle cx="6" cy="6" r="1"/>
-            <circle cx="10" cy="6" r="1"/>
-            <circle cx="2" cy="10" r="1"/>
-            <circle cx="6" cy="10" r="1"/>
-            <circle cx="10" cy="10" r="1"/>
-          </svg>
+        <div className="panel-header-controls">
+          <button
+            className="collapse-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsCollapsed(!isCollapsed);
+            }}
+            title={isCollapsed ? 'Expand' : 'Collapse'}
+            type="button"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              {isCollapsed ? (
+                // Expand icon (chevron down)
+                <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+              ) : (
+                // Collapse icon (chevron up)
+                <path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+              )}
+            </svg>
+          </button>
+          <div className="drag-grip">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              <circle cx="2" cy="2" r="1"/>
+              <circle cx="6" cy="2" r="1"/>
+              <circle cx="10" cy="2" r="1"/>
+              <circle cx="2" cy="6" r="1"/>
+              <circle cx="6" cy="6" r="1"/>
+              <circle cx="10" cy="6" r="1"/>
+              <circle cx="2" cy="10" r="1"/>
+              <circle cx="6" cy="10" r="1"/>
+              <circle cx="10" cy="10" r="1"/>
+            </svg>
+          </div>
         </div>
       </div>
-      <div className="panel-content">
-        {children}
-      </div>
+      {!isCollapsed && (
+        <div className="panel-content">
+          {children}
+        </div>
+      )}
     </div>
   );
 };

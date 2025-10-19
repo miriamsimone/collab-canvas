@@ -1344,6 +1344,37 @@ body {
   background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
 }
 
+.draggable-panel .panel-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.draggable-panel .collapse-button {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #64748b;
+  transition: all 0.2s ease;
+  width: 24px;
+  height: 24px;
+}
+
+.draggable-panel .collapse-button:hover {
+  background: rgba(100, 116, 139, 0.1);
+  color: #334155;
+}
+
+.draggable-panel .collapse-button:active {
+  background: rgba(100, 116, 139, 0.2);
+  transform: scale(0.95);
+}
+
 .draggable-panel .drag-grip {
   width: 20px;
   height: 20px;
@@ -1356,6 +1387,13 @@ body {
 
 .draggable-panel .panel-content {
   pointer-events: auto;
+  transition: max-height 0.3s ease, opacity 0.2s ease;
+}
+
+.draggable-panel.collapsed .panel-content {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 
 /* Specific panel styles */
