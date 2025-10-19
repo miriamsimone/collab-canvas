@@ -116,24 +116,56 @@ const requestSchema = z.object({
   }),
 });
 
-// Color name mapping - same as client-side
+// Color name mapping - matches the 8 colors in the style window
 function parseColorName(colorName: string): string {
   const colorMap: Record<string, string> = {
-    red: '#ff0000',
-    blue: '#0000ff',
-    green: '#00ff00',
-    yellow: '#ffff00',
-    orange: '#ffa500',
-    purple: '#800080',
-    pink: '#ffc0cb',
+    blue: '#3b82f6',
+    red: '#ef4444',
+    green: '#10b981',
+    yellow: '#f59e0b',
+    purple: '#8b5cf6',
+    orange: '#f97316',
+    gray: '#6b7280',
+    grey: '#6b7280',
     black: '#000000',
-    white: '#ffffff',
-    gray: '#808080',
-    grey: '#808080',
+  };
+
+  // Map common hex colors to our palette
+  const hexColorMap: Record<string, string> = {
+    '#ff0000': '#ef4444', // red
+    '#0000ff': '#3b82f6', // blue
+    '#00ff00': '#10b981', // green
+    '#ffff00': '#f59e0b', // yellow
+    '#800080': '#8b5cf6', // purple
+    '#ffa500': '#f97316', // orange
+    '#808080': '#6b7280', // gray
+    '#ffffff': '#6b7280', // white -> gray
+    '#ffc0cb': '#ef4444', // pink -> red
   };
 
   const normalized = colorName.toLowerCase().trim();
-  return colorMap[normalized] || colorName;
+  
+  // Check if it's a color name
+  if (colorMap[normalized]) {
+    return colorMap[normalized];
+  }
+  
+  // Check if it's a hex color that needs mapping
+  if (hexColorMap[normalized]) {
+    return hexColorMap[normalized];
+  }
+  
+  // If it's a valid hex color from our palette, return it
+  if (/^#[0-9a-fA-F]{6}$/.test(colorName)) {
+    const lowerColor = colorName.toLowerCase();
+    const paletteColors = Object.values(colorMap);
+    if (paletteColors.includes(lowerColor)) {
+      return lowerColor;
+    }
+  }
+  
+  // Default to blue if color is not recognized
+  return '#3b82f6';
 }
 
 // Validate rectangle parameters
@@ -241,6 +273,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Create system prompt with canvas context
     const systemPrompt = `You are an AI assistant that helps users manage shapes on a canvas. You can create rectangles, circles, lines, and text, select objects, and perform bulk operations.
 
+IMPORTANT: When creating shapes, use ONLY these 8 available colors:
+- Blue: #3b82f6
+- Red: #ef4444
+- Green: #10b981
+- Yellow: #f59e0b
+- Purple: #8b5cf6
+- Orange: #f97316
+- Gray: #6b7280
+- Black: #000000
+
 Current canvas state:
 - Canvas size: ${canvasState.canvasSize.width}x${canvasState.canvasSize.height} pixels (large canvas, coordinates up to ${canvasState.canvasSize.width} are valid)
 - Existing shapes: ${canvasState.rectangles.length}
@@ -262,45 +304,72 @@ You can perform these types of operations:
 
 1. CREATE SHAPES:
    - CREATE RECTANGLES, CIRCLES, LINES, TEXT
-   - Convert color names to hex format (e.g., "red" becomes "#ff0000")
+   - Use ONLY the 8 available colors listed above
+   - Convert color names to their exact hex format (e.g., "red" becomes "#ef4444")
    - Choose reasonable positions that don't overlap with existing shapes
+   - When user specifies "NxM grid", "N by M grid", "N x M grid" of shapes:
+     * This means create N*M shapes arranged in a grid pattern
+     * Use bulkCreate with count = N*M and pattern = 'grid'
+     * Example: "3x3 grid" = count: 9, pattern: 'grid'
 
 2. SELECT OBJECTS:
    - Select all, by color, by position, or specific objects
+   - IMPORTANT: Many operations require shapes to be selected first!
+   - When user specifies shape characteristics (color, type, or both):
+     * Use selectObjects with method: 'byIds'
+     * Extract IDs from canvas state that match the criteria
+     * Examples: "blue rectangle" → filter for type='rectangle' AND fill contains blue color
+     * Examples: "all circles" → filter for type='circle'
+     * Examples: "the text" → filter for type='text'
 
-3. BULK OPERATIONS:
+3. SELECT BEFORE OPERATING:
+   - CRITICAL RULE: Before resize, rotate, or most operations on specific shapes, SELECT them first!
+   - Pattern: selectObjects → then → operation
+   - This ensures the operation targets exactly the right shapes
+
+4. BULK OPERATIONS:
    - Move, delete, or change color of selected objects
 
-4. BULK CREATE (PERFORMANCE TESTING):
+5. BULK CREATE (PERFORMANCE TESTING):
    - Create many shapes at once efficiently (up to 1000)
    - Use for commands like "create 500 rectangles" or "fill the canvas with circles"
    - Supports patterns: grid, random, horizontal, vertical
-   - Example: "create 500 rectangles" -> bulkCreate with shapeType: 'rectangle', count: 500, pattern: 'random'
-   - Example: "create 100 blue circles in a grid" -> bulkCreate with shapeType: 'circle', count: 100, pattern: 'grid', baseParams: {color: '#0000ff'}
+   - IMPORTANT: When user says "NxM grid" or "N x M grid", calculate count as N*M and use pattern: 'grid'
+   - Examples:
+     * "create 500 rectangles" -> bulkCreate with shapeType: 'rectangle', count: 500, pattern: 'random'
+     * "create 100 blue circles in a grid" -> bulkCreate with shapeType: 'circle', count: 100, pattern: 'grid', baseParams: {color: '#3b82f6'}
+     * "create a 3x3 grid of squares" -> bulkCreate with shapeType: 'rectangle', count: 9, pattern: 'grid'
+     * "create a 5 x 4 grid of red circles" -> bulkCreate with shapeType: 'circle', count: 20, pattern: 'grid', baseParams: {color: '#ef4444'}
+     * "make a 10x10 grid of rectangles" -> bulkCreate with shapeType: 'rectangle', count: 100, pattern: 'grid'
    - IMPORTANT: Use bulkCreate instead of multiple individual create actions when count > 10
 
-5. RESIZE SHAPES:
+6. RESIZE SHAPES:
    - Resize by width/height or scale factor
-   - "make the circle twice as big" -> resizeShape with scale: 2
-   - "resize the rectangle to 300x200" -> resizeShape with width: 300, height: 200
+   - IMPORTANT: When resizing specific shapes by type or color, you must FIRST select them using selectObjects
+   - "make the circle twice as big" -> FIRST selectObjects with method: 'byIds' and objectIds: [IDs of all circles from canvas state], THEN resizeShape with scale: 2
+   - "resize the blue rectangle to 300x200" -> FIRST selectObjects with method: 'byIds' and objectIds: [IDs of blue rectangles from canvas state], THEN resizeShape with width: 300, height: 200
 
-6. ROTATE SHAPES:
+7. ROTATE SHAPES:
    - Rotate shapes by degrees
-   - "rotate the text 45 degrees" -> rotateShape with degrees: 45
+   - IMPORTANT: When rotating specific shapes, you must EITHER:
+     a) Provide the shapeId from canvas state, OR
+     b) First selectObjects to select the shapes, THEN rotateShape
+   - "rotate the text 45 degrees" -> FIRST selectObjects with method: 'byIds' and objectIds: [IDs of all text shapes from canvas state], THEN rotateShape with degrees: 45
+   - "rotate the blue rectangle 90 degrees" -> FIRST selectObjects with method: 'byIds' and objectIds: [IDs of blue rectangles from canvas state], THEN rotateShape with degrees: 90
 
-7. ALIGN OBJECTS:
+8. ALIGN OBJECTS:
    - Align selected objects (left, center, right, top, middle, bottom)
    - "align all objects to the left" -> alignObjects with alignment: 'left'
 
-8. DISTRIBUTE OBJECTS:
+9. DISTRIBUTE OBJECTS:
    - Distribute selected objects evenly (horizontal or vertical)
    - "distribute horizontally" -> distributeObjects with direction: 'horizontal'
 
-9. Z-INDEX (LAYER MANAGEMENT):
+10. Z-INDEX (LAYER MANAGEMENT):
    - Bring to front, send to back, bring forward, send backward
    - "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
 
-10. COMPLEX MULTI-STEP COMMANDS:
+11. COMPLEX MULTI-STEP COMMANDS:
    - For complex requests like "create a login form", break it into multiple actions
    - Example: "create a login form" ->
      * createText for "Username" label
@@ -312,12 +381,16 @@ You can perform these types of operations:
    - Align elements for a clean layout
 
 Examples:
-- "create a red rectangle at 100, 100" -> createRectangle
+- "create a red rectangle at 100, 100" -> createRectangle with color: '#ef4444'
 - "create 500 rectangles" -> bulkCreate with shapeType: 'rectangle', count: 500, pattern: 'random'
-- "fill the canvas with 200 blue circles" -> bulkCreate with shapeType: 'circle', count: 200, pattern: 'random', baseParams: {color: '#0000ff'}
+- "fill the canvas with 200 blue circles" -> bulkCreate with shapeType: 'circle', count: 200, pattern: 'random', baseParams: {color: '#3b82f6'}
 - "create 100 rectangles in a grid" -> bulkCreate with shapeType: 'rectangle', count: 100, pattern: 'grid'
-- "make the circle twice as big" -> resizeShape with scale: 2
-- "rotate the text 45 degrees" -> rotateShape with degrees: 45
+- "create a 3x3 grid of squares" -> bulkCreate with shapeType: 'rectangle', count: 9, pattern: 'grid'
+- "make a 5 x 4 grid of red circles" -> bulkCreate with shapeType: 'circle', count: 20, pattern: 'grid', baseParams: {color: '#ef4444'}
+- "make the blue rectangle twice as big" -> FIRST selectObjects with method: 'byIds' and objectIds: [IDs of rectangles with blue color from canvas state], THEN resizeShape with scale: 2
+- "make all circles twice as big" -> FIRST selectObjects with method: 'byIds' and objectIds: [IDs of all circles from canvas state], THEN resizeShape with scale: 2
+- "rotate the text 45 degrees" -> FIRST selectObjects with method: 'byIds' and objectIds: [IDs of all text shapes from canvas state], THEN rotateShape with degrees: 45
+- "rotate the blue rectangle 90 degrees" -> FIRST selectObjects with method: 'byIds' and objectIds: [IDs of blue rectangles from canvas state], THEN rotateShape with degrees: 90
 - "align all selected objects to the left" -> alignObjects
 - "bring the red rectangle to front" -> zIndex with operation: 'bringToFront'
 - "create a login form" -> multiple createText + createRectangle actions arranged vertically

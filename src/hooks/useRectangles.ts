@@ -31,8 +31,8 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [realtimeMovements, setRealtimeMovements] = useState<Record<string, RealtimeObjectData>>({});
 
-  // Colors for random rectangle creation
-  const colors = ['#007ACC', '#28A745', '#DC3545', '#FFC107', '#6F42C1', '#FD7E14'];
+  // Colors for random rectangle creation - matches the 8-color palette
+  const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#f97316', '#6b7280', '#000000'];
 
   /**
    * Create a new rectangle locally and sync to Firestore
@@ -48,19 +48,10 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
       throw new Error('User must be authenticated to create rectangles');
     }
 
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    const baseColor = fillColor ? fillColor.replace('#', '') : randomColor.replace('#', '');
-    
-    // Ensure all rectangles are semi-transparent by default
-    let transparentFill: string;
-    if (fillColor) {
-      // If fillColor is provided, make it semi-transparent
-      const cleanColor = fillColor.replace('#', '').substring(0, 6); // Remove # and any existing alpha
-      transparentFill = `#${cleanColor}40`; // Add 25% opacity (40 in hex)
-    } else {
-      // Use random color with transparency
-      transparentFill = randomColor + '40'; // Add 25% opacity
-    }
+    const baseColor = (fillColor || colors[Math.floor(Math.random() * colors.length)]).toLowerCase();
+    const cleanColor = baseColor.replace('#', '').substring(0, 6);
+    // Use ff hex (100% opacity) to match manual creation
+    const fill = `#${cleanColor}ff`;
     
     const newRectangle: CanvasObjectData = {
       id: generateRectangleId(),
@@ -68,9 +59,10 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
       y,
       width,
       height,
-      fill: transparentFill,
-      stroke: `#${baseColor}`,
+      fill,
+      stroke: baseColor,
       strokeWidth: 2,
+      opacity: 1.0, // 100% opacity
     };
 
     try {

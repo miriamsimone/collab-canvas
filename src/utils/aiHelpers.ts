@@ -11,14 +11,34 @@ export function getCanvasState(
   canvasSize?: { width: number; height: number }
 ): CanvasState {
   return {
-    rectangles: shapes.map(shape => ({
-      id: shape.id,
-      x: shape.x,
-      y: shape.y,
-      width: (shape as any).width || 100,
-      height: (shape as any).height || 100,
-      fill: (shape as any).fill || '#000000',
-    })),
+    rectangles: shapes.map(shape => {
+      const baseShape: any = {
+        id: shape.id,
+        type: shape.type,
+        x: shape.x,
+        y: shape.y,
+      };
+      
+      // Add type-specific properties
+      if (shape.type === 'rectangle') {
+        baseShape.width = (shape as any).width || 100;
+        baseShape.height = (shape as any).height || 100;
+        baseShape.fill = (shape as any).fill || (shape as any).stroke || '#000000';
+      } else if (shape.type === 'circle') {
+        baseShape.radius = (shape as any).radius || 50;
+        baseShape.fill = (shape as any).fill || (shape as any).stroke || '#000000';
+      } else if (shape.type === 'line') {
+        baseShape.x2 = (shape as any).x2 || shape.x + 100;
+        baseShape.y2 = (shape as any).y2 || shape.y;
+        baseShape.stroke = (shape as any).stroke || '#000000';
+      } else if (shape.type === 'text') {
+        baseShape.text = (shape as any).text || '';
+        baseShape.fontSize = (shape as any).fontSize || 16;
+        baseShape.fill = (shape as any).fill || '#000000';
+      }
+      
+      return baseShape;
+    }),
     canvasSize: canvasSize || {
       width: CANVAS_CONFIG.WIDTH,
       height: CANVAS_CONFIG.HEIGHT,
@@ -95,23 +115,55 @@ export function generateCommandId(): string {
 }
 
 /**
- * Parse color names to hex values for common colors
+ * Parse color names to hex values - matches the 8 colors in the style window
  */
 export function parseColorName(colorName: string): string {
   const colorMap: Record<string, string> = {
-    red: '#ff0000',
-    blue: '#0000ff',
-    green: '#00ff00',
-    yellow: '#ffff00',
-    orange: '#ffa500',
-    purple: '#800080',
-    pink: '#ffc0cb',
+    blue: '#3b82f6',
+    red: '#ef4444',
+    green: '#10b981',
+    yellow: '#f59e0b',
+    purple: '#8b5cf6',
+    orange: '#f97316',
+    gray: '#6b7280',
+    grey: '#6b7280',
     black: '#000000',
-    white: '#ffffff',
-    gray: '#808080',
-    grey: '#808080',
+  };
+
+  // Map common hex colors to our palette
+  const hexColorMap: Record<string, string> = {
+    '#ff0000': '#ef4444', // red
+    '#0000ff': '#3b82f6', // blue
+    '#00ff00': '#10b981', // green
+    '#ffff00': '#f59e0b', // yellow
+    '#800080': '#8b5cf6', // purple
+    '#ffa500': '#f97316', // orange
+    '#808080': '#6b7280', // gray
+    '#ffffff': '#6b7280', // white -> gray
+    '#ffc0cb': '#ef4444', // pink -> red
   };
 
   const normalized = colorName.toLowerCase().trim();
-  return colorMap[normalized] || colorName;
+  
+  // Check if it's a color name
+  if (colorMap[normalized]) {
+    return colorMap[normalized];
+  }
+  
+  // Check if it's a hex color that needs mapping
+  if (hexColorMap[normalized]) {
+    return hexColorMap[normalized];
+  }
+  
+  // If it's a valid hex color from our palette, return it
+  if (/^#[0-9a-fA-F]{6}$/.test(colorName)) {
+    const lowerColor = colorName.toLowerCase();
+    const paletteColors = Object.values(colorMap);
+    if (paletteColors.includes(lowerColor)) {
+      return lowerColor;
+    }
+  }
+  
+  // Default to blue if color is not recognized
+  return '#3b82f6';
 }

@@ -80,8 +80,8 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [realtimeMovements, setRealtimeMovements] = useState<Record<string, RealtimeObjectData>>({});
 
-  // Default colors for shape creation
-  const colors = ['#007ACC', '#28A745', '#DC3545', '#FFC107', '#6F42C1', '#FD7E14'];
+  // Default colors for shape creation - matches the 8-color palette
+  const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#f97316', '#6b7280', '#000000'];
 
   /**
    * Generic shape creation method
@@ -182,18 +182,20 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
     height: number = 80, 
     fillColor?: string
   ): Promise<Shape> => {
-    const baseColor = fillColor || colors[Math.floor(Math.random() * colors.length)];
-    const transparentFill = fillColor ? 
-      `${fillColor.replace('#', '').substring(0, 6)}40` : 
-      `${baseColor.replace('#', '')}40`;
+    const baseColor = (fillColor || colors[Math.floor(Math.random() * colors.length)]).toLowerCase();
+    const cleanColor = baseColor.replace('#', '').substring(0, 6);
+    // Use ff hex (100% opacity) to match manual creation
+    const fill = `#${cleanColor}ff`;
       
     return createShape('rectangle', { x, y }, {
       width,
       height,
-      fill: `#${transparentFill}`,
+      fill,
       stroke: baseColor,
+      strokeWidth: 2,
+      opacity: 1.0, // 100% opacity
     });
-  }, [createShape]);
+  }, [createShape, colors]);
 
   const createCircle = useCallback(async (
     x: number, 
@@ -201,17 +203,19 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
     radius: number = 50, 
     fillColor?: string
   ): Promise<Shape> => {
-    const baseColor = fillColor || colors[Math.floor(Math.random() * colors.length)];
-    const transparentFill = fillColor ? 
-      `${fillColor.replace('#', '').substring(0, 6)}40` : 
-      `${baseColor.replace('#', '')}40`;
+    const baseColor = (fillColor || colors[Math.floor(Math.random() * colors.length)]).toLowerCase();
+    const cleanColor = baseColor.replace('#', '').substring(0, 6);
+    // Use ff hex (100% opacity) to match manual creation
+    const fill = `#${cleanColor}ff`;
       
     return createShape('circle', { x, y }, {
       radius,
-      fill: `#${transparentFill}`,
+      fill,
       stroke: baseColor,
+      strokeWidth: 2,
+      opacity: 1.0, // 100% opacity
     });
-  }, [createShape]);
+  }, [createShape, colors]);
 
   const createLine = useCallback(async (
     x1: number, 
@@ -220,15 +224,16 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
     y2: number, 
     strokeColor?: string
   ): Promise<Shape> => {
-    const color = strokeColor || colors[Math.floor(Math.random() * colors.length)];
+    const color = (strokeColor || colors[Math.floor(Math.random() * colors.length)]).toLowerCase();
     
     return createShape('line', { x: x1, y: y1 }, {
       x2,
       y2,
       stroke: color,
       strokeWidth: 3,
+      opacity: 1.0, // 100% opacity
     });
-  }, [createShape]);
+  }, [createShape, colors]);
 
   const createText = useCallback(async (
     x: number, 

@@ -98,29 +98,6 @@ export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({
         dash={[20, 10]}
         listening={false}
       />
-      
-      {/* Corner Indicators */}
-      <Rect
-        x={0}
-        y={0}
-        width={40}
-        height={40}
-        fill="#007ACC"
-        opacity={0.7}
-        cornerRadius={5}
-        listening={false}
-      />
-      
-      <Rect
-        x={CANVAS_DIMENSIONS.WIDTH - 40}
-        y={CANVAS_DIMENSIONS.HEIGHT - 40}
-        width={40}
-        height={40}
-        fill="#007ACC"
-        opacity={0.7}
-        cornerRadius={5}
-        listening={false}
-      />
     </>
   );
 };

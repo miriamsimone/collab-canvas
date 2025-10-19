@@ -8,6 +8,7 @@ interface ToolbarProps {
   snapToGridEnabled?: boolean;
   onToggleSnapToGrid?: () => void;
   unresolvedCommentsCount?: number;
+  isOffline?: boolean;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({ 
@@ -16,6 +17,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   snapToGridEnabled = false,
   onToggleSnapToGrid,
   unresolvedCommentsCount = 0,
+  isOffline = false,
 }) => {
   const tools = [
     {
@@ -108,18 +110,26 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     <div className="toolbar">
       <div className="toolbar-content">
         <div className="toolbar-tools">
-          {tools.map((tool) => (
-            <button
-              key={tool.id}
-              className={`toolbar-button ${activeTool === tool.id ? 'active' : ''}`}
-              onClick={() => onToolChange(tool.id)}
-              title={tool.description}
-              type="button"
-            >
-              <span className="tool-icon">{tool.icon}</span>
-              <span className="tool-name">{tool.name}</span>
-            </button>
-          ))}
+          {tools.map((tool) => {
+            // Disable shape creation tools when offline
+            const isEditingTool = ['rectangle', 'circle', 'line', 'text', 'comment', 'audioConnector'].includes(tool.id);
+            const isDisabled = isOffline && isEditingTool;
+            
+            return (
+              <button
+                key={tool.id}
+                className={`toolbar-button ${activeTool === tool.id ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
+                onClick={() => !isDisabled && onToolChange(tool.id)}
+                title={isDisabled ? 'Offline - reconnect to use this tool' : tool.description}
+                type="button"
+                disabled={isDisabled}
+                style={{ opacity: isDisabled ? 0.5 : 1, cursor: isDisabled ? 'not-allowed' : 'pointer' }}
+              >
+                <span className="tool-icon">{tool.icon}</span>
+                <span className="tool-name">{tool.name}</span>
+              </button>
+            );
+          })}
         </div>
         
         <div className="toolbar-info">

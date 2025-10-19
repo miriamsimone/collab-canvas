@@ -78,6 +78,7 @@ export const Canvas: React.FC = () => {
 
   // Multi-select management
   const {
+    selectedIds,
     isDragSelecting,
     dragStartPos,
     dragCurrentPos,
@@ -166,22 +167,14 @@ export const Canvas: React.FC = () => {
   const [currentTextSize, setCurrentTextSize] = useState(16);
   const [currentOpacity, setCurrentOpacity] = useState(100);
   
-  // Named color palette
+  // Named color palette (8 colors)
   const colorPalette = [
     { name: 'Blue', value: '#3b82f6' },
     { name: 'Red', value: '#ef4444' },
     { name: 'Green', value: '#10b981' },
     { name: 'Yellow', value: '#f59e0b' },
     { name: 'Purple', value: '#8b5cf6' },
-    { name: 'Pink', value: '#ec4899' },
-    { name: 'Indigo', value: '#6366f1' },
     { name: 'Orange', value: '#f97316' },
-    { name: 'Teal', value: '#14b8a6' },
-    { name: 'Cyan', value: '#06b6d4' },
-    { name: 'Lime', value: '#84cc16' },
-    { name: 'Rose', value: '#f43f5e' },
-    { name: 'Violet', value: '#a855f7' },
-    { name: 'Amber', value: '#f59e0b' },
     { name: 'Gray', value: '#6b7280' },
     { name: 'Black', value: '#000000' },
   ];
@@ -1201,6 +1194,10 @@ export const Canvas: React.FC = () => {
   // Tool switching and connection keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle tool shortcuts when typing in input fields
+      const isInInputField = e.target instanceof HTMLInputElement || 
+                            e.target instanceof HTMLTextAreaElement;
+      
       // Escape key: cancel pending connection or clear selection
       if (e.key === 'Escape') {
         if (pendingConnection) {
@@ -1209,6 +1206,9 @@ export const Canvas: React.FC = () => {
           setMousePosition(null);
         }
       }
+      
+      // Don't activate tools when typing
+      if (isInInputField) return;
       
       // L key: activate audio connector tool
       if (e.key === 'l' || e.key === 'L') {
@@ -1414,6 +1414,65 @@ export const Canvas: React.FC = () => {
       }
     }
   }, [activeTool, isDragging]);
+
+  // Update style controls when selection changes
+  useEffect(() => {
+    if (selectedIds.size === 0) {
+      // No selection - keep current values for creating new shapes
+      return;
+    }
+    
+    // Get the first selected object
+    const firstSelectedId = Array.from(selectedIds)[0];
+    const firstSelected = shapes.find(s => s.id === firstSelectedId);
+    
+    if (!firstSelected) return;
+    
+    // Update color based on shape type
+    if (firstSelected.type === 'text') {
+      if (firstSelected.fill) {
+        // Handle color with alpha channel by extracting base color
+        const colorValue = firstSelected.fill.length > 7 
+          ? firstSelected.fill.substring(0, 7) // Get #RRGGBB part if alpha is present
+          : firstSelected.fill;
+        setCurrentColor(colorValue.toLowerCase());
+      }
+    } else if (firstSelected.type === 'rectangle' || firstSelected.type === 'circle') {
+      if (firstSelected.stroke) {
+        setCurrentColor(firstSelected.stroke.toLowerCase());
+      }
+    } else if (firstSelected.type === 'line') {
+      if (firstSelected.stroke) {
+        setCurrentColor(firstSelected.stroke.toLowerCase());
+      }
+    }
+    
+    // Update opacity - check multiple sources
+    let opacityValue = 100; // Default to fully opaque
+    
+    // First, check if there's an explicit opacity property
+    if (firstSelected.opacity !== undefined && firstSelected.opacity !== null) {
+      opacityValue = Math.round(firstSelected.opacity * 100);
+    } else {
+      // For rectangles and circles, try to extract from fill color alpha channel
+      if ((firstSelected.type === 'rectangle' || firstSelected.type === 'circle') && firstSelected.fill) {
+        const fillColor = firstSelected.fill;
+        // Check if color has alpha channel (format: #RRGGBBAA)
+        if (fillColor.length === 9 && fillColor.startsWith('#')) {
+          const alphaHex = fillColor.substring(7, 9);
+          const alphaDecimal = parseInt(alphaHex, 16);
+          opacityValue = Math.round((alphaDecimal / 255) * 100);
+        }
+      }
+    }
+    
+    setCurrentOpacity(opacityValue);
+    
+    // Update text size
+    if (firstSelected.type === 'text' && firstSelected.fontSize) {
+      setCurrentTextSize(firstSelected.fontSize);
+    }
+  }, [selectedIds, shapes]);
 
   // Shape interaction handlers
   const [dragStartPositions, setDragStartPositions] = useState<Record<string, { x: number; y: number }>>({});
@@ -1772,6 +1831,12 @@ export const Canvas: React.FC = () => {
 
 
   const handleStageClick = async (e: Konva.KonvaEventObject<MouseEvent>) => {
+    // Don't create shapes if offline
+    if (!presenceConnected) {
+      setCanvasError('You are offline. Please reconnect to edit the canvas.');
+      return;
+    }
+    
     // Don't create shapes if dragging the canvas, shapes, or drag selecting
     if (isDragging || isDraggingRectangle || isDragSelecting) return;
     
@@ -1905,8 +1970,11 @@ export const Canvas: React.FC = () => {
       return;
     }
 
-    // Check if clicking on empty canvas (stage or layer background, not shapes)
-    const isStageOrLayer = e.target === stageRef.current || e.target.getType() === 'Layer';
+    // Check if clicking on empty canvas (stage, layer, or canvas-background, not shapes)
+    const targetName = e.target.name?.();
+    const isStageOrLayer = e.target === stageRef.current || 
+                           e.target.getType() === 'Layer' ||
+                           targetName === 'canvas-background';
     if (!isStageOrLayer) {
       return;
     }
@@ -1929,17 +1997,15 @@ export const Canvas: React.FC = () => {
     const pos = getCanvasPointerPosition(stage);
     if (!pos) return;
 
+    // Always update mouse position for position indicator
+    setMousePosition({ x: pos.x, y: pos.y });
+
     // Update cursor position for multiplayer cursors
     updateCursorPosition(pos.x, pos.y);
 
     // Update drag selection if active
     if (isDragSelecting) {
       updateDragSelection(pos.x, pos.y);
-    }
-
-    // Update mouse position for audio connector temp line
-    if (pendingConnection && activeTool === 'audioConnector') {
-      setMousePosition({ x: pos.x, y: pos.y });
     }
   };
 
@@ -1985,6 +2051,17 @@ export const Canvas: React.FC = () => {
 
   return (
     <div className="canvas-app">
+      {/* Offline Warning Banner */}
+      {!presenceConnected && (
+        <div className="error-toast" style={{ top: '20px', background: '#fef3c7', borderColor: '#fbbf24', borderLeftColor: '#f59e0b' }}>
+          <div className="error-content">
+            <span className="error-message" style={{ color: '#92400e' }}>
+              ⚠️ You are offline. Editing is disabled until you reconnect.
+            </span>
+          </div>
+        </div>
+      )}
+      
       {/* Error Toasts */}
       {shapesError && (
         <div className="error-toast">
@@ -2043,6 +2120,7 @@ export const Canvas: React.FC = () => {
           snapToGridEnabled={gridConfig.enabled}
           onToggleSnapToGrid={toggleSnapToGrid}
           unresolvedCommentsCount={countUnresolvedComments(comments)}
+          isOffline={!presenceConnected}
         />
       </DraggablePanel>
 
@@ -2115,12 +2193,20 @@ export const Canvas: React.FC = () => {
             
             {/* Render All Shapes (sorted by z-index, merged with lock data) */}
             {sortShapesByZIndex(mergeLocksWithShapes(shapes)).map((shape) => {
+              // Mark all shapes as locked when offline
+              const shapeWithOfflineState = presenceConnected ? shape : {
+                ...shape,
+                isLockedByOther: true,
+                lockedByName: 'Offline',
+                locked: true,
+              } as typeof shape;
+              
               // Render different components based on shape type
               if (shape.type === 'rectangle') {
                 return (
                   <CanvasObject
                     key={shape.id}
-                    object={shape}
+                    object={shapeWithOfflineState as any}
                     isSelected={isSelected(shape.id)}
                     isPlaying={playingShapeIds.includes(shape.id)}
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
@@ -2142,7 +2228,7 @@ export const Canvas: React.FC = () => {
                 return (
                   <CircleComponent
                     key={shape.id}
-                    shape={shape}
+                    shape={shapeWithOfflineState as any}
                     isSelected={isSelected(shape.id)}
                     isPlaying={playingShapeIds.includes(shape.id)}
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
@@ -2164,7 +2250,7 @@ export const Canvas: React.FC = () => {
                 return (
                   <LineComponent
                     key={shape.id}
-                    shape={shape}
+                    shape={shapeWithOfflineState as any}
                     isSelected={isSelected(shape.id)}
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
                     onDragStart={handleShapeDragStart}
@@ -2181,7 +2267,7 @@ export const Canvas: React.FC = () => {
                 return (
                   <TextComponent
                     key={shape.id}
-                    shape={shape}
+                    shape={shapeWithOfflineState as any}
                     isSelected={isSelected(shape.id)}
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
                     onDragStart={handleShapeDragStart}
@@ -2305,7 +2391,7 @@ export const Canvas: React.FC = () => {
         <div className="info-panel">
           <p>Canvas: {CANVAS_CONFIG.WIDTH} × {CANVAS_CONFIG.HEIGHT}px</p>
           <p>Zoom: {Math.round(scale * 100)}%</p>
-          <p>Position: ({Math.round(x)}, {Math.round(y)})</p>
+          <p>Position: {mousePosition ? `(${Math.round(mousePosition.x)}, ${Math.round(mousePosition.y)})` : '(0, 0)'}</p>
           {isDragging && <p className="drag-indicator">Dragging...</p>}
         </div>
       </div>
@@ -2329,49 +2415,13 @@ export const Canvas: React.FC = () => {
         />
       </DraggablePanel>
 
-      {/* AI Command Panel - Below Presence Panel */}
-      <DraggablePanel 
-        title="AI Assistant"
-        panelId="ai-assistant-panel"
-        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 390 }}
-        className="ai-assistant-panel"
-      >
-        <div className="ai-panel">
-          <div className="ai-panel-content">
-            <div className="ai-status">
-              {aiLoading && <AILoadingIndicator size="small" />}
-            </div>
-            
-            {aiError && (
-              <AIErrorDisplay 
-                error={aiError} 
-                onDismiss={clearAIError}
-              />
-            )}
-            
-            <AICommandInput
-              onExecuteCommand={executeAICommand}
-              isLoading={aiLoading}
-              disabled={!user}
-              placeholder="Try: 'create a red rectangle at 200, 150'"
-            />
-            
-            <AICommandHistory
-              commands={commandHistory}
-              maxVisible={3}
-              onClearHistory={clearAIHistory}
-            />
-          </div>
-        </div>
-      </DraggablePanel>
-
-      {/* Style Panel - Below AI Assistant */}
+      {/* Style Panel - Below Presence Panel */}
       <DraggablePanel 
         title="Style Controls"
         panelId="style-panel"
-        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 720 }}
+        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 390 }}
         className="style-panel"
-        defaultCollapsed={true}
+        defaultCollapsed={false}
       >
         <div className="style-controls">
           <div className="control-group">
@@ -2424,9 +2474,17 @@ export const Canvas: React.FC = () => {
                   // Update selected objects
                   const selected = getSelectedObjects(shapes);
                   selected.forEach(shape => {
-                    if (shape.type === 'rectangle' || shape.type === 'circle' || shape.type === 'text') {
+                    if (shape.type === 'rectangle' || shape.type === 'circle') {
+                      // Update both opacity property and fill alpha channel
                       updateShape(shape.id, { opacity: newOpacity / 100 });
-                    } else if (shape.type === 'line') {
+                      
+                      // Also update fill color's alpha channel if it has a stroke color
+                      if (shape.stroke) {
+                        const cleanColor = shape.stroke.replace('#', '');
+                        const opacityHex = Math.round((newOpacity / 100) * 255).toString(16).padStart(2, '0');
+                        updateShape(shape.id, { fill: `#${cleanColor}${opacityHex}` });
+                      }
+                    } else if (shape.type === 'text' || shape.type === 'line') {
                       updateShape(shape.id, { opacity: newOpacity / 100 });
                     }
                   });
@@ -2461,6 +2519,42 @@ export const Canvas: React.FC = () => {
               />
               <span className="text-size-value">{currentTextSize}px</span>
             </div>
+          </div>
+        </div>
+      </DraggablePanel>
+
+      {/* AI Command Panel - Below Style Panel */}
+      <DraggablePanel 
+        title="AI Assistant"
+        panelId="ai-assistant-panel"
+        defaultPosition={{ x: windowSize.width - PANEL_WIDTH - 20, y: 720 }}
+        className="ai-assistant-panel"
+      >
+        <div className="ai-panel">
+          <div className="ai-panel-content">
+            <div className="ai-status">
+              {aiLoading && <AILoadingIndicator size="small" />}
+            </div>
+            
+            {aiError && (
+              <AIErrorDisplay 
+                error={aiError} 
+                onDismiss={clearAIError}
+              />
+            )}
+            
+            <AICommandInput
+              onExecuteCommand={executeAICommand}
+              isLoading={aiLoading}
+              disabled={!user || !presenceConnected}
+              placeholder={!presenceConnected ? "Offline - reconnect to use AI" : "Try: 'create a red rectangle at 200, 150'"}
+            />
+            
+            <AICommandHistory
+              commands={commandHistory}
+              maxVisible={3}
+              onClearHistory={clearAIHistory}
+            />
           </div>
         </div>
       </DraggablePanel>

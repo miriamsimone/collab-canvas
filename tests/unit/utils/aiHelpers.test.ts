@@ -5,14 +5,15 @@ import {
   generateCommandId, 
   parseColorName 
 } from '../../../src/utils/aiHelpers';
-import { type CanvasObjectData } from '../../../src/components/CanvasObject';
+import type { Shape } from '../../../src/types/shapes';
 
 describe('AI Helpers', () => {
   describe('getCanvasState', () => {
     it('should return canvas state with rectangles and canvas size', () => {
-      const rectangles: CanvasObjectData[] = [
+      const shapes: Shape[] = [
         {
           id: 'rect-1',
+          type: 'rectangle',
           x: 100,
           y: 150,
           width: 120,
@@ -20,9 +21,13 @@ describe('AI Helpers', () => {
           fill: '#ff0000',
           stroke: '#ff0000',
           strokeWidth: 2,
+          zIndex: 1,
+          createdBy: 'user-1',
+          createdAt: Date.now(),
         },
         {
           id: 'rect-2',
+          type: 'rectangle',
           x: 300,
           y: 200,
           width: 100,
@@ -30,14 +35,18 @@ describe('AI Helpers', () => {
           fill: '#0000ff',
           stroke: '#0000ff',
           strokeWidth: 2,
+          zIndex: 2,
+          createdBy: 'user-1',
+          createdAt: Date.now(),
         },
       ];
 
-      const canvasState = getCanvasState(rectangles);
+      const canvasState = getCanvasState(shapes);
 
       expect(canvasState.rectangles).toHaveLength(2);
       expect(canvasState.rectangles[0]).toEqual({
         id: 'rect-1',
+        type: 'rectangle',
         x: 100,
         y: 150,
         width: 120,
@@ -45,8 +54,8 @@ describe('AI Helpers', () => {
         fill: '#ff0000',
       });
       expect(canvasState.canvasSize).toEqual({
-        width: 1200,
-        height: 800,
+        width: 5000,
+        height: 5000,
       });
     });
 
@@ -55,8 +64,38 @@ describe('AI Helpers', () => {
 
       expect(canvasState.rectangles).toHaveLength(0);
       expect(canvasState.canvasSize).toEqual({
-        width: 1200,
-        height: 800,
+        width: 5000,
+        height: 5000,
+      });
+    });
+
+    it('should handle circles with radius', () => {
+      const shapes: Shape[] = [
+        {
+          id: 'circle-1',
+          type: 'circle',
+          x: 200,
+          y: 200,
+          radius: 50,
+          fill: '#3b82f6',
+          stroke: '#3b82f6',
+          strokeWidth: 2,
+          zIndex: 1,
+          createdBy: 'user-1',
+          createdAt: Date.now(),
+        },
+      ];
+
+      const canvasState = getCanvasState(shapes);
+
+      expect(canvasState.rectangles).toHaveLength(1);
+      expect(canvasState.rectangles[0]).toEqual({
+        id: 'circle-1',
+        type: 'circle',
+        x: 200,
+        y: 200,
+        radius: 50,
+        fill: '#3b82f6',
       });
     });
   });
@@ -175,34 +214,52 @@ describe('AI Helpers', () => {
   });
 
   describe('parseColorName', () => {
-    it('should convert common color names to hex', () => {
-      expect(parseColorName('red')).toBe('#ff0000');
-      expect(parseColorName('blue')).toBe('#0000ff');
-      expect(parseColorName('green')).toBe('#00ff00');
-      expect(parseColorName('yellow')).toBe('#ffff00');
-      expect(parseColorName('white')).toBe('#ffffff');
+    it('should convert common color names to hex (8 colors)', () => {
+      expect(parseColorName('red')).toBe('#ef4444');
+      expect(parseColorName('blue')).toBe('#3b82f6');
+      expect(parseColorName('green')).toBe('#10b981');
+      expect(parseColorName('yellow')).toBe('#f59e0b');
+      expect(parseColorName('purple')).toBe('#8b5cf6');
+      expect(parseColorName('orange')).toBe('#f97316');
       expect(parseColorName('black')).toBe('#000000');
     });
 
     it('should handle case insensitive color names', () => {
-      expect(parseColorName('RED')).toBe('#ff0000');
-      expect(parseColorName('Blue')).toBe('#0000ff');
-      expect(parseColorName('GREEN')).toBe('#00ff00');
+      expect(parseColorName('RED')).toBe('#ef4444');
+      expect(parseColorName('Blue')).toBe('#3b82f6');
+      expect(parseColorName('GREEN')).toBe('#10b981');
     });
 
     it('should handle color names with extra whitespace', () => {
-      expect(parseColorName('  red  ')).toBe('#ff0000');
-      expect(parseColorName(' blue ')).toBe('#0000ff');
+      expect(parseColorName('  red  ')).toBe('#ef4444');
+      expect(parseColorName(' blue ')).toBe('#3b82f6');
     });
 
-    it('should return original value for unknown colors', () => {
-      expect(parseColorName('#custom')).toBe('#custom');
-      expect(parseColorName('unknown-color')).toBe('unknown-color');
+    it('should return palette colors if they are provided as hex', () => {
+      expect(parseColorName('#3b82f6')).toBe('#3b82f6'); // blue
+      expect(parseColorName('#ef4444')).toBe('#ef4444'); // red
+    });
+
+    it('should default to blue for non-palette hex colors', () => {
+      expect(parseColorName('#aabbcc')).toBe('#3b82f6');
+      expect(parseColorName('#AABBCC')).toBe('#3b82f6');
+    });
+
+    it('should default to blue for unknown colors', () => {
+      expect(parseColorName('unknown-color')).toBe('#3b82f6');
+      expect(parseColorName('cyan')).toBe('#3b82f6');
+    });
+
+    it('should map common hex colors to palette colors', () => {
+      expect(parseColorName('#ff0000')).toBe('#ef4444'); // red
+      expect(parseColorName('#0000ff')).toBe('#3b82f6'); // blue
+      expect(parseColorName('#00ff00')).toBe('#10b981'); // green
+      expect(parseColorName('#ffc0cb')).toBe('#ef4444'); // pink -> red
     });
 
     it('should handle both gray and grey spelling', () => {
-      expect(parseColorName('gray')).toBe('#808080');
-      expect(parseColorName('grey')).toBe('#808080');
+      expect(parseColorName('gray')).toBe('#6b7280');
+      expect(parseColorName('grey')).toBe('#6b7280');
     });
   });
 });
