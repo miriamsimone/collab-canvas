@@ -12,6 +12,8 @@ export interface CanvasObjectData {
   fill: string;
   stroke: string;
   strokeWidth: number;
+  isLockedByOther?: boolean;
+  lockedByName?: string;
 }
 
 interface CanvasObjectProps {
@@ -240,6 +242,12 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
   };
 
 
+  // Visual lock indicator
+  const isLocked = object.isLockedByOther;
+  const lockStroke = isLocked ? '#ff4444' : object.stroke;
+  const lockStrokeWidth = isLocked ? 4 : object.strokeWidth;
+  const lockDash = isLocked ? [10, 5] : undefined;
+
   return (
     <>
       <Rect
@@ -250,17 +258,29 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         width={object.width}
         height={object.height}
         fill={object.fill}
-        stroke={object.stroke}
-        strokeWidth={object.strokeWidth}
-        draggable
+        stroke={lockStroke}
+        strokeWidth={lockStrokeWidth}
+        dash={lockDash}
+        draggable={!isLocked}
         onClick={(e) => {
           // Ignore right-clicks (context menu clicks)
           if ((e.evt as MouseEvent)?.button === 2) {
             return;
           }
+          // Show alert if locked
+          if (isLocked) {
+            alert(`This object is being edited by ${object.lockedByName || 'another user'}`);
+            return;
+          }
           onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey });
         }}
-        onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onTap={(e) => {
+          if (isLocked) {
+            alert(`This object is being edited by ${object.lockedByName || 'another user'}`);
+            return;
+          }
+          onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey });
+        }}
         onContextMenu={onContextMenu}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
@@ -270,7 +290,7 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
           if (stage) {
-            stage.container().style.cursor = 'pointer';
+            stage.container().style.cursor = isLocked ? 'not-allowed' : 'pointer';
           }
         }}
         onMouseLeave={(e) => {
@@ -279,16 +299,17 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
             stage.container().style.cursor = 'default';
           }
         }}
-        // Selection styling
-        shadowColor={isSelected ? object.stroke : 'transparent'}
-        shadowBlur={isSelected ? 10 : 0}
-        shadowOpacity={isSelected ? 0.6 : 0}
+        // Selection or lock styling
+        shadowColor={isLocked ? '#ff4444' : (isSelected ? object.stroke : 'transparent')}
+        shadowBlur={isLocked ? 15 : (isSelected ? 10 : 0)}
+        shadowOpacity={isLocked ? 0.8 : (isSelected ? 0.6 : 0)}
         shadowOffsetX={0}
         shadowOffsetY={0}
+        opacity={isLocked ? 0.7 : 1}
       />
       
-      {/* Show transformer only when selected */}
-      {isSelected && (
+      {/* Show transformer only when selected and not locked */}
+      {isSelected && !isLocked && (
         <Transformer
           ref={transformerRef}
           boundBoxFunc={(oldBox, newBox) => {

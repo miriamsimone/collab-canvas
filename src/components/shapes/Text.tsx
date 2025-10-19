@@ -302,6 +302,11 @@ export const TextComponent: React.FC<TextComponentProps> = ({
     }
   }, [isEditing]);
 
+  // Visual lock indicator
+  const isLocked = shape.isLockedByOther || shape.locked;
+  const lockStroke = shape.isLockedByOther ? '#ff4444' : shape.stroke;
+  const lockStrokeWidth = shape.isLockedByOther ? 3 : (shape.strokeWidth || 0);
+
   return (
     <>
       <Text
@@ -314,35 +319,46 @@ export const TextComponent: React.FC<TextComponentProps> = ({
         fontFamily={shape.fontFamily}
         fontStyle={shape.fontStyle || 'normal'}
         fill={shape.fill}
-        stroke={shape.stroke}
-        strokeWidth={shape.strokeWidth || 0}
+        stroke={lockStroke}
+        strokeWidth={lockStrokeWidth}
         align={shape.align || 'left'}
         verticalAlign={shape.verticalAlign || 'top'}
         width={shape.width}
         height={shape.height}
         rotation={shape.rotation || 0}
-        opacity={shape.opacity || 1}
+        opacity={shape.isLockedByOther ? 0.7 : (shape.opacity || 1)}
         visible={shape.visible !== false && !isEditing}
-        draggable={!shape.locked && !isEditing}
+        draggable={!isLocked && !isEditing}
         onClick={(e) => {
           // Ignore right-clicks (context menu clicks)
           if ((e.evt as MouseEvent)?.button === 2) {
             return;
           }
+          // Show alert if locked by another user
+          if (shape.isLockedByOther) {
+            alert(`This text is being edited by ${shape.lockedByName || 'another user'}`);
+            return;
+          }
           onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey });
         }}
-        onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onTap={(e) => {
+          if (shape.isLockedByOther) {
+            alert(`This text is being edited by ${shape.lockedByName || 'another user'}`);
+            return;
+          }
+          onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey });
+        }}
         onContextMenu={onContextMenu}
-        onDblClick={handleDoubleClick}
-        onDblTap={handleDoubleClick}
+        onDblClick={shape.isLockedByOther ? undefined : handleDoubleClick}
+        onDblTap={shape.isLockedByOther ? undefined : handleDoubleClick}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         // Visual feedback
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
-          if (stage && !shape.locked) {
-            stage.container().style.cursor = 'text';
+          if (stage) {
+            stage.container().style.cursor = isLocked ? 'not-allowed' : 'text';
           }
         }}
         onMouseLeave={(e) => {
@@ -351,16 +367,16 @@ export const TextComponent: React.FC<TextComponentProps> = ({
             stage.container().style.cursor = 'default';
           }
         }}
-        // Selection styling
-        shadowColor={isSelected ? shape.fill : 'transparent'}
-        shadowBlur={isSelected ? 8 : 0}
-        shadowOpacity={isSelected ? 0.3 : 0}
+        // Selection or lock styling
+        shadowColor={shape.isLockedByOther ? '#ff4444' : (isSelected ? shape.fill : 'transparent')}
+        shadowBlur={shape.isLockedByOther ? 15 : (isSelected ? 8 : 0)}
+        shadowOpacity={shape.isLockedByOther ? 0.8 : (isSelected ? 0.3 : 0)}
         shadowOffsetX={0}
         shadowOffsetY={0}
       />
       
-      {/* Transformer for text resizing */}
-      {isSelected && !shape.locked && !isEditing && (
+      {/* Transformer for text resizing - only when not locked */}
+      {isSelected && !isLocked && !isEditing && (
         <Transformer
           ref={transformerRef}
           boundBoxFunc={(oldBox, newBox) => {

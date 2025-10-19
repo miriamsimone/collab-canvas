@@ -407,16 +407,26 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
     };
   }, [user]);
 
-  // Merge Firestore shapes with RTDB real-time movements
+  // Merge Firestore shapes with RTDB real-time movements and lock status
   const mergedShapes = shapes.map(shape => {
     const realtimeMovement = realtimeMovements[shape.id];
+    const updates: any = {};
+    
+    // Check for lock status
+    if (realtimeMovement?.lockedBy && realtimeMovement.lockedBy !== user?.uid) {
+      const lockAge = Date.now() - (realtimeMovement.lockedAt || 0);
+      // Lock is valid for 10 seconds
+      if (lockAge < 10000) {
+        updates.isLockedByOther = true;
+        updates.lockedBy = realtimeMovement.lockedBy;
+        updates.lockedByName = realtimeMovement.lockUserName;
+      }
+    }
     
     // If this shape is being dragged in real-time by someone else, use RTDB position
     if (realtimeMovement && realtimeMovement.isDragging && realtimeMovement.draggedBy !== user?.uid) {
-      const updates: any = {
-        x: realtimeMovement.x,
-        y: realtimeMovement.y,
-      };
+      updates.x = realtimeMovement.x;
+      updates.y = realtimeMovement.y;
       
       // Add type-specific properties
       if (isRectangle(shape)) {
@@ -441,10 +451,8 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
     if (realtimeMovement && !realtimeMovement.isDragging) {
       const timeSinceUpdate = Date.now() - realtimeMovement.timestamp;
       if (timeSinceUpdate < 2000) { // 2 second grace period
-        const updates: any = {
-          x: realtimeMovement.x,
-          y: realtimeMovement.y,
-        };
+        updates.x = realtimeMovement.x;
+        updates.y = realtimeMovement.y;
         
         // Add type-specific properties (same logic as above)
         if (isRectangle(shape)) {
@@ -464,8 +472,8 @@ export const useShapes = (): UseShapesState & UseShapesActions => {
       }
     }
     
-    // Otherwise, use the Firestore position
-    return shape;
+    // Apply any updates (lock status, etc.) or return original
+    return Object.keys(updates).length > 0 ? { ...shape, ...updates } : shape;
   });
 
   // Legacy compatibility - filter rectangles for backward compatibility

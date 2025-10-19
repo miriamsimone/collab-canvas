@@ -240,6 +240,12 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
     }
   };
 
+  // Visual lock indicator
+  const isLocked = shape.isLockedByOther || shape.locked;
+  const lockStroke = shape.isLockedByOther ? '#ff4444' : shape.stroke;
+  const lockStrokeWidth = shape.isLockedByOther ? 4 : shape.strokeWidth;
+  const lockDash = shape.isLockedByOther ? [10, 5] : undefined;
+
   return (
     <>
       <Circle
@@ -249,20 +255,32 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         y={shape.y}
         radius={visualRadius}
         fill={shape.fill}
-        stroke={shape.stroke}
-        strokeWidth={shape.strokeWidth}
-        opacity={shape.opacity || 1}
+        stroke={lockStroke}
+        strokeWidth={lockStrokeWidth}
+        dash={lockDash}
+        opacity={shape.isLockedByOther ? 0.7 : (shape.opacity || 1)}
         visible={shape.visible !== false}
         rotation={shape.rotation || 0}
-        draggable={!shape.locked}
+        draggable={!isLocked}
         onClick={(e) => {
           // Ignore right-clicks (context menu clicks)
           if ((e.evt as MouseEvent)?.button === 2) {
             return;
           }
+          // Show alert if locked by another user
+          if (shape.isLockedByOther) {
+            alert(`This circle is being edited by ${shape.lockedByName || 'another user'}`);
+            return;
+          }
           onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey });
         }}
-        onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+        onTap={(e) => {
+          if (shape.isLockedByOther) {
+            alert(`This circle is being edited by ${shape.lockedByName || 'another user'}`);
+            return;
+          }
+          onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey });
+        }}
         onContextMenu={onContextMenu}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
@@ -271,8 +289,8 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
         // Visual feedback on hover
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
-          if (stage && !shape.locked) {
-            stage.container().style.cursor = 'pointer';
+          if (stage) {
+            stage.container().style.cursor = isLocked ? 'not-allowed' : 'pointer';
           }
         }}
         onMouseLeave={(e) => {
@@ -281,16 +299,16 @@ export const CircleComponent: React.FC<CircleComponentProps> = ({
             stage.container().style.cursor = 'default';
           }
         }}
-        // Selection styling
-        shadowColor={isSelected ? shape.stroke : 'transparent'}
-        shadowBlur={isSelected ? 10 : 0}
-        shadowOpacity={isSelected ? 0.6 : 0}
+        // Selection or lock styling
+        shadowColor={shape.isLockedByOther ? '#ff4444' : (isSelected ? shape.stroke : 'transparent')}
+        shadowBlur={shape.isLockedByOther ? 15 : (isSelected ? 10 : 0)}
+        shadowOpacity={shape.isLockedByOther ? 0.8 : (isSelected ? 0.6 : 0)}
         shadowOffsetX={0}
         shadowOffsetY={0}
       />
       
-      {/* Show transformer only when selected */}
-      {isSelected && !shape.locked && (
+      {/* Show transformer only when selected and not locked */}
+      {isSelected && !isLocked && (
         <Transformer
           ref={transformerRef}
           boundBoxFunc={(oldBox, newBox) => {

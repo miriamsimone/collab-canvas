@@ -285,6 +285,12 @@ export const LineComponent: React.FC<LineComponentProps> = ({
     };
   };
 
+  // Visual lock indicator
+  const isLocked = shape.isLockedByOther || shape.locked;
+  const lockStroke = shape.isLockedByOther ? '#ff4444' : shape.stroke;
+  const lockStrokeWidth = shape.isLockedByOther ? 4 : shape.strokeWidth;
+  const lockDash = shape.isLockedByOther ? [10, 5] : shape.dashArray;
+
   return (
     <Group
       ref={groupRef}
@@ -292,25 +298,36 @@ export const LineComponent: React.FC<LineComponentProps> = ({
       x={shape.x}
       y={shape.y}
       rotation={shape.rotation || 0}
-      opacity={shape.opacity || 1}
+      opacity={shape.isLockedByOther ? 0.7 : (shape.opacity || 1)}
       visible={shape.visible !== false}
-      draggable={!shape.locked}
+      draggable={!isLocked}
       onClick={(e) => {
         // Ignore right-clicks (context menu clicks)
         if ((e.evt as MouseEvent)?.button === 2) {
           return;
         }
+        // Show alert if locked by another user
+        if (shape.isLockedByOther) {
+          alert(`This line is being edited by ${shape.lockedByName || 'another user'}`);
+          return;
+        }
         onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey });
       }}
-      onTap={(e) => onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey })}
+      onTap={(e) => {
+        if (shape.isLockedByOther) {
+          alert(`This line is being edited by ${shape.lockedByName || 'another user'}`);
+          return;
+        }
+        onSelect({ shiftKey: (e.evt as MouseEvent)?.shiftKey });
+      }}
       onContextMenu={onContextMenu}
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
       onMouseEnter={(e) => {
         const stage = e.target.getStage();
-        if (stage && !shape.locked) {
-          stage.container().style.cursor = 'pointer';
+        if (stage) {
+          stage.container().style.cursor = isLocked ? 'not-allowed' : 'pointer';
         }
       }}
       onMouseLeave={(e) => {
@@ -324,20 +341,20 @@ export const LineComponent: React.FC<LineComponentProps> = ({
       <Line
         ref={lineRef}
         points={points}
-        stroke={shape.stroke}
-        strokeWidth={shape.strokeWidth}
+        stroke={lockStroke}
+        strokeWidth={lockStrokeWidth}
         lineCap={shape.lineCap || 'round'}
-        dash={shape.dashArray}
-        // Selection styling
-        shadowColor={isSelected ? shape.stroke : 'transparent'}
-        shadowBlur={isSelected ? 8 : 0}
-        shadowOpacity={isSelected ? 0.6 : 0}
+        dash={lockDash}
+        // Selection or lock styling
+        shadowColor={shape.isLockedByOther ? '#ff4444' : (isSelected ? shape.stroke : 'transparent')}
+        shadowBlur={shape.isLockedByOther ? 15 : (isSelected ? 8 : 0)}
+        shadowOpacity={shape.isLockedByOther ? 0.8 : (isSelected ? 0.6 : 0)}
         shadowOffsetX={0}
         shadowOffsetY={0}
       />
       
-      {/* Endpoint handles when selected */}
-      {isSelected && !shape.locked && (
+      {/* Endpoint handles when selected and not locked */}
+      {isSelected && !isLocked && (
         <>
           {/* Start point handle */}
           <Circle
@@ -367,8 +384,8 @@ export const LineComponent: React.FC<LineComponentProps> = ({
         </>
       )}
       
-      {/* Transformer for overall line manipulation */}
-      {isSelected && !shape.locked && (
+      {/* Transformer for overall line manipulation - only when not locked */}
+      {isSelected && !isLocked && (
         <Transformer
           ref={transformerRef}
           boundBoxFunc={(oldBox, newBox) => {

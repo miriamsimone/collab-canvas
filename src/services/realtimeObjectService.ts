@@ -16,6 +16,9 @@ export interface RealtimeObjectData {
   isDragging: boolean;
   draggedBy: string;
   timestamp: number;
+  lockedBy?: string; // User ID of who has the lock
+  lockedAt?: number; // When the lock was acquired
+  lockUserName?: string; // Display name of user with lock
 }
 
 // Input data for updating object position
@@ -175,6 +178,120 @@ export class RealtimeObjectService {
         }
       }
     }, { onlyOnce: true }); // Only run once per cleanup call
+  }
+
+  /**
+   * Acquire a lock on an object for editing
+   */
+  async lockObject(objectId: string, userId: string, userName: string): Promise<boolean> {
+    try {
+      const objectRef = ref(rtdb, `${this.objectMovementsPath}/${objectId}`);
+      
+      // Check if object is already locked
+      const currentData = await new Promise<RealtimeObjectData | null>((resolve) => {
+        onValue(objectRef, (snapshot) => {
+          resolve(snapshot.val());
+        }, { onlyOnce: true });
+      });
+      
+      // If locked by someone else and lock is recent (< 10 seconds), deny
+      if (currentData?.lockedBy && currentData.lockedBy !== userId) {
+        const lockAge = Date.now() - (currentData.lockedAt || 0);
+        if (lockAge < 10000) {
+          console.log(`🔒 Object ${objectId} is locked by ${currentData.lockUserName}`);
+          return false;
+        }
+      }
+      
+      // Acquire lock
+      const lockData: RealtimeObjectData = {
+        x: currentData?.x || 0,
+        y: currentData?.y || 0,
+        width: currentData?.width || 100,
+        height: currentData?.height || 100,
+        isDragging: currentData?.isDragging || false,
+        draggedBy: currentData?.draggedBy || userId,
+        timestamp: Date.now(),
+        lockedBy: userId,
+        lockedAt: Date.now(),
+        lockUserName: userName,
+      };
+      
+      await set(objectRef, lockData);
+      console.log(`✅ Locked object ${objectId} for ${userName}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to lock object:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Release lock on an object
+   */
+  async unlockObject(objectId: string, userId: string): Promise<void> {
+    try {
+      const objectRef = ref(rtdb, `${this.objectMovementsPath}/${objectId}`);
+      
+      // Get current data
+      const currentData = await new Promise<RealtimeObjectData | null>((resolve) => {
+        onValue(objectRef, (snapshot) => {
+          resolve(snapshot.val());
+        }, { onlyOnce: true });
+      });
+      
+      // Only unlock if we own the lock
+      if (currentData?.lockedBy === userId) {
+        // If also dragging, keep the data but remove lock
+        if (currentData.isDragging) {
+          const updatedData: RealtimeObjectData = {
+            ...currentData,
+            lockedBy: undefined,
+            lockedAt: undefined,
+            lockUserName: undefined,
+          };
+          await set(objectRef, updatedData);
+        } else {
+          // Remove entirely if not dragging
+          await remove(objectRef);
+        }
+        console.log(`🔓 Unlocked object ${objectId}`);
+      }
+    } catch (error) {
+      console.error('Failed to unlock object:', error);
+    }
+  }
+
+  /**
+   * Check if object is locked by another user
+   */
+  async isObjectLocked(objectId: string, currentUserId: string): Promise<{ locked: boolean; lockedBy?: string; userName?: string }> {
+    try {
+      const objectRef = ref(rtdb, `${this.objectMovementsPath}/${objectId}`);
+      
+      const data = await new Promise<RealtimeObjectData | null>((resolve) => {
+        onValue(objectRef, (snapshot) => {
+          resolve(snapshot.val());
+        }, { onlyOnce: true });
+      });
+      
+      if (data?.lockedBy && data.lockedBy !== currentUserId) {
+        const lockAge = Date.now() - (data.lockedAt || 0);
+        // Lock is valid for 10 seconds
+        if (lockAge < 10000) {
+          return {
+            locked: true,
+            lockedBy: data.lockedBy,
+            userName: data.lockUserName,
+          };
+        }
+      }
+      
+      return { locked: false };
+    } catch (error) {
+      console.error('Failed to check lock status:', error);
+      return { locked: false };
+    }
   }
 
   /**

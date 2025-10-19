@@ -12,11 +12,15 @@ export interface BaseShape {
   rotation?: number;
   opacity?: number;
   visible?: boolean;
-  locked?: boolean;
+  locked?: boolean; // Permanent lock flag
   zIndex?: number;
   createdBy?: string;
   createdAt?: number;
   updatedAt?: number;
+  // Runtime lock information (from RTDB)
+  isLockedByOther?: boolean;
+  lockedBy?: string;
+  lockedByName?: string;
 }
 
 // Rectangle-specific properties
