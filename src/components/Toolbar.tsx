@@ -95,8 +95,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div className="toolbar">
       <div className="toolbar-content">
-        <h3 className="toolbar-title">Tools</h3>
-        
         <div className="toolbar-tools">
           {tools.map((tool) => (
             <button

@@ -127,6 +127,31 @@ export const Canvas: React.FC = () => {
   // Panel width for right-side panels
   const PANEL_WIDTH = 320;
 
+  // Style controls state
+  const [currentColor, setCurrentColor] = useState('#3b82f6');
+  const [currentTextSize, setCurrentTextSize] = useState(16);
+  const [currentOpacity, setCurrentOpacity] = useState(100);
+  
+  // Named color palette
+  const colorPalette = [
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Red', value: '#ef4444' },
+    { name: 'Green', value: '#10b981' },
+    { name: 'Yellow', value: '#f59e0b' },
+    { name: 'Purple', value: '#8b5cf6' },
+    { name: 'Pink', value: '#ec4899' },
+    { name: 'Indigo', value: '#6366f1' },
+    { name: 'Orange', value: '#f97316' },
+    { name: 'Teal', value: '#14b8a6' },
+    { name: 'Cyan', value: '#06b6d4' },
+    { name: 'Lime', value: '#84cc16' },
+    { name: 'Rose', value: '#f43f5e' },
+    { name: 'Violet', value: '#a855f7' },
+    { name: 'Amber', value: '#f59e0b' },
+    { name: 'Gray', value: '#6b7280' },
+    { name: 'Black', value: '#000000' },
+  ];
+
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -1488,8 +1513,10 @@ export const Canvas: React.FC = () => {
     const { createRectangleShape, createCircleShape, createLineShape, createTextShape } = await import('../services/shapesService');
     const { generateShapeId } = await import('../types/shapes');
     
-    const colors = ['#007ACC', '#28A745', '#DC3545', '#FFC107', '#6F42C1', '#FD7E14'];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    // Use current style settings
+    const cleanColor = currentColor.replace('#', '');
+    const opacityHex = Math.round((currentOpacity / 100) * 255).toString(16).padStart(2, '0');
+    const opacity = currentOpacity / 100;
 
     if (activeTool === 'rectangle') {
       try {
@@ -1498,9 +1525,10 @@ export const Canvas: React.FC = () => {
           id: generateShapeId('rectangle'),
           width: 120,
           height: 80,
-          fill: `${randomColor}40`,
-          stroke: randomColor,
+          fill: `#${cleanColor}${opacityHex}`,
+          stroke: currentColor,
           strokeWidth: 2,
+          opacity: opacity,
         });
         const createCommand = new CreateShapeCommand({ shape: newRectangle }, user.uid);
         await executeCommand(createCommand);
@@ -1513,9 +1541,10 @@ export const Canvas: React.FC = () => {
         const newCircle = createCircleShape({ x: clickX, y: clickY }, user.uid, {
           id: generateShapeId('circle'),
           radius: 50,
-          fill: `${randomColor}40`,
-          stroke: randomColor,
+          fill: `#${cleanColor}${opacityHex}`,
+          stroke: currentColor,
           strokeWidth: 2,
+          opacity: opacity,
         });
         const createCommand = new CreateShapeCommand({ shape: newCircle }, user.uid);
         await executeCommand(createCommand);
@@ -1531,8 +1560,9 @@ export const Canvas: React.FC = () => {
           user.uid,
           {
             id: generateShapeId('line'),
-            stroke: randomColor,
+            stroke: currentColor,
             strokeWidth: 3,
+            opacity: opacity,
           }
         );
         const createCommand = new CreateShapeCommand({ shape: newLine }, user.uid);
@@ -1545,9 +1575,10 @@ export const Canvas: React.FC = () => {
       try {
         const newText = createTextShape({ x: clickX, y: clickY }, 'New Text', user.uid, {
           id: generateShapeId('text'),
-          fontSize: 16,
+          fontSize: currentTextSize,
           fontFamily: 'Arial, sans-serif',
-          fill: '#000000',
+          fill: currentColor,
+          opacity: opacity,
         });
         const createCommand = new CreateShapeCommand({ shape: newText }, user.uid);
         await executeCommand(createCommand);
@@ -1954,15 +1985,65 @@ export const Canvas: React.FC = () => {
       >
         <div className="style-controls">
           <div className="control-group">
-            <label htmlFor="color-picker">Color</label>
-            <div className="color-picker-wrapper">
+            <label>Color</label>
+            <div className="color-palette-grid">
+              {colorPalette.map((color) => (
+                <button
+                  key={color.value}
+                  className={`color-swatch ${currentColor === color.value ? 'selected' : ''}`}
+                  style={{ backgroundColor: color.value }}
+                  onClick={() => {
+                    setCurrentColor(color.value);
+                    // Update selected objects
+                    const selected = getSelectedObjects(shapes);
+                    selected.forEach(shape => {
+                      if (shape.type === 'text') {
+                        updateShape(shape.id, { fill: color.value });
+                      } else if (shape.type === 'rectangle' || shape.type === 'circle') {
+                        // Keep transparency for fill, update stroke
+                        const cleanColor = color.value.replace('#', '');
+                        const opacityHex = Math.round((currentOpacity / 100) * 255).toString(16).padStart(2, '0');
+                        updateShape(shape.id, { 
+                          stroke: color.value,
+                          fill: `#${cleanColor}${opacityHex}`
+                        });
+                      } else if (shape.type === 'line') {
+                        updateShape(shape.id, { stroke: color.value });
+                      }
+                    });
+                  }}
+                  title={color.name}
+                  type="button"
+                />
+              ))}
+            </div>
+          </div>
+          
+          <div className="control-group">
+            <label htmlFor="opacity-slider">Opacity</label>
+            <div className="opacity-control">
               <input 
-                type="color" 
-                id="color-picker"
-                className="color-picker-input"
-                defaultValue="#3b82f6"
+                type="range" 
+                id="opacity-slider"
+                min="0" 
+                max="100" 
+                value={currentOpacity}
+                onChange={(e) => {
+                  const newOpacity = parseInt(e.target.value);
+                  setCurrentOpacity(newOpacity);
+                  // Update selected objects
+                  const selected = getSelectedObjects(shapes);
+                  selected.forEach(shape => {
+                    if (shape.type === 'rectangle' || shape.type === 'circle' || shape.type === 'text') {
+                      updateShape(shape.id, { opacity: newOpacity / 100 });
+                    } else if (shape.type === 'line') {
+                      updateShape(shape.id, { opacity: newOpacity / 100 });
+                    }
+                  });
+                }}
+                className="opacity-slider"
               />
-              <span className="color-value">#3b82f6</span>
+              <span className="opacity-value">{currentOpacity}%</span>
             </div>
           </div>
           
@@ -1974,10 +2055,21 @@ export const Canvas: React.FC = () => {
                 id="text-size"
                 min="8" 
                 max="72" 
-                defaultValue="16"
+                value={currentTextSize}
+                onChange={(e) => {
+                  const newSize = parseInt(e.target.value);
+                  setCurrentTextSize(newSize);
+                  // Update selected text objects
+                  const selected = getSelectedObjects(shapes);
+                  selected.forEach(shape => {
+                    if (shape.type === 'text') {
+                      updateShape(shape.id, { fontSize: newSize });
+                    }
+                  });
+                }}
                 className="text-size-slider"
               />
-              <span className="text-size-value">16px</span>
+              <span className="text-size-value">{currentTextSize}px</span>
             </div>
           </div>
         </div>
