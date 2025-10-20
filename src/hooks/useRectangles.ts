@@ -62,7 +62,6 @@ export const useRectangles = (): UseRectanglesState & UseRectanglesActions => {
       fill,
       stroke: baseColor,
       strokeWidth: 2,
-      opacity: 1.0, // 100% opacity
     };
 
     try {

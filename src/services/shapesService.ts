@@ -42,7 +42,21 @@ export type CreateShapeData = Shape & {
 
 // Shape service class for managing Firestore operations
 export class ShapesService {
-  private readonly collectionPath = `canvas/shared/shapes`;
+  private canvasId: string = 'shared';
+
+  /**
+   * Set the canvas ID for this service
+   */
+  setCanvasId(canvasId: string): void {
+    this.canvasId = canvasId;
+  }
+
+  /**
+   * Get the current collection path
+   */
+  private getCollectionPath(): string {
+    return `canvas/${this.canvasId}/shapes`;
+  }
 
   /**
    * Create a new shape in Firestore
@@ -69,7 +83,7 @@ export class ShapesService {
       lastModifiedBy: preparedShape.createdBy,
     } as any;
 
-    const shapeRef = doc(db, this.collectionPath, preparedShape.id);
+    const shapeRef = doc(db, this.getCollectionPath(), preparedShape.id);
     await setDoc(shapeRef, firestoreData);
   }
 
@@ -81,7 +95,7 @@ export class ShapesService {
     updates: Partial<Shape>,
     userId: string
   ): Promise<void> {
-    const shapeRef = doc(db, this.collectionPath, shapeId);
+    const shapeRef = doc(db, this.getCollectionPath(), shapeId);
     
     const updateData = {
       ...updates,
@@ -101,7 +115,7 @@ export class ShapesService {
     duration: number,
     userId: string
   ): Promise<void> {
-    const shapeRef = doc(db, this.collectionPath, shapeId);
+    const shapeRef = doc(db, this.getCollectionPath(), shapeId);
     
     const audioData = {
       audioUrl,
@@ -119,7 +133,7 @@ export class ShapesService {
    * Delete a shape from Firestore
    */
   async deleteShape(shapeId: string): Promise<void> {
-    const shapeRef = doc(db, this.collectionPath, shapeId);
+    const shapeRef = doc(db, this.getCollectionPath(), shapeId);
     await deleteDoc(shapeRef);
   }
 
@@ -140,7 +154,7 @@ export class ShapesService {
     onError?: (error: Error) => void
   ): Unsubscribe {
     const shapesQuery = query(
-      collection(db, this.collectionPath),
+      collection(db, this.getCollectionPath()),
       orderBy('createdAt', 'asc')
     );
 
@@ -247,7 +261,7 @@ export class ShapesService {
       const batchShapes = shapes.slice(i, Math.min(i + BATCH_SIZE, shapes.length));
       
       for (const shapeData of batchShapes) {
-        const shapeRef = doc(collection(db, this.collectionPath), shapeData.id);
+        const shapeRef = doc(collection(db, this.getCollectionPath()), shapeData.id);
         const firestoreData: FirestoreShape = {
           ...prepareShapeForFirestore(shapeData, userId),
           createdAt: now,
@@ -356,8 +370,8 @@ export class ShapesService {
   /**
    * Get the collection path (useful for security rules testing)
    */
-  getCollectionPath(): string {
-    return this.collectionPath;
+  public getCollectionPathPublic(): string {
+    return this.getCollectionPath();
   }
 
   /**

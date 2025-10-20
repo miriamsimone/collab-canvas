@@ -16,7 +16,14 @@ import { db } from './firebase';
 import type { Comment, CommentReply, CommentInput } from '../types/comments';
 
 const COMMENTS_COLLECTION = 'canvasComments';
-const CANVAS_ID = 'shared'; // Using same shared canvas as shapes
+let CANVAS_ID = 'shared'; // Using same shared canvas as shapes
+
+/**
+ * Set the current canvas ID for comments
+ */
+export const setCommentsCanvasId = (canvasId: string): void => {
+  CANVAS_ID = canvasId;
+};
 
 /**
  * Generate a unique comment ID

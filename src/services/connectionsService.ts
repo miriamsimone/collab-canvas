@@ -23,7 +23,21 @@ export type FirestoreConnection = Omit<AudioConnection, 'createdAt' | 'updatedAt
 
 // Connections service class for managing Firestore operations
 export class ConnectionsService {
-  private readonly collectionPath = `canvas/shared/connections`;
+  private canvasId: string = 'shared';
+
+  /**
+   * Set the canvas ID for this service
+   */
+  setCanvasId(canvasId: string): void {
+    this.canvasId = canvasId;
+  }
+
+  /**
+   * Get the current collection path
+   */
+  private getCollectionPath(): string {
+    return `canvas/${this.canvasId}/connections`;
+  }
 
   /**
    * Create a new audio connection between two shapes
@@ -34,7 +48,7 @@ export class ConnectionsService {
     userId: string
   ): Promise<AudioConnection> {
     const connectionId = generateConnectionId();
-    const connectionRef = doc(db, this.collectionPath, connectionId);
+    const connectionRef = doc(db, this.getCollectionPath(), connectionId);
     
     const now = Timestamp.now();
     const connectionData: FirestoreConnection = {
@@ -60,7 +74,7 @@ export class ConnectionsService {
    * Delete a connection from Firestore
    */
   async deleteConnection(connectionId: string): Promise<void> {
-    const connectionRef = doc(db, this.collectionPath, connectionId);
+    const connectionRef = doc(db, this.getCollectionPath(), connectionId);
     await deleteDoc(connectionRef);
   }
 
@@ -70,7 +84,7 @@ export class ConnectionsService {
   async getConnectionForShape(shapeId: string): Promise<AudioConnection | null> {
     // Query for connections where this shape is the source
     const sourceQuery = query(
-      collection(db, this.collectionPath),
+      collection(db, this.getCollectionPath()),
       where('sourceShapeId', '==', shapeId)
     );
     
@@ -86,7 +100,7 @@ export class ConnectionsService {
     
     // Query for connections where this shape is the target
     const targetQuery = query(
-      collection(db, this.collectionPath),
+      collection(db, this.getCollectionPath()),
       where('targetShapeId', '==', shapeId)
     );
     
@@ -120,7 +134,7 @@ export class ConnectionsService {
     onError?: (error: Error) => void
   ): Unsubscribe {
     const connectionsQuery = query(
-      collection(db, this.collectionPath),
+      collection(db, this.getCollectionPath()),
       orderBy('createdAt', 'asc')
     );
 

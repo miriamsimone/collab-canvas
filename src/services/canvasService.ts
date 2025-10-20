@@ -26,10 +26,17 @@ export class CanvasService {
   private readonly sharedCanvasId = 'shared';
 
   /**
-   * Initialize shared canvas document if it doesn't exist
+   * Generate a unique canvas ID
    */
-  async initializeSharedCanvas(userId: string): Promise<CanvasDocument> {
-    const canvasRef = doc(db, this.canvasPath, this.sharedCanvasId);
+  generateCanvasId(): string {
+    return `canvas-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Initialize canvas document if it doesn't exist
+   */
+  async initializeCanvas(canvasId: string, userId: string): Promise<CanvasDocument> {
+    const canvasRef = doc(db, this.canvasPath, canvasId);
     const canvasDoc = await getDoc(canvasRef);
 
     if (canvasDoc.exists()) {
@@ -56,19 +63,19 @@ export class CanvasService {
       }
       
       return {
-        id: data.id || this.sharedCanvasId,
-        name: data.name || 'Shared Canvas',
+        id: data.id || canvasId,
+        name: data.name || 'Canvas',
         createdAt,
         updatedAt,
         createdBy: data.createdBy,
         isActive: data.isActive !== undefined ? data.isActive : true,
       };
     } else {
-      // Create new shared canvas
+      // Create new canvas
       const now = new Date();
       const canvasData: CanvasDocument = {
-        id: this.sharedCanvasId,
-        name: 'Shared Canvas',
+        id: canvasId,
+        name: canvasId === this.sharedCanvasId ? 'Shared Canvas' : 'Canvas',
         createdAt: now,
         updatedAt: now,
         createdBy: userId,
@@ -87,11 +94,18 @@ export class CanvasService {
   }
 
   /**
-   * Get shared canvas document
+   * Initialize shared canvas document if it doesn't exist (backward compatibility)
    */
-  async getSharedCanvas(): Promise<CanvasDocument | null> {
+  async initializeSharedCanvas(userId: string): Promise<CanvasDocument> {
+    return this.initializeCanvas(this.sharedCanvasId, userId);
+  }
+
+  /**
+   * Get canvas document
+   */
+  async getCanvas(canvasId: string): Promise<CanvasDocument | null> {
     try {
-      const canvasRef = doc(db, this.canvasPath, this.sharedCanvasId);
+      const canvasRef = doc(db, this.canvasPath, canvasId);
       const canvasDoc = await getDoc(canvasRef);
 
       if (canvasDoc.exists()) {
@@ -103,8 +117,8 @@ export class CanvasService {
         const updatedAt = data.updatedAt?.toDate() || now;
         
         return {
-          id: data.id || this.sharedCanvasId,
-          name: data.name || 'Shared Canvas',
+          id: data.id || canvasId,
+          name: data.name || 'Canvas',
           createdAt,
           updatedAt,
           createdBy: data.createdBy,
@@ -113,17 +127,24 @@ export class CanvasService {
       }
       return null;
     } catch (error) {
-      console.error('Error getting shared canvas:', error);
+      console.error('Error getting canvas:', error);
       return null;
     }
   }
 
   /**
+   * Get shared canvas document (backward compatibility)
+   */
+  async getSharedCanvas(): Promise<CanvasDocument | null> {
+    return this.getCanvas(this.sharedCanvasId);
+  }
+
+  /**
    * Update canvas last modified timestamp
    */
-  async updateCanvasTimestamp(userId: string): Promise<void> {
+  async updateCanvasTimestamp(canvasId: string, userId: string): Promise<void> {
     try {
-      const canvasRef = doc(db, this.canvasPath, this.sharedCanvasId);
+      const canvasRef = doc(db, this.canvasPath, canvasId);
       await setDoc(canvasRef, {
         updatedAt: Timestamp.now(),
         lastModifiedBy: userId,
@@ -136,9 +157,9 @@ export class CanvasService {
   /**
    * Mark canvas as active/inactive
    */
-  async setCanvasActive(isActive: boolean): Promise<void> {
+  async setCanvasActive(canvasId: string, isActive: boolean): Promise<void> {
     try {
-      const canvasRef = doc(db, this.canvasPath, this.sharedCanvasId);
+      const canvasRef = doc(db, this.canvasPath, canvasId);
       await setDoc(canvasRef, {
         isActive,
         updatedAt: Timestamp.now(),

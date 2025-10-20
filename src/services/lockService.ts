@@ -16,8 +16,22 @@ export interface ShapeLock {
  * Uses Firebase Realtime Database for instant lock acquisition/release
  */
 export class LockService {
-  private locksPath = 'canvas/shared/locks';
+  private canvasId: string = 'shared';
   private activeSubscriptions: Map<string, Unsubscribe> = new Map();
+
+  /**
+   * Set the canvas ID for this service
+   */
+  setCanvasId(canvasId: string): void {
+    this.canvasId = canvasId;
+  }
+
+  /**
+   * Get the current locks path
+   */
+  private getLocksPath(): string {
+    return `canvas/${this.canvasId}/locks`;
+  }
 
   /**
    * Acquire a lock on a shape
@@ -28,7 +42,7 @@ export class LockService {
     userName: string,
     userColor: string
   ): Promise<boolean> {
-    const lockRef = ref(rtdb, `${this.locksPath}/${shapeId}`);
+    const lockRef = ref(rtdb, `${this.getLocksPath()}/${shapeId}`);
     
     try {
       const lockData: ShapeLock = {
@@ -51,7 +65,7 @@ export class LockService {
    * Release a lock on a shape
    */
   async releaseLock(shapeId: string, userId: string): Promise<void> {
-    const lockRef = ref(rtdb, `${this.locksPath}/${shapeId}`);
+    const lockRef = ref(rtdb, `${this.getLocksPath()}/${shapeId}`);
     
     try {
       // Verify the lock belongs to this user before releasing
@@ -67,7 +81,7 @@ export class LockService {
    * Release all locks held by a user (call on disconnect/unmount)
    */
   async releaseAllLocks(userId: string): Promise<void> {
-    const locksRef = ref(rtdb, this.locksPath);
+    const locksRef = ref(rtdb, this.getLocksPath());
     
     try {
       // Get all locks and remove those belonging to this user
@@ -99,7 +113,7 @@ export class LockService {
   subscribeToLocks(
     callback: (locks: Record<string, ShapeLock>) => void
   ): Unsubscribe {
-    const locksRef = ref(rtdb, this.locksPath);
+    const locksRef = ref(rtdb, this.getLocksPath());
     
     const unsubscribe = onValue(locksRef, (snapshot) => {
       const data = snapshot.val();
@@ -119,7 +133,7 @@ export class LockService {
     shapeId: string,
     callback: (lock: ShapeLock | null) => void
   ): Unsubscribe {
-    const lockRef = ref(rtdb, `${this.locksPath}/${shapeId}`);
+    const lockRef = ref(rtdb, `${this.getLocksPath()}/${shapeId}`);
     const subscriptionId = `shape-${shapeId}`;
     
     const unsubscribe = onValue(lockRef, (snapshot) => {
@@ -140,7 +154,7 @@ export class LockService {
    * Check if a shape is locked by another user
    */
   async isLockedByOther(shapeId: string, currentUserId: string): Promise<boolean> {
-    const lockRef = ref(rtdb, `${this.locksPath}/${shapeId}`);
+    const lockRef = ref(rtdb, `${this.getLocksPath()}/${shapeId}`);
     
     try {
       const snapshot = await new Promise((resolve) => {

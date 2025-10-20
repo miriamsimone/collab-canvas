@@ -27,7 +27,21 @@ export interface CreateRectangleData extends CanvasObjectData {
 
 // Rectangle service class for managing Firestore operations
 export class RectanglesService {
-  private readonly collectionPath = `canvas/shared/shapes`;
+  private canvasId: string = 'shared';
+
+  /**
+   * Set the canvas ID for this service
+   */
+  setCanvasId(canvasId: string): void {
+    this.canvasId = canvasId;
+  }
+
+  /**
+   * Get the current collection path
+   */
+  private getCollectionPath(): string {
+    return `canvas/${this.canvasId}/shapes`;
+  }
 
   /**
    * Create a new rectangle in Firestore
@@ -41,7 +55,7 @@ export class RectanglesService {
       lastModifiedBy: rectangleData.createdBy,
     };
 
-    const rectangleRef = doc(db, this.collectionPath, rectangleData.id);
+    const rectangleRef = doc(db, this.getCollectionPath(), rectangleData.id);
     await setDoc(rectangleRef, firestoreData);
   }
 
@@ -53,7 +67,7 @@ export class RectanglesService {
     updates: Partial<CanvasObjectData>,
     userId: string
   ): Promise<void> {
-    const rectangleRef = doc(db, this.collectionPath, rectangleId);
+    const rectangleRef = doc(db, this.getCollectionPath(), rectangleId);
     
     const updateData = {
       ...updates,
@@ -68,7 +82,7 @@ export class RectanglesService {
    * Delete a rectangle from Firestore
    */
   async deleteRectangle(rectangleId: string): Promise<void> {
-    const rectangleRef = doc(db, this.collectionPath, rectangleId);
+    const rectangleRef = doc(db, this.getCollectionPath(), rectangleId);
     await deleteDoc(rectangleRef);
   }
 
@@ -81,7 +95,7 @@ export class RectanglesService {
     onError?: (error: Error) => void
   ): Unsubscribe {
     const rectanglesQuery = query(
-      collection(db, this.collectionPath),
+      collection(db, this.getCollectionPath()),
       orderBy('createdAt', 'asc')
     );
 
@@ -138,8 +152,8 @@ export class RectanglesService {
   /**
    * Get the collection path (useful for security rules testing)
    */
-  getCollectionPath(): string {
-    return this.collectionPath;
+  public getCollectionPathPublic(): string {
+    return this.getCollectionPath();
   }
 }
 

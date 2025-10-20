@@ -18,6 +18,10 @@ import { useConnections } from '../hooks/useConnections';
 import { canvasService } from '../services/canvasService';
 import { shapesService } from '../services/shapesService';
 import { audioService } from '../services/audioService';
+import { lockService } from '../services/lockService';
+import { connectionsService } from '../services/connectionsService';
+import { rectanglesService } from '../services/rectanglesService';
+import { setCommentsCanvasId } from '../services/commentsService';
 import { CreateShapeCommand, BatchCommand, CreateConnectionCommand, DeleteConnectionCommand } from '../services/commandService';
 import { copyShapesToClipboard, getShapesFromClipboard, duplicateShapes } from '../utils/clipboardHelpers';
 import { CanvasBackground } from './CanvasBackground';
@@ -43,10 +47,16 @@ import { CommentThread } from './features/Comments/CommentThread';
 import { CommentInput } from './features/Comments/CommentInput';
 import { ConnectionArrow } from './ConnectionArrow';
 import { RamblePlayer } from './features/Audio/RamblePlayer';
+import { NewCanvasButton } from './NewCanvasButton';
+import { ShareCanvasButton } from './ShareCanvasButton';
 import { getCanvasPointerPosition } from '../utils/canvasHelpers';
 import { countUnresolvedComments } from '../services/commentsService';
 
-export const Canvas: React.FC = () => {
+interface CanvasProps {
+  canvasId: string;
+}
+
+export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
   const { user, userProfile, signOut } = useAuth();
   const stageRef = useRef<Konva.Stage>(null);
   const { 
@@ -1325,8 +1335,15 @@ export const Canvas: React.FC = () => {
     ];
   };
 
-  // Initialize shared canvas on mount
+  // Initialize canvas on mount and set canvas ID for all services
   useEffect(() => {
+    // Set canvas ID for all services
+    shapesService.setCanvasId(canvasId);
+    lockService.setCanvasId(canvasId);
+    connectionsService.setCanvasId(canvasId);
+    rectanglesService.setCanvasId(canvasId);
+    setCommentsCanvasId(canvasId);
+    
     const initializeCanvas = async () => {
       if (!user || !userProfile) {
         return;
@@ -1334,7 +1351,7 @@ export const Canvas: React.FC = () => {
 
       try {
         setCanvasError(null);
-        await canvasService.initializeSharedCanvas(user.uid);
+        await canvasService.initializeCanvas(canvasId, user.uid);
       } catch (error: any) {
         console.error('Failed to initialize canvas:', error);
         setCanvasError(`Failed to initialize canvas: ${error.message}`);
@@ -1342,7 +1359,7 @@ export const Canvas: React.FC = () => {
     };
 
     initializeCanvas();
-  }, [user, userProfile]);
+  }, [user, userProfile, canvasId]);
 
   // Handle window resize
   useEffect(() => {
@@ -2108,6 +2125,12 @@ export const Canvas: React.FC = () => {
         </div>
       )}
       
+      {/* Canvas Controls (top right) */}
+      <div className="canvas-controls">
+        <NewCanvasButton />
+        <ShareCanvasButton canvasId={canvasId} />
+      </div>
+
       {/* Toolbar */}
       <DraggablePanel 
         title="Tools"

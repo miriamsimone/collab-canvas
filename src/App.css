@@ -1771,3 +1771,81 @@ body {
   width: 24px;
   height: 24px;
 }
+
+/* Canvas Navigation Controls */
+.canvas-controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 12px;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.new-canvas-button,
+.share-canvas-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.new-canvas-button:hover,
+.share-canvas-button:hover {
+  background: #f9fafb;
+  border-color: #3b82f6;
+  color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.new-canvas-button:active,
+.share-canvas-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.new-canvas-button .button-icon,
+.share-canvas-button .button-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.new-canvas-button .button-text,
+.share-canvas-button .button-text {
+  font-weight: 600;
+}
+
+/* Responsive canvas controls */
+@media (max-width: 768px) {
+  .canvas-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .new-canvas-button,
+  .share-canvas-button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .new-canvas-button .button-text,
+  .share-canvas-button .button-text {
+    display: none;
+  }
+
+  .new-canvas-button .button-icon,
+  .share-canvas-button .button-icon {
+    font-size: 20px;
+  }
+}
