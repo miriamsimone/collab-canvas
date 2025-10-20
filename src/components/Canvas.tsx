@@ -200,6 +200,7 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
   const [isDraggingRectangle, setIsDraggingRectangle] = useState<boolean>(false);
   const [canvasError, setCanvasError] = useState<string | null>(null);
   const [newCommentPos, setNewCommentPos] = useState<{ x: number; y: number; screenX: number; screenY: number } | null>(null);
+  const [showOfflineBanner, setShowOfflineBanner] = useState<boolean>(false);
 
   // Bulk operations for selected objects
   const handleBulkDelete = async () => {
@@ -1361,6 +1362,25 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
     initializeCanvas();
   }, [user, userProfile, canvasId]);
 
+  // Handle offline banner with delay to prevent flash on initial load
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    if (!presenceConnected && !presenceLoading) {
+      // Wait 1 second before showing the offline banner
+      timeoutId = setTimeout(() => {
+        setShowOfflineBanner(true);
+      }, 1000);
+    } else {
+      // Immediately hide banner when connected
+      setShowOfflineBanner(false);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [presenceConnected, presenceLoading]);
+
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
@@ -2068,8 +2088,8 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
 
   return (
     <div className="canvas-app">
-      {/* Offline Warning Banner - Only show after initial loading is complete */}
-      {!presenceConnected && !presenceLoading && (
+      {/* Offline Warning Banner - Only show after delay to prevent flash */}
+      {showOfflineBanner && (
         <div className="error-toast" style={{ top: '20px', background: '#fef3c7', borderColor: '#fbbf24', borderLeftColor: '#f59e0b' }}>
           <div className="error-content">
             <span className="error-message" style={{ color: '#92400e' }}>
