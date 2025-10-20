@@ -77,6 +77,29 @@ export interface CanvasState {
     height: number;
     fill: string;
   }>;
+  circles: Array<{
+    id: string;
+    x: number;
+    y: number;
+    radius: number;
+    fill: string;
+  }>;
+  lines: Array<{
+    id: string;
+    x: number;
+    y: number;
+    x2: number;
+    y2: number;
+    stroke: string;
+  }>;
+  texts: Array<{
+    id: string;
+    x: number;
+    y: number;
+    text: string;
+    fontSize: number;
+    fill: string;
+  }>;
   canvasSize: {
     width: number;
     height: number;

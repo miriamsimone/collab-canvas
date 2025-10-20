@@ -4,41 +4,61 @@ import { CANVAS_CONFIG } from '../hooks/useCanvas';
 
 /**
  * Get current canvas state for AI context
- * Returns basic rectangle positions and types for AI decision making
+ * Returns shapes categorized by type for AI decision making
  */
 export function getCanvasState(
   shapes: Shape[], 
   canvasSize?: { width: number; height: number }
 ): CanvasState {
+  // Separate shapes by type
+  const rectangles = shapes
+    .filter(shape => shape.type === 'rectangle')
+    .map(shape => ({
+      id: shape.id,
+      x: shape.x,
+      y: shape.y,
+      width: (shape as any).width || 100,
+      height: (shape as any).height || 100,
+      fill: (shape as any).fill || (shape as any).stroke || '#000000',
+    }));
+
+  const circles = shapes
+    .filter(shape => shape.type === 'circle')
+    .map(shape => ({
+      id: shape.id,
+      x: shape.x,
+      y: shape.y,
+      radius: (shape as any).radius || 50,
+      fill: (shape as any).fill || (shape as any).stroke || '#000000',
+    }));
+
+  const lines = shapes
+    .filter(shape => shape.type === 'line')
+    .map(shape => ({
+      id: shape.id,
+      x: shape.x,
+      y: shape.y,
+      x2: (shape as any).x2 || shape.x + 100,
+      y2: (shape as any).y2 || shape.y,
+      stroke: (shape as any).stroke || '#000000',
+    }));
+
+  const texts = shapes
+    .filter(shape => shape.type === 'text')
+    .map(shape => ({
+      id: shape.id,
+      x: shape.x,
+      y: shape.y,
+      text: (shape as any).text || '',
+      fontSize: (shape as any).fontSize || 16,
+      fill: (shape as any).fill || '#000000',
+    }));
+
   return {
-    rectangles: shapes.map(shape => {
-      const baseShape: any = {
-        id: shape.id,
-        type: shape.type,
-        x: shape.x,
-        y: shape.y,
-      };
-      
-      // Add type-specific properties
-      if (shape.type === 'rectangle') {
-        baseShape.width = (shape as any).width || 100;
-        baseShape.height = (shape as any).height || 100;
-        baseShape.fill = (shape as any).fill || (shape as any).stroke || '#000000';
-      } else if (shape.type === 'circle') {
-        baseShape.radius = (shape as any).radius || 50;
-        baseShape.fill = (shape as any).fill || (shape as any).stroke || '#000000';
-      } else if (shape.type === 'line') {
-        baseShape.x2 = (shape as any).x2 || shape.x + 100;
-        baseShape.y2 = (shape as any).y2 || shape.y;
-        baseShape.stroke = (shape as any).stroke || '#000000';
-      } else if (shape.type === 'text') {
-        baseShape.text = (shape as any).text || '';
-        baseShape.fontSize = (shape as any).fontSize || 16;
-        baseShape.fill = (shape as any).fill || '#000000';
-      }
-      
-      return baseShape;
-    }),
+    rectangles,
+    circles,
+    lines,
+    texts,
     canvasSize: canvasSize || {
       width: CANVAS_CONFIG.WIDTH,
       height: CANVAS_CONFIG.HEIGHT,

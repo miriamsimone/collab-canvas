@@ -109,6 +109,29 @@ const requestSchema = z.object({
       height: z.number(),
       fill: z.string(),
     })),
+    circles: z.array(z.object({
+      id: z.string(),
+      x: z.number(),
+      y: z.number(),
+      radius: z.number(),
+      fill: z.string(),
+    })),
+    lines: z.array(z.object({
+      id: z.string(),
+      x: z.number(),
+      y: z.number(),
+      x2: z.number(),
+      y2: z.number(),
+      stroke: z.string(),
+    })),
+    texts: z.array(z.object({
+      id: z.string(),
+      x: z.number(),
+      y: z.number(),
+      text: z.string(),
+      fontSize: z.number(),
+      fill: z.string(),
+    })),
     canvasSize: z.object({
       width: z.number(),
       height: z.number(),
@@ -285,20 +308,31 @@ IMPORTANT: When creating shapes, use ONLY these 8 available colors:
 
 Current canvas state:
 - Canvas size: ${canvasState.canvasSize.width}x${canvasState.canvasSize.height} pixels (large canvas, coordinates up to ${canvasState.canvasSize.width} are valid)
-- Existing shapes: ${canvasState.rectangles.length}
-${canvasState.rectangles.length > 0 ? 
-  canvasState.rectangles.map(shape => {
-    if (shape.type === 'rectangle') {
-      return `  - Rectangle "${shape.id}" at (${shape.x}, ${shape.y}) with size ${shape.width}x${shape.height}, color ${shape.fill}`;
-    } else if (shape.type === 'circle') {
-      return `  - Circle "${shape.id}" at (${shape.x}, ${shape.y}) with radius ${shape.radius}, color ${shape.fill}`;
-    } else if (shape.type === 'line') {
-      return `  - Line "${shape.id}" from (${shape.x}, ${shape.y}) to (${shape.x2}, ${shape.y2}), color ${shape.stroke}`;
-    } else if (shape.type === 'text') {
-      return `  - Text "${shape.id}" at (${shape.x}, ${shape.y}) saying "${shape.text}", font size ${shape.fontSize}`;
-    }
-    return `  - Shape "${shape.id}" at (${shape.x}, ${shape.y})`;
-  }).join('\n') : '  - No existing shapes'}
+- Existing rectangles: ${canvasState.rectangles.length}
+- Existing circles: ${canvasState.circles.length}
+- Existing lines: ${canvasState.lines.length}
+- Existing text objects: ${canvasState.texts.length}
+${(() => {
+  const shapeDescriptions = [];
+  
+  canvasState.rectangles.forEach(shape => {
+    shapeDescriptions.push(`  - Rectangle "${shape.id}" at (${shape.x}, ${shape.y}) with size ${shape.width}x${shape.height}, color ${shape.fill}`);
+  });
+  
+  canvasState.circles.forEach(shape => {
+    shapeDescriptions.push(`  - Circle "${shape.id}" at (${shape.x}, ${shape.y}) with radius ${shape.radius}, color ${shape.fill}`);
+  });
+  
+  canvasState.lines.forEach(shape => {
+    shapeDescriptions.push(`  - Line "${shape.id}" from (${shape.x}, ${shape.y}) to (${shape.x2}, ${shape.y2}), color ${shape.stroke}`);
+  });
+  
+  canvasState.texts.forEach(shape => {
+    shapeDescriptions.push(`  - Text "${shape.id}" at (${shape.x}, ${shape.y}) saying "${shape.text}", font size ${shape.fontSize}`);
+  });
+  
+  return shapeDescriptions.length > 0 ? shapeDescriptions.join('\n') : '  - No existing shapes';
+})()}
 
 You can perform these types of operations:
 
