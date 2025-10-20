@@ -2068,8 +2068,8 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
 
   return (
     <div className="canvas-app">
-      {/* Offline Warning Banner */}
-      {!presenceConnected && (
+      {/* Offline Warning Banner - Only show after initial loading is complete */}
+      {!presenceConnected && !presenceLoading && (
         <div className="error-toast" style={{ top: '20px', background: '#fef3c7', borderColor: '#fbbf24', borderLeftColor: '#f59e0b' }}>
           <div className="error-content">
             <span className="error-message" style={{ color: '#92400e' }}>
