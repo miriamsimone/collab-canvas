@@ -1778,7 +1778,7 @@ body {
   top: 20px;
   right: 20px;
   display: flex;
-  gap: 12px;
+  gap: 8px;
   z-index: 1000;
   pointer-events: auto;
 }
@@ -1787,13 +1787,13 @@ body {
 .share-canvas-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   background: white;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
   color: #374151;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1819,33 +1819,25 @@ body {
 .share-canvas-button .button-icon {
   font-size: 18px;
   line-height: 1;
-}
-
-.new-canvas-button .button-text,
-.share-canvas-button .button-text {
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Responsive canvas controls */
 @media (max-width: 768px) {
   .canvas-controls {
-    flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   .new-canvas-button,
   .share-canvas-button {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-
-  .new-canvas-button .button-text,
-  .share-canvas-button .button-text {
-    display: none;
+    width: 32px;
+    height: 32px;
   }
 
   .new-canvas-button .button-icon,
   .share-canvas-button .button-icon {
-    font-size: 20px;
+    font-size: 16px;
   }
 }

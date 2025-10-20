@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { canvasService } from '../services/canvasService';
 
 interface NewCanvasButtonProps {
@@ -7,14 +6,12 @@ interface NewCanvasButtonProps {
 }
 
 export const NewCanvasButton: React.FC<NewCanvasButtonProps> = ({ className }) => {
-  const navigate = useNavigate();
-
   const handleNewCanvas = () => {
     // Generate a new canvas ID
     const newCanvasId = canvasService.generateCanvasId();
     
-    // Navigate to the new canvas
-    navigate(`/canvas/${newCanvasId}`);
+    // Navigate to the new canvas and reload
+    window.location.href = `/canvas/${newCanvasId}`;
   };
 
   return (
@@ -25,7 +22,6 @@ export const NewCanvasButton: React.FC<NewCanvasButtonProps> = ({ className }) =
       type="button"
     >
       <span className="button-icon">➕</span>
-      <span className="button-text">New Canvas</span>
     </button>
   );
 };

@@ -46,11 +46,10 @@ export const ShareCanvasButton: React.FC<ShareCanvasButtonProps> = ({ canvasId, 
     <button
       className={className || 'share-canvas-button'}
       onClick={handleShareCanvas}
-      title="Copy canvas link to share with others"
+      title={showCopied ? 'Copied!' : 'Copy canvas link to share with others'}
       type="button"
     >
-      <span className="button-icon">🔗</span>
-      <span className="button-text">{showCopied ? 'Copied!' : 'Share Canvas'}</span>
+      <span className="button-icon">{showCopied ? '✓' : '🔗'}</span>
     </button>
   );
 };
