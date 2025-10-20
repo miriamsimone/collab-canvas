@@ -96,6 +96,25 @@ export const duplicateShapes = (
     newShape.createdAt = Date.now();
     newShape.updatedAt = Date.now();
     
+    // Remove fields that shouldn't be duplicated
+    // Audio recordings belong to the original shape
+    delete (newShape as any).audioUrl;
+    delete (newShape as any).audioDuration;
+    delete (newShape as any).isRambleStart;
+    
+    // Locks don't transfer to duplicates
+    delete (newShape as any).lockedBy;
+    
+    // Connections don't transfer to duplicates
+    delete (newShape as any).connections;
+    
+    // Remove any undefined fields (Firestore doesn't accept undefined)
+    Object.keys(newShape).forEach(key => {
+      if ((newShape as any)[key] === undefined) {
+        delete (newShape as any)[key];
+      }
+    });
+    
     return newShape;
   });
 };
