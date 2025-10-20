@@ -43,18 +43,6 @@ export const CanvasBackground: React.FC<CanvasBackgroundProps> = ({
         listening={true}
         onClick={onClick}
         onTap={onClick}
-        onMouseDown={(e) => {
-          // Don't stop propagation - let stage handle mouse down for drag selection
-          e.cancelBubble = false;
-        }}
-        onMouseMove={(e) => {
-          // Don't stop propagation - let stage handle mouse move for drag selection
-          e.cancelBubble = false;
-        }}
-        onMouseUp={(e) => {
-          // Don't stop propagation - let stage handle mouse up for drag selection
-          e.cancelBubble = false;
-        }}
       />
       
       {/* Grid Lines */}
