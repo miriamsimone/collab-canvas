@@ -189,15 +189,34 @@ interface Shape {
   width?: number;      // rectangle, text
   height?: number;     // rectangle, text
   radius?: number;     // circle
-  points?: number[];   // line
-  text?: string;       // text
-  fontSize?: number;   // text
+  points?: number[];   // line (deprecated - use x2, y2)
+  x2?: number;         // line endpoint x
+  y2?: number;         // line endpoint y
+  text?: string;       // text content
+  fontSize?: number;   // text size (8-72px)
+  fontFamily?: string; // text font
   
   // Style
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
-  rotation?: number;
+  rotation?: number;   // rotation in degrees
+  
+  // Audio Rambles
+  audioUrl?: string;       // Firebase Storage URL for audio recording
+  audioDuration?: number;  // Recording duration in seconds (max 30s)
+  isRambleStart?: boolean; // Mark as start of ramble sequence
+  
+  // Connections
+  connections?: string[];  // Array of connection IDs linking this shape
+  
+  // Collaborative Locking
+  lockedBy?: {
+    userId: string;
+    userName: string;
+    userColor: string;
+    timestamp: number;
+  };
 }
 ```
 
@@ -251,6 +270,126 @@ interface CommentReply {
   timestamp: number;
 }
 ```
+
+### Connection Model
+
+```typescript
+interface Connection {
+  id: string;
+  canvasId: string;
+  fromShapeId: string;  // Source shape ID
+  toShapeId: string;    // Target shape ID
+  createdBy: string;
+  createdAt: number;
+  
+  // Visual properties
+  color?: string;       // Arrow color
+  strokeWidth?: number; // Arrow thickness
+  
+  // Connection points (optional override)
+  fromX?: number;
+  fromY?: number;
+  toX?: number;
+  toY?: number;
+}
+```
+
+---
+
+## Audio Rambles Architecture
+
+### Overview
+
+Audio Rambles allow users to attach voice recordings to shapes and play them back sequentially, creating narrated walkthroughs of designs.
+
+### Recording Flow
+
+```
+1. User selects shape → AudioControls component appears
+                       ↓
+2. Click record → Request microphone permission
+                       ↓
+3. Record audio → MediaRecorder API (max 30 seconds)
+                       ↓
+4. Stop recording → Create audio Blob
+                       ↓
+5. Upload to Firebase Storage → Get download URL
+                       ↓
+6. Update shape in Firestore → audioUrl + audioDuration
+```
+
+### Ramble Sequence Playback
+
+```
+1. User clicks "Ramble" → RamblePlayer component opens
+                       ↓
+2. Find all shapes with isRambleStart: true
+                       ↓
+3. For each ramble start → Follow connection arrows
+                       ↓
+4. Collect audio URLs → Build playback sequence
+                       ↓
+5. Play sequentially → Auto-advance on audio end
+                       ↓
+6. Visual feedback → Highlight currently playing shape
+```
+
+### Audio Service Implementation
+
+```typescript
+class AudioRecordingService {
+  // Record audio from microphone
+  async startRecording(
+    onTimeUpdate?: (seconds: number) => void,
+    onMaxTimeReached?: () => void
+  ): Promise<void>;
+  
+  // Stop and return audio blob
+  async stopRecording(): Promise<Blob>;
+  
+  // Upload to Firebase Storage
+  async uploadToStorage(
+    blob: Blob, 
+    shapeId: string, 
+    canvasId: string
+  ): Promise<string>;
+  
+  // Play audio from URL
+  async playAudio(
+    url: string, 
+    onEnded?: () => void
+  ): Promise<void>;
+  
+  // Delete from Firebase Storage
+  async deleteAudio(url: string): Promise<void>;
+}
+```
+
+### Storage Structure
+
+```
+Firebase Storage:
+/canvas-audio/
+  {canvasId}/
+    {shapeId}-{timestamp}.webm  (or .mp4, .ogg depending on browser)
+```
+
+### Key Features
+
+- **Max Recording Time**: 30 seconds (configurable)
+- **Format**: WebM (Chrome/Firefox) or MP4 (Safari) - automatic detection
+- **CORS Configuration**: Required for browser uploads (see STORAGE_SETUP.md)
+- **Cleanup**: Old recordings deleted when re-recording
+- **Permissions**: User must grant microphone access
+
+### Browser Compatibility
+
+| Browser | MediaRecorder Support | Audio Format |
+|---------|----------------------|--------------|
+| Chrome 49+ | ✅ Yes | WebM (VP8) |
+| Firefox 25+ | ✅ Yes | WebM (VP8) |
+| Safari 14.1+ | ✅ Yes | MP4 (H.264) |
+| Edge 79+ | ✅ Yes | WebM (VP8) |
 
 ---
 
