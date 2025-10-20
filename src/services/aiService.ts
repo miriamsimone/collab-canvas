@@ -83,6 +83,9 @@ class AIService {
     try {
       const testCanvas: CanvasState = {
         rectangles: [],
+        circles: [],
+        lines: [],
+        texts: [],
         canvasSize: { width: 5000, height: 5000 },
       };
       
