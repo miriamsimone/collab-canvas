@@ -61,7 +61,7 @@
     },
     
     "canvas": {
-      "shared": {
+      "$canvasId": {
         "locks": {
           ".read": "auth != null",
           "$shapeId": {
