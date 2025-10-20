@@ -18,7 +18,7 @@ interface UsePresenceActions {
 export const usePresence = (): UsePresenceState & UsePresenceActions => {
   const { user, userProfile } = useAuth();
   const [cursors, setCursors] = useState<Record<string, RealtimePresenceData>>({});
-  const [isConnected, setIsConnected] = useState<boolean>(navigator.onLine); // Initialize with actual browser status
+  const [isConnected, setIsConnected] = useState<boolean>(true); // Start as true to avoid flash, will update after subscription
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
