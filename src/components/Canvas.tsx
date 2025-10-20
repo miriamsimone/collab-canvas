@@ -2251,6 +2251,7 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
                     key={shape.id}
                     object={shapeWithOfflineState as any}
                     isSelected={isSelected(shape.id)}
+                    isSingleSelection={selectedIds.size === 1}
                     isPlaying={playingShapeIds.includes(shape.id)}
                     onSelect={(event?: { shiftKey?: boolean }) => handleShapeSelect(shape.id, event)}
                     onDragStart={handleShapeDragStart}

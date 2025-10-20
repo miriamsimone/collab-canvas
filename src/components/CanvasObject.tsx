@@ -26,6 +26,7 @@ export interface CanvasObjectData {
 interface CanvasObjectProps {
   object: CanvasObjectData;
   isSelected: boolean;
+  isSingleSelection?: boolean; // True if this is the only selected shape
   isPlaying?: boolean; // Visual indicator when audio is playing
   onSelect: (event?: { shiftKey?: boolean }) => void;
   onDragStart: (id: string, x: number, y: number) => void;
@@ -45,6 +46,7 @@ interface CanvasObjectProps {
 export const CanvasObject: React.FC<CanvasObjectProps> = ({
   object,
   isSelected,
+  isSingleSelection = true,
   isPlaying,
   onSelect,
   onDragStart,  
@@ -370,8 +372,8 @@ export const CanvasObject: React.FC<CanvasObjectProps> = ({
         />
       )}
 
-      {/* Audio Controls - Show when selected and not locked */}
-      {isSelected && !isLocked && canvasId && (
+      {/* Audio Controls - Show only when single shape is selected and not locked */}
+      {isSelected && isSingleSelection && !isLocked && canvasId && (
         <AudioControls
           shapeId={object.id}
           canvasId={canvasId}
