@@ -17,6 +17,9 @@ export const ShortcutsPanel: React.FC<ShortcutsPanelProps> = ({ isVisible, onClo
     'Selection': ['selectAll', 'escape'],
     'Clipboard': ['copy', 'paste', 'cut', 'duplicate'],
     'Edit': ['delete', 'nudge'],
+    'Layers': ['bringToFront', 'bringForward', 'sendBackward', 'sendToBack'],
+    'Alignment': ['alignLeft', 'alignCenter', 'alignRight', 'alignTop', 'alignMiddle', 'alignBottom'],
+    'Distribution': ['distributeH', 'distributeV'],
     'Help': ['help'],
   };
   
