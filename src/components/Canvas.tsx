@@ -75,10 +75,6 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
   const {
     shapes,
     error: shapesError,
-    createRectangle,
-    createCircle,
-    createLine,
-    createText,
     updateShape,
     updateShapeTransform,
     updateTextContent,
@@ -391,10 +387,19 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
         }
       }
       
-      // Use batch create for maximum performance (creates all shapes in 1-2 Firestore transactions)
-      await shapesService.batchCreateShapes(shapesData, user.uid);
+      // Use command pattern for undo/redo support
+      const commands = shapesData.map(shape => 
+        new CreateShapeCommand({ shape }, user.uid)
+      );
       
-      console.log(`✅ Successfully created ${count} ${shapeType}s using batch writes`);
+      const batchCommand = new BatchCommand(
+        { commands },
+        `Create ${count} ${shapeType}${count > 1 ? 's' : ''}`
+      );
+      
+      await executeCommand(batchCommand);
+      
+      console.log(`✅ Successfully created ${count} ${shapeType}s (undoable)`);
     } catch (error) {
       console.error(`Failed to bulk create ${shapeType}s:`, error);
       setCanvasError(`Failed to bulk create shapes. Please try again.`);
@@ -611,10 +616,26 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
     setActiveComment(null);
   };
 
-  // AI shape creation handlers
+  // AI shape creation handlers - using command pattern for undo/redo support
   const handleAICreateRectangle = async (x: number, y: number, width: number, height: number, color: string): Promise<void> => {
+    if (!user) throw new Error('User not authenticated');
+    
     try {
-      await createRectangle(x, y, width, height, color);
+      const { CreateShapeCommand } = await import('../services/commandService');
+      const { createRectangleShape } = await import('../services/shapesService');
+      const { generateShapeId } = await import('../types/shapes');
+      
+      const newRectangle = createRectangleShape({ x, y }, user.uid, {
+        id: generateShapeId('rectangle'),
+        width,
+        height,
+        fill: `${color}40`, // Semi-transparent
+        stroke: color,
+        strokeWidth: 2,
+      });
+      
+      const createCommand = new CreateShapeCommand({ shape: newRectangle }, user.uid);
+      await executeCommand(createCommand);
     } catch (error) {
       console.error('Failed to create AI rectangle:', error);
       throw error;
@@ -622,8 +643,23 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
   };
 
   const handleAICreateCircle = async (x: number, y: number, radius: number, color: string): Promise<void> => {
+    if (!user) throw new Error('User not authenticated');
+    
     try {
-      await createCircle(x, y, radius, color);
+      const { CreateShapeCommand } = await import('../services/commandService');
+      const { createCircleShape } = await import('../services/shapesService');
+      const { generateShapeId } = await import('../types/shapes');
+      
+      const newCircle = createCircleShape({ x, y }, user.uid, {
+        id: generateShapeId('circle'),
+        radius,
+        fill: `${color}40`, // Semi-transparent
+        stroke: color,
+        strokeWidth: 2,
+      });
+      
+      const createCommand = new CreateShapeCommand({ shape: newCircle }, user.uid);
+      await executeCommand(createCommand);
     } catch (error) {
       console.error('Failed to create AI circle:', error);
       throw error;
@@ -631,8 +667,26 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
   };
 
   const handleAICreateLine = async (x1: number, y1: number, x2: number, y2: number, color: string): Promise<void> => {
+    if (!user) throw new Error('User not authenticated');
+    
     try {
-      await createLine(x1, y1, x2, y2, color);
+      const { CreateShapeCommand } = await import('../services/commandService');
+      const { createLineShape } = await import('../services/shapesService');
+      const { generateShapeId } = await import('../types/shapes');
+      
+      const newLine = createLineShape(
+        { x: x1, y: y1 },
+        { x: x2, y: y2 },
+        user.uid,
+        {
+          id: generateShapeId('line'),
+          stroke: color,
+          strokeWidth: 3,
+        }
+      );
+      
+      const createCommand = new CreateShapeCommand({ shape: newLine }, user.uid);
+      await executeCommand(createCommand);
     } catch (error) {
       console.error('Failed to create AI line:', error);
       throw error;
@@ -640,8 +694,22 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
   };
 
   const handleAICreateText = async (x: number, y: number, text: string, fontSize?: number): Promise<void> => {
+    if (!user) throw new Error('User not authenticated');
+    
     try {
-      await createText(x, y, text, fontSize);
+      const { CreateShapeCommand } = await import('../services/commandService');
+      const { createTextShape } = await import('../services/shapesService');
+      const { generateShapeId } = await import('../types/shapes');
+      
+      const newText = createTextShape({ x, y }, text, user.uid, {
+        id: generateShapeId('text'),
+        fontSize: fontSize || 16,
+        fontFamily: 'Arial, sans-serif',
+        fill: '#000000',
+      });
+      
+      const createCommand = new CreateShapeCommand({ shape: newText }, user.uid);
+      await executeCommand(createCommand);
     } catch (error) {
       console.error('Failed to create AI text:', error);
       throw error;
