@@ -10,47 +10,69 @@ export function getCanvasState(
   shapes: Shape[], 
   canvasSize?: { width: number; height: number }
 ): CanvasState {
-  // Separate shapes by type
+  // Separate shapes by type and filter out invalid data
   const rectangles = shapes
-    .filter(shape => shape.type === 'rectangle')
+    .filter(shape => {
+      if (shape.type !== 'rectangle') return false;
+      // Only include rectangles with valid width and height
+      const width = (shape as any).width;
+      const height = (shape as any).height;
+      return typeof width === 'number' && typeof height === 'number' && width > 0 && height > 0;
+    })
     .map(shape => ({
       id: shape.id,
       x: shape.x,
       y: shape.y,
-      width: (shape as any).width || 100,
-      height: (shape as any).height || 100,
+      width: (shape as any).width,
+      height: (shape as any).height,
       fill: (shape as any).fill || (shape as any).stroke || '#000000',
     }));
 
   const circles = shapes
-    .filter(shape => shape.type === 'circle')
+    .filter(shape => {
+      if (shape.type !== 'circle') return false;
+      // Only include circles with valid radius
+      const radius = (shape as any).radius;
+      return typeof radius === 'number' && radius > 0;
+    })
     .map(shape => ({
       id: shape.id,
       x: shape.x,
       y: shape.y,
-      radius: (shape as any).radius || 50,
+      radius: (shape as any).radius,
       fill: (shape as any).fill || (shape as any).stroke || '#000000',
     }));
 
   const lines = shapes
-    .filter(shape => shape.type === 'line')
+    .filter(shape => {
+      if (shape.type !== 'line') return false;
+      // Only include lines with valid endpoints
+      const x2 = (shape as any).x2;
+      const y2 = (shape as any).y2;
+      return typeof x2 === 'number' && typeof y2 === 'number';
+    })
     .map(shape => ({
       id: shape.id,
       x: shape.x,
       y: shape.y,
-      x2: (shape as any).x2 || shape.x + 100,
-      y2: (shape as any).y2 || shape.y,
+      x2: (shape as any).x2,
+      y2: (shape as any).y2,
       stroke: (shape as any).stroke || '#000000',
     }));
 
   const texts = shapes
-    .filter(shape => shape.type === 'text')
+    .filter(shape => {
+      if (shape.type !== 'text') return false;
+      // Only include texts with valid text content
+      const text = (shape as any).text;
+      return typeof text === 'string';
+    })
     .map(shape => ({
       id: shape.id,
       x: shape.x,
       y: shape.y,
-      text: (shape as any).text || '',
-      fontSize: (shape as any).fontSize || 16,
+      text: (shape as any).text,
+      fontSize: typeof (shape as any).fontSize === 'number' ? (shape as any).fontSize : 16,
       fill: (shape as any).fill || '#000000',
     }));
 
