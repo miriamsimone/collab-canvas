@@ -42,56 +42,41 @@ export const useCanvas = (): CanvasState & CanvasActions => {
     setY(newY);
   }, []);
 
-  // Handle mouse wheel zoom and trackpad pan
+  // Handle mouse wheel zoom
   const handleZoom = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     
     const stage = e.target.getStage();
     if (!stage) return;
 
-    const evt = e.evt;
     const oldScale = stage.scaleX();
     const pointer = stage.getPointerPosition();
     if (!pointer) return;
 
-    // Detect if this is a pinch-to-zoom gesture (Cmd/Ctrl key pressed on trackpad)
-    // or if it's a pan gesture (deltaX present without Cmd/Ctrl)
-    const isPinchZoom = evt.ctrlKey || evt.metaKey;
-    const isPan = Math.abs(evt.deltaX) > 0 && !isPinchZoom;
+    // Calculate new scale
+    const deltaY = e.evt.deltaY;
+    const scaleBy = 1 + CANVAS_CONFIG.ZOOM_SPEED * (deltaY > 0 ? -1 : 1);
+    const newScale = Math.min(
+      Math.max(oldScale * scaleBy, CANVAS_CONFIG.MIN_ZOOM),
+      CANVAS_CONFIG.MAX_ZOOM
+    );
 
-    if (isPan) {
-      // Handle pan gesture (two-finger scroll or three-finger swipe on trackpad)
-      const newX = stage.x() - evt.deltaX;
-      const newY = stage.y() - evt.deltaY;
-      
-      setPosition(newX, newY);
-      stage.position({ x: newX, y: newY });
-    } else {
-      // Handle zoom gesture (scroll wheel or pinch-to-zoom)
-      const deltaY = evt.deltaY;
-      const scaleBy = 1 + CANVAS_CONFIG.ZOOM_SPEED * (deltaY > 0 ? -1 : 1);
-      const newScale = Math.min(
-        Math.max(oldScale * scaleBy, CANVAS_CONFIG.MIN_ZOOM),
-        CANVAS_CONFIG.MAX_ZOOM
-      );
+    // Calculate new position to zoom towards pointer
+    const mousePointTo = {
+      x: (pointer.x - stage.x()) / oldScale,
+      y: (pointer.y - stage.y()) / oldScale,
+    };
 
-      // Calculate new position to zoom towards pointer
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      };
+    const newX = pointer.x - mousePointTo.x * newScale;
+    const newY = pointer.y - mousePointTo.y * newScale;
 
-      const newX = pointer.x - mousePointTo.x * newScale;
-      const newY = pointer.y - mousePointTo.y * newScale;
-
-      // Update state
-      setScale(newScale);
-      setPosition(newX, newY);
-      
-      // Update stage
-      stage.scale({ x: newScale, y: newScale });
-      stage.position({ x: newX, y: newY });
-    }
+    // Update state
+    setScale(newScale);
+    setPosition(newX, newY);
+    
+    // Update stage
+    stage.scale({ x: newScale, y: newScale });
+    stage.position({ x: newX, y: newY });
   }, [setPosition]);
 
   // Reset view to default
