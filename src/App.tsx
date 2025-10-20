@@ -10,10 +10,10 @@ const CanvasApp: React.FC = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
   const navigate = useNavigate();
 
-  // If no canvas ID, redirect to a new canvas
+  // If no canvas ID, generate and redirect to a new canvas
   React.useEffect(() => {
     if (!canvasId) {
-      const newCanvasId = canvasService.getSharedCanvasId(); // Default to shared canvas
+      const newCanvasId = canvasService.generateCanvasId(); // Generate new unique canvas
       navigate(`/canvas/${newCanvasId}`, { replace: true });
     }
   }, [canvasId, navigate]);
