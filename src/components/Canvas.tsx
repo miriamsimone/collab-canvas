@@ -201,6 +201,9 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
   const [canvasError, setCanvasError] = useState<string | null>(null);
   const [newCommentPos, setNewCommentPos] = useState<{ x: number; y: number; screenX: number; screenY: number } | null>(null);
   const [showOfflineBanner, setShowOfflineBanner] = useState<boolean>(false);
+  
+  // Touch gesture state for trackpad/touch panning
+  const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number; stageX: number; stageY: number } | null>(null);
 
   // Bulk operations for selected objects
   const handleBulkDelete = async () => {
@@ -2144,6 +2147,73 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
     }
   };
 
+  // Handle three-finger touch gesture for panning
+  const handleTouchStart = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const touches = e.evt.touches;
+    
+    // Check if it's a three-finger gesture (or two-finger for fallback)
+    if (touches.length >= 2) {
+      e.evt.preventDefault();
+      
+      // Calculate center point of all touches
+      let centerX = 0;
+      let centerY = 0;
+      for (let i = 0; i < touches.length; i++) {
+        centerX += touches[i].clientX;
+        centerY += touches[i].clientY;
+      }
+      centerX /= touches.length;
+      centerY /= touches.length;
+      
+      setTouchStartPos({
+        x: centerX,
+        y: centerY,
+        stageX: stage.x(),
+        stageY: stage.y(),
+      });
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    const stage = stageRef.current;
+    if (!stage || !touchStartPos) return;
+
+    const touches = e.evt.touches;
+    
+    // Continue panning if we have the same number of fingers (or more)
+    if (touches.length >= 2) {
+      e.evt.preventDefault();
+      
+      // Calculate current center point
+      let centerX = 0;
+      let centerY = 0;
+      for (let i = 0; i < touches.length; i++) {
+        centerX += touches[i].clientX;
+        centerY += touches[i].clientY;
+      }
+      centerX /= touches.length;
+      centerY /= touches.length;
+      
+      // Calculate delta
+      const deltaX = centerX - touchStartPos.x;
+      const deltaY = centerY - touchStartPos.y;
+      
+      // Update stage position
+      const newX = touchStartPos.stageX + deltaX;
+      const newY = touchStartPos.stageY + deltaY;
+      
+      setPosition(newX, newY);
+      stage.position({ x: newX, y: newY });
+    }
+  }, [touchStartPos, setPosition]);
+
+  const handleTouchEnd = useCallback(() => {
+    setTouchStartPos(null);
+  }, []);
+
   return (
     <div className="canvas-app">
       {/* Offline Warning Banner - Only show after delay to prevent flash */}
@@ -2271,6 +2341,9 @@ export const Canvas: React.FC<CanvasProps> = ({ canvasId }) => {
           onMouseUp={handleStageMouseUp}
           onClick={handleStageClick}
           onTap={handleStageClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           {/* Grid Overlay Layer (drawn first, behind everything) */}
           {gridConfig.showGrid && gridConfig.enabled && (
